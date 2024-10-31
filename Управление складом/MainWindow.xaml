@@ -1,0 +1,115 @@
+﻿<Window x:Class="УправлениеСкладом.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:УправлениеСкладом"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        Title="Авторизация" Height="450" Width="350"
+        WindowStartupLocation="CenterScreen" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        MouseDown="Window_MouseDown">
+    <Window.Resources>
+        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </Window.Resources>
+    <Grid>
+        <Border Background="#FFFFFFFF" CornerRadius="20" Padding="20">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
+            </Border.Effect>
+            <StackPanel>
+                <!-- Заголовок с кнопкой закрытия -->
+                <Grid Margin="0,0,0,10">
+                    <TextBlock Text="Управление складом" FontSize="18" FontWeight="Bold" Foreground="#007AFF" HorizontalAlignment="Center"/>
+                    <Button Content="✖" Width="30" Height="30" Background="Transparent" BorderThickness="0" FontSize="14"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseButton_Click"/>
+                </Grid>
+
+                <!-- Заголовок -->
+                <TextBlock Text="Добро пожаловать" FontSize="24" FontWeight="Bold" Foreground="#333333" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+
+                <!-- Поле логина -->
+                <Grid Margin="0,0,0,10">
+                    <Border CornerRadius="10" Background="#F2F2F2">
+                        <TextBox x:Name="UsernameTextBox" Height="40" Padding="10"
+                                 Background="Transparent" BorderThickness="0"
+                                 Foreground="#333333"/>
+                    </Border>
+                    <!-- Плейсхолдер для логина -->
+                    <TextBlock Text="Логин" Foreground="Gray" Margin="15,0,0,0"
+                               VerticalAlignment="Center" IsHitTestVisible="False">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=UsernameTextBox}" Value="">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+
+                <!-- Поле пароля с иконкой глаза -->
+                <Grid Margin="0,0,0,20">
+                    <Border CornerRadius="10" Background="#F2F2F2">
+                        <!-- Используем Grid для наложения элементов -->
+                        <Grid>
+                            <!-- PasswordBox (скрытый пароль) -->
+                            <PasswordBox x:Name="PasswordBox" Height="40" Padding="10,0,40,0"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="#333333"
+                                         Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=False}"
+                                         local:PasswordHelper.Attach="True"
+                                         local:PasswordHelper.Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         KeyDown="PasswordBox_KeyDown"/>
+                            <!-- TextBox (открытый пароль) -->
+                            <TextBox x:Name="PasswordTextBox" Height="40" Padding="10,0,40,0"
+                                     Background="Transparent" BorderThickness="0"
+                                     Foreground="#333333"
+                                     Text="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}"
+                                     KeyDown="PasswordBox_KeyDown"/>
+                            <!-- Кнопка глаза -->
+                            <Button Width="24" Height="24" Background="Transparent" BorderThickness="0"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"
+                                    Click="TogglePasswordVisibility">
+                                <iconPacks:PackIconMaterial Kind="{Binding EyeIcon}" Width="24" Height="24" Foreground="#333333"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+                    <!-- Плейсхолдер для пароля -->
+                    <TextBlock Text="Пароль" Foreground="Gray" Margin="15,0,0,0"
+                               VerticalAlignment="Center" IsHitTestVisible="False">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Password}" Value="">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+
+                <!-- Кнопка входа -->
+                <Button Content="Войти" Height="45" Background="#007AFF" Foreground="White"
+                        FontWeight="Bold" BorderThickness="0" Margin="0"
+                        Click="LoginButton_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border CornerRadius="22.5" Background="{TemplateBinding Background}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <!-- Ссылка "Забыли пароль?" -->
+                <TextBlock Text="Забыли пароль?" Foreground="#007AFF" HorizontalAlignment="Center" Margin="0,10,0,0">
+                    <!-- Реализация команды ForgotPasswordCommand -->
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
