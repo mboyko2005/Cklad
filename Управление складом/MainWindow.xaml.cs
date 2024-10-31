@@ -135,6 +135,7 @@ namespace УправлениеСкладом
 			UpdateThemeIcon();
 		}
 
+
 		public void UpdateThemeIcon()
 		{
 			if (ThemeIcon != null)

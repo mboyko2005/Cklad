@@ -1,5 +1,7 @@
-﻿// ManageUsersWindow.xaml.cs
+﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -10,17 +12,17 @@ namespace УправлениеСкладом
 {
 	public partial class ManageUsersWindow : Window, IThemeable
 	{
-		// Пример модели пользователя
+		// Пример модели пользователя с виртуальным ID для отображения
 		public class User
 		{
-			public int Id { get; set; }
+			public int DisplayId { get; set; } // Виртуальный ID для отображения
+			public int Id { get; set; } // Реальный ID из базы данных
 			public string Name { get; set; }
 			public string Role { get; set; }
-			// Добавьте другие свойства по необходимости
 		}
 
-		// Пример списка пользователей
-		private List<User> Users;
+		// Пример строки подключения к базе данных
+		private static string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
 
 		public ManageUsersWindow()
 		{
@@ -30,16 +32,45 @@ namespace УправлениеСкладом
 
 		private void LoadUsers()
 		{
-			// Здесь должна быть логика загрузки пользователей из базы данных
-			// Для примера используем статический список
-			Users = new List<User>
-			{
-				new User { Id = 1, Name = "Иван Иванов", Role = "Администратор" },
-				new User { Id = 2, Name = "Мария Петрова", Role = "Менеджер" },
-				new User { Id = 3, Name = "Сергей Смирнов", Role = "Сотрудник склада" }
-			};
+			// Создаем список пользователей
+			List<User> users = new List<User>();
 
-			UsersDataGrid.ItemsSource = Users;
+			// Подключаемся к базе данных и выполняем запрос
+			using (SqlConnection connection = new SqlConnection(connectionString))
+			{
+				try
+				{
+					connection.Open();
+					string query = @"
+                        SELECT Пользователи.ПользовательID, Пользователи.ИмяПользователя, Роли.Наименование AS Role
+                        FROM Пользователи
+                        INNER JOIN Роли ON Пользователи.РольID = Роли.РольID
+                        ORDER BY Пользователи.ПользовательID";
+
+					SqlCommand command = new SqlCommand(query, connection);
+					SqlDataReader reader = command.ExecuteReader();
+
+					// Читаем данные из результата запроса и добавляем виртуальный ID
+					int displayId = 1;
+					while (reader.Read())
+					{
+						users.Add(new User
+						{
+							DisplayId = displayId++,
+							Id = reader.GetInt32(0),
+							Name = reader.GetString(1),
+							Role = reader.GetString(2)
+						});
+					}
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Ошибка при загрузке данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+				}
+			}
+
+			// Привязываем список пользователей к DataGrid
+			UsersDataGrid.ItemsSource = users;
 		}
 
 		private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -49,14 +80,11 @@ namespace УправлениеСкладом
 
 		private void AddUser_Click(object sender, RoutedEventArgs e)
 		{
-			// Логика добавления пользователя
-			// Например, открытие диалогового окна для ввода данных нового пользователя
 			MessageBox.Show("Функция добавления пользователя ещё не реализована.", "Добавить пользователя", MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 
 		private void EditUser_Click(object sender, RoutedEventArgs e)
 		{
-			// Логика редактирования выбранного пользователя
 			if (UsersDataGrid.SelectedItem is User selectedUser)
 			{
 				MessageBox.Show($"Редактирование пользователя: {selectedUser.Name}", "Редактировать пользователя", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -69,10 +97,40 @@ namespace УправлениеСкладом
 
 		private void DeleteUser_Click(object sender, RoutedEventArgs e)
 		{
-			// Логика удаления выбранного пользователя
 			if (UsersDataGrid.SelectedItem is User selectedUser)
 			{
-				MessageBox.Show($"Удаление пользователя: {selectedUser.Name}", "Удалить пользователя", MessageBoxButton.OK, MessageBoxImage.Information);
+				MessageBoxResult result = MessageBox.Show($"Вы уверены, что хотите удалить пользователя: {selectedUser.Name}?",
+					"Удалить пользователя", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+				if (result == MessageBoxResult.Yes)
+				{
+					using (SqlConnection connection = new SqlConnection(connectionString))
+					{
+						try
+						{
+							connection.Open();
+
+							// Удаление связанных записей из таблицы ДвиженияТоваров
+							string deleteRelatedQuery = "DELETE FROM ДвиженияТоваров WHERE ПользовательID = @UserId";
+							SqlCommand deleteRelatedCommand = new SqlCommand(deleteRelatedQuery, connection);
+							deleteRelatedCommand.Parameters.AddWithValue("@UserId", selectedUser.Id);
+							deleteRelatedCommand.ExecuteNonQuery();
+
+							// Удаление пользователя
+							string deleteQuery = "DELETE FROM Пользователи WHERE ПользовательID = @UserId";
+							SqlCommand deleteCommand = new SqlCommand(deleteQuery, connection);
+							deleteCommand.Parameters.AddWithValue("@UserId", selectedUser.Id);
+							deleteCommand.ExecuteNonQuery();
+						}
+						catch (Exception ex)
+						{
+							MessageBox.Show($"Ошибка при удалении пользователя: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+						}
+					}
+
+					// Обновляем список пользователей после удаления
+					LoadUsers();
+				}
 			}
 			else
 			{

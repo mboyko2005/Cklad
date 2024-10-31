@@ -1,22 +1,15 @@
-﻿<!-- Themes/LightTheme.xaml -->
+﻿<!-- LightTheme.xaml -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Определение цветов -->
     <Color x:Key="WindowBackgroundColor">#FFFFFFFF</Color>
-    <!-- Белый -->
     <Color x:Key="ForegroundColor">#333333</Color>
-    <!-- Тёмно-серый -->
     <Color x:Key="PrimaryColor">#007AFF</Color>
-    <!-- Голубой -->
     <Color x:Key="ButtonBackgroundColor">#F2F2F2</Color>
-    <!-- Светло-серый -->
     <Color x:Key="ButtonForegroundColor">#007AFF</Color>
-    <!-- Голубой -->
     <Color x:Key="ButtonBorderColor">#007AFF</Color>
-    <!-- Голубой -->
     <Color x:Key="ButtonBorderColorDelete">#FF3B30</Color>
-    <!-- Красный -->
 
     <!-- Определение кистей -->
     <SolidColorBrush x:Key="WindowBackgroundBrush" Color="{StaticResource WindowBackgroundColor}"/>
@@ -26,4 +19,13 @@
     <SolidColorBrush x:Key="ButtonForegroundBrush" Color="{StaticResource ButtonForegroundColor}"/>
     <SolidColorBrush x:Key="ButtonBorderBrush" Color="{StaticResource ButtonBorderColor}"/>
     <SolidColorBrush x:Key="ButtonBorderBrushDelete" Color="{StaticResource ButtonBorderColorDelete}"/>
+
+    <!-- Стиль для заголовков столбцов DataGrid -->
+    <Style TargetType="DataGridColumnHeader">
+        <Setter Property="Background" Value="{StaticResource ButtonBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="BorderBrush" Value="{StaticResource ButtonBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    </Style>
 </ResourceDictionary>

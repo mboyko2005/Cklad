@@ -10,6 +10,17 @@
     <Window.Resources>
         <!-- Подключение конвертера, если необходимо -->
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <!-- Стиль для заголовков столбцов DataGrid -->
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="5"/>
+            <!-- Добавлен отступ -->
+        </Style>
     </Window.Resources>
     <Grid>
         <Border Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="20" Padding="20">
@@ -32,7 +43,12 @@
                     <DataGrid x:Name="InventoryDataGrid" AutoGenerateColumns="False" CanUserAddRows="False" Margin="0,0,0,10"
                               SelectionMode="Single" IsReadOnly="True"
                               Background="{DynamicResource WindowBackgroundBrush}"
-                              Foreground="{DynamicResource ForegroundBrush}">
+                              Foreground="{DynamicResource ForegroundBrush}"
+                              BorderBrush="{DynamicResource ButtonBorderBrush}"
+                              GridLinesVisibility="None"
+                              HeadersVisibility="Column"
+                              RowBackground="{DynamicResource WindowBackgroundBrush}"
+                              AlternatingRowBackground="{DynamicResource ButtonBackgroundBrush}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="Auto"/>
                             <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*"/>
@@ -44,36 +60,36 @@
 
                     <!-- Кнопки управления складскими позициями -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="Добавить" Width="100" Margin="5" Click="AddInventory_Click">
+                        <Button Content="Добавить" Width="120" Margin="5" Click="AddInventory_Click">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
-                                    <Border CornerRadius="10" Background="{DynamicResource ButtonBackgroundBrush}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <iconPacks:PackIconMaterial Kind="PlusCircleOutline" Width="24" Height="24" Foreground="{DynamicResource ButtonForegroundBrush}" Margin="0,0,10,0"/>
+                                    <Border CornerRadius="10" Background="{DynamicResource ButtonBackgroundBrush}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" Padding="5">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0">
+                                            <iconPacks:PackIconMaterial Kind="PlusCircleOutline" Width="20" Height="20" Foreground="{DynamicResource ButtonForegroundBrush}" Margin="0,0,5,0"/>
                                             <TextBlock Text="{TemplateBinding Content}" FontSize="16" Foreground="{DynamicResource ButtonForegroundBrush}"/>
                                         </StackPanel>
                                     </Border>
                                 </ControlTemplate>
                             </Button.Template>
                         </Button>
-                        <Button Content="Редактировать" Width="120" Margin="5" Click="EditInventory_Click">
+                        <Button Content="Редактировать" Width="171" Margin="5" Click="EditInventory_Click">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
-                                    <Border CornerRadius="10" Background="{DynamicResource ButtonBackgroundBrush}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <iconPacks:PackIconMaterial Kind="PencilOutline" Width="24" Height="24" Foreground="{DynamicResource ButtonForegroundBrush}" Margin="0,0,10,0"/>
+                                    <Border CornerRadius="10" Background="{DynamicResource ButtonBackgroundBrush}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1" Padding="5">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0">
+                                            <iconPacks:PackIconMaterial Kind="PencilOutline" Width="20" Height="20" Foreground="{DynamicResource ButtonForegroundBrush}" Margin="0,0,5,0"/>
                                             <TextBlock Text="{TemplateBinding Content}" FontSize="16" Foreground="{DynamicResource ButtonForegroundBrush}"/>
                                         </StackPanel>
                                     </Border>
                                 </ControlTemplate>
                             </Button.Template>
                         </Button>
-                        <Button Content="Удалить" Width="100" Margin="5" Click="DeleteInventory_Click">
+                        <Button Content="Удалить" Width="120" Margin="5" Click="DeleteInventory_Click">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
-                                    <Border CornerRadius="10" Background="{DynamicResource ButtonBackgroundBrush}" BorderBrush="{DynamicResource ButtonBorderBrushDelete}" BorderThickness="1">
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <iconPacks:PackIconMaterial Kind="DeleteOutline" Width="24" Height="24" Foreground="{DynamicResource ButtonBorderBrushDelete}" Margin="0,0,10,0"/>
+                                    <Border CornerRadius="10" Background="{DynamicResource ButtonBackgroundBrush}" BorderBrush="{DynamicResource ButtonBorderBrushDelete}" BorderThickness="1" Padding="5">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0">
+                                            <iconPacks:PackIconMaterial Kind="DeleteOutline" Width="20" Height="20" Foreground="{DynamicResource ButtonBorderBrushDelete}" Margin="0,0,5,0"/>
                                             <TextBlock Text="{TemplateBinding Content}" FontSize="16" Foreground="{DynamicResource ButtonBorderBrushDelete}"/>
                                         </StackPanel>
                                     </Border>

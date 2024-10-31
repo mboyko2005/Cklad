@@ -10,6 +10,48 @@
     <Window.Resources>
         <!-- Подключение конвертера, если необходимо -->
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <!-- Стиль для заголовков столбцов DataGrid -->
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="5"/>
+        </Style>
+
+        <!-- Стиль для строк DataGrid -->
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="{DynamicResource WindowBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <!-- Изменено на Transparent -->
+            <Setter Property="BorderThickness" Value="0"/>
+            <!-- Убрана толщина границы -->
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Стиль для ячеек DataGrid -->
+        <Style TargetType="DataGridCell">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <!-- Изменено на Transparent -->
+            <Setter Property="BorderThickness" Value="0"/>
+            <!-- Убрана толщина границы -->
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
     <Grid>
         <Border Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="20" Padding="20">
@@ -32,18 +74,22 @@
                     <DataGrid x:Name="UsersDataGrid" AutoGenerateColumns="False" CanUserAddRows="False" Margin="0,0,0,10"
                               SelectionMode="Single" IsReadOnly="True"
                               Background="{DynamicResource WindowBackgroundBrush}"
-                              Foreground="{DynamicResource ForegroundBrush}">
+                              Foreground="{DynamicResource ForegroundBrush}"
+                              BorderBrush="{DynamicResource ButtonBorderBrush}"
+                              GridLinesVisibility="None"
+                              HeadersVisibility="Column"
+                              RowBackground="{DynamicResource WindowBackgroundBrush}"
+                              AlternatingRowBackground="{DynamicResource ButtonBackgroundBrush}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="Auto"/>
                             <DataGridTextColumn Header="Имя" Binding="{Binding Name}" Width="*"/>
                             <DataGridTextColumn Header="Роль" Binding="{Binding Role}" Width="*"/>
-                            <!-- Добавьте другие столбцы по необходимости -->
                         </DataGrid.Columns>
                     </DataGrid>
 
                     <!-- Кнопки управления пользователями -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="Добавить" Width="100" Margin="5" Click="AddUser_Click">
+                        <Button Content="Добавить" Width="128" Margin="5" Click="AddUser_Click">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border CornerRadius="10" Background="{DynamicResource ButtonBackgroundBrush}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
@@ -55,7 +101,7 @@
                                 </ControlTemplate>
                             </Button.Template>
                         </Button>
-                        <Button Content="Редактировать" Width="120" Margin="5" Click="EditUser_Click">
+                        <Button Content="Редактировать" Width="163" Margin="5" Click="EditUser_Click">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border CornerRadius="10" Background="{DynamicResource ButtonBackgroundBrush}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
