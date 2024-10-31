@@ -2,10 +2,12 @@
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
+using MahApps.Metro.IconPacks;
+using Управление_складом.Themes;
 
 namespace УправлениеСкладом
 {
-	public partial class MainWindow : Window, INotifyPropertyChanged
+	public partial class MainWindow : Window, INotifyPropertyChanged, IThemeable
 	{
 		private string _password;
 		private bool _isPasswordVisible;
@@ -121,6 +123,23 @@ namespace УправлениеСкладом
 			if (e.Key == Key.Enter)
 			{
 				LoginButton_Click(sender, e);
+			}
+		}
+
+		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
+		{
+			// Используем ThemeManager для переключения темы
+			ThemeManager.ToggleTheme();
+
+			// Обновляем иконку темы в текущем окне
+			UpdateThemeIcon();
+		}
+
+		public void UpdateThemeIcon()
+		{
+			if (ThemeIcon != null)
+			{
+				ThemeIcon.Kind = ThemeManager.IsDarkTheme ? PackIconMaterialKind.WeatherNight : PackIconMaterialKind.WeatherSunny;
 			}
 		}
 
