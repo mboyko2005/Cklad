@@ -1,9 +1,109 @@
 ﻿<Window x:Class="УправлениеСкладом.AdministratorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:УправлениеСкладом"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         Title="Администратор" Height="450" Width="800"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        MouseDown="Window_MouseDown">
+    <Window.Resources>
+        <!-- Подключение конвертера, если необходимо -->
+        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+    </Window.Resources>
     <Grid>
-        <TextBlock Text="Добро пожаловать, Администратор!" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24"/>
+        <Border Background="#FFFFFFFF" CornerRadius="20" Padding="20">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
+            </Border.Effect>
+            <StackPanel>
+                <!-- Заголовок с кнопкой закрытия -->
+                <Grid Margin="0,0,0,10">
+                    <TextBlock Text="Администратор" FontSize="18" FontWeight="Bold" Foreground="#007AFF" HorizontalAlignment="Center"/>
+                    <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseButton_Click">
+                        <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" Foreground="#007AFF"/>
+                    </Button>
+                </Grid>
+
+                <!-- Основной контент -->
+                <StackPanel>
+                    <!-- Добро пожаловать -->
+                    <TextBlock Text="Добро пожаловать, Администратор!" FontSize="24" FontWeight="Bold" Foreground="#333333" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+
+                    <!-- Пример разделов или кнопок для администратора -->
+                    <Grid>
+                        <!-- Определение строк и столбцов -->
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Кнопка управления пользователями -->
+                        <Button Grid.Row="0" Grid.Column="0" Content="Управление пользователями" Height="50" Margin="10" Click="ManageUsers_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border CornerRadius="10" Background="#F2F2F2" BorderBrush="#007AFF" BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <iconPacks:PackIconMaterial Kind="AccountSettingsOutline" Width="24" Height="24" Foreground="#007AFF" Margin="0,0,10,0"/>
+                                            <TextBlock Text="{TemplateBinding Content}" FontSize="16" Foreground="#007AFF"/>
+                                        </StackPanel>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+
+                        <!-- Кнопка управления складскими позициями -->
+                        <Button Grid.Row="0" Grid.Column="1" Content="Управление складскими позициями" Height="50" Margin="10" Click="ManageInventory_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border CornerRadius="10" Background="#F2F2F2" BorderBrush="#007AFF" BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <iconPacks:PackIconMaterial Kind="Warehouse" Width="24" Height="24" Foreground="#007AFF" Margin="0,0,10,0"/>
+                                            <TextBlock Text="{TemplateBinding Content}" FontSize="16" Foreground="#007AFF"/>
+                                        </StackPanel>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+
+                        <!-- Кнопка отчётов -->
+                        <Button Grid.Row="1" Grid.Column="0" Content="Отчёты" Height="50" Margin="10" Click="Reports_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border CornerRadius="10" Background="#F2F2F2" BorderBrush="#007AFF" BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <iconPacks:PackIconMaterial Kind="ChartBar" Width="24" Height="24" Foreground="#007AFF" Margin="0,0,10,0"/>
+                                            <TextBlock Text="{TemplateBinding Content}" FontSize="16" Foreground="#007AFF"/>
+                                        </StackPanel>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+
+                        <!-- Кнопка настройки -->
+                        <Button Grid.Row="1" Grid.Column="1" Content="Настройки" Height="50" Margin="10" Click="Settings_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border CornerRadius="10" Background="#F2F2F2" BorderBrush="#007AFF" BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <iconPacks:PackIconMaterial Kind="CogOutline" Width="24" Height="24" Foreground="#007AFF" Margin="0,0,10,0"/>
+                                            <TextBlock Text="{TemplateBinding Content}" FontSize="16" Foreground="#007AFF"/>
+                                        </StackPanel>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+
+                        <!-- Добавьте дополнительные кнопки по необходимости -->
+                    </Grid>
+                </StackPanel>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

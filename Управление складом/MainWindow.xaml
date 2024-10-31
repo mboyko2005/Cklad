@@ -18,8 +18,10 @@
                 <!-- Заголовок с кнопкой закрытия -->
                 <Grid Margin="0,0,0,10">
                     <TextBlock Text="Управление складом" FontSize="18" FontWeight="Bold" Foreground="#007AFF" HorizontalAlignment="Center"/>
-                    <Button Content="✖" Width="30" Height="30" Background="Transparent" BorderThickness="0" FontSize="14"
-                            HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseButton_Click"/>
+                    <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseButton_Click">
+                        <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="14" Foreground="#007AFF" HorizontalAlignment="Center"/>
+                    </Button>
                 </Grid>
 
                 <!-- Заголовок -->
@@ -30,7 +32,7 @@
                     <Border CornerRadius="10" Background="#F2F2F2">
                         <TextBox x:Name="UsernameTextBox" Height="40" Padding="10"
                                  Background="Transparent" BorderThickness="0"
-                                 Foreground="#333333"/>
+                                 Foreground="#333333" VerticalContentAlignment="Center"/>
                     </Border>
                     <!-- Плейсхолдер для логина -->
                     <TextBlock Text="Логин" Foreground="Gray" Margin="15,0,0,0"
@@ -56,7 +58,7 @@
                             <!-- PasswordBox (скрытый пароль) -->
                             <PasswordBox x:Name="PasswordBox" Height="40" Padding="10,0,40,0"
                                          Background="Transparent" BorderThickness="0"
-                                         Foreground="#333333"
+                                         Foreground="#333333" VerticalContentAlignment="Center"
                                          Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=False}"
                                          local:PasswordHelper.Attach="True"
                                          local:PasswordHelper.Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -64,13 +66,13 @@
                             <!-- TextBox (открытый пароль) -->
                             <TextBox x:Name="PasswordTextBox" Height="40" Padding="10,0,40,0"
                                      Background="Transparent" BorderThickness="0"
-                                     Foreground="#333333"
+                                     Foreground="#333333" VerticalContentAlignment="Center"
                                      Text="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}"
                                      KeyDown="PasswordBox_KeyDown"/>
                             <!-- Кнопка глаза -->
                             <Button Width="24" Height="24" Background="Transparent" BorderThickness="0"
-                                    HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,9,0"
                                     Click="TogglePasswordVisibility">
                                 <iconPacks:PackIconMaterial Kind="{Binding EyeIcon}" Width="24" Height="24" Foreground="#333333"/>
                             </Button>
@@ -83,7 +85,7 @@
                             <Style TargetType="TextBlock">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Password}" Value="">
+                                    <DataTrigger Binding="{Binding Password, ElementName=PasswordBox}" Value="">
                                         <Setter Property="Visibility" Value="Visible"/>
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -106,9 +108,7 @@
                 </Button>
 
                 <!-- Ссылка "Забыли пароль?" -->
-                <TextBlock Text="Забыли пароль?" Foreground="#007AFF" HorizontalAlignment="Center" Margin="0,10,0,0">
-                    <!-- Реализация команды ForgotPasswordCommand -->
-                </TextBlock>
+                <TextBlock Text="Забыли пароль?" Foreground="#007AFF" HorizontalAlignment="Center" Margin="0,10,0,0"/>
             </StackPanel>
         </Border>
     </Grid>
