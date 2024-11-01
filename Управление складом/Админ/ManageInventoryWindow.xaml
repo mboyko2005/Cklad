@@ -209,14 +209,19 @@
 
                         <!-- Поля для ввода данных -->
                         <StackPanel Grid.Row="1">
-                            <Label Content="Название:" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <Label Content="Название товара:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <TextBox x:Name="NameTextBox" Margin="0,0,0,10" />
 
                             <Label Content="Количество:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <TextBox x:Name="QuantityTextBox" Margin="0,0,0,10" />
 
-                            <Label Content="Местоположение:" Foreground="{DynamicResource ForegroundBrush}"/>
-                            <TextBox x:Name="LocationTextBox" Margin="0,0,0,10" />
+                            <Label Content="Склад:" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <ComboBox x:Name="WarehouseComboBox" Margin="0,0,0,10"
+                                      DisplayMemberPath="Name"
+                                      SelectedValuePath="Id" />
+
+                            <Label Content="Поставщик:" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBox x:Name="SupplierTextBox" Margin="0,0,0,10" />
                         </StackPanel>
 
                         <!-- Кнопки действия -->
