@@ -10,10 +10,10 @@
     <Color x:Key="ButtonForegroundColor">#007AFF</Color>
     <Color x:Key="ButtonBorderColor">#007AFF</Color>
     <Color x:Key="ButtonBorderColorDelete">#FF3B30</Color>
-    <Color x:Key="DataGridRowBackground">#FF2E2E2E</Color>
-    <!-- Цвет фона строк -->
-    <Color x:Key="DataGridRowForeground">#FFFFFF</Color>
-    <!-- Цвет текста в строках -->
+    <Color x:Key="RowBackgroundColor">#FF2E2E2E</Color>
+    <Color x:Key="AlternatingRowBackgroundColor">#FF3C3C3C</Color>
+    <Color x:Key="HeaderBackgroundColor">#FF1E1E1E</Color>
+    <Color x:Key="HeaderForegroundColor">#FFFFFF</Color>
 
     <!-- Определение кистей -->
     <SolidColorBrush x:Key="WindowBackgroundBrush" Color="{StaticResource WindowBackgroundColor}"/>
@@ -23,8 +23,12 @@
     <SolidColorBrush x:Key="ButtonForegroundBrush" Color="{StaticResource ButtonForegroundColor}"/>
     <SolidColorBrush x:Key="ButtonBorderBrush" Color="{StaticResource ButtonBorderColor}"/>
     <SolidColorBrush x:Key="ButtonBorderBrushDelete" Color="{StaticResource ButtonBorderColorDelete}"/>
-    <SolidColorBrush x:Key="DataGridRowBackgroundBrush" Color="{StaticResource DataGridRowBackground}"/>
-    <SolidColorBrush x:Key="DataGridRowForegroundBrush" Color="{StaticResource DataGridRowForeground}"/>
+    <SolidColorBrush x:Key="RowBackgroundBrush" Color="{StaticResource RowBackgroundColor}"/>
+    <SolidColorBrush x:Key="AlternatingRowBackgroundBrush" Color="{StaticResource AlternatingRowBackgroundColor}"/>
+    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="{StaticResource HeaderBackgroundColor}"/>
+    <SolidColorBrush x:Key="HeaderForegroundBrush" Color="{StaticResource HeaderForegroundColor}"/>
+    <SolidColorBrush x:Key="ButtonHoverBackgroundBrush" Color="#FF4C4C4C"/>
+    <SolidColorBrush x:Key="ButtonPressedBackgroundBrush" Color="#FF5C5C5C"/>
 
     <!-- Стиль для заголовков столбцов DataGrid -->
     <Style TargetType="DataGridColumnHeader">
@@ -33,26 +37,14 @@
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="BorderBrush" Value="{StaticResource ButtonBorderBrush}"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="Padding" Value="5"/>
     </Style>
 
     <!-- Стиль для строк DataGrid -->
     <Style TargetType="DataGridRow">
-        <Setter Property="Background" Value="{StaticResource DataGridRowBackgroundBrush}"/>
-        <Setter Property="Foreground" Value="{StaticResource DataGridRowForegroundBrush}"/>
+        <Setter Property="Background" Value="{StaticResource RowBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
         <Setter Property="BorderBrush" Value="{StaticResource ButtonBorderBrush}"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
-    </Style>
-
-    <!-- Стиль для выделенных ячеек DataGrid -->
-    <Style TargetType="DataGridCell">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="{StaticResource DataGridRowForegroundBrush}"/>
-        <Style.Triggers>
-            <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
-                <Setter Property="Foreground" Value="#FFFFFF"/>
-                <!-- Белый текст для выделенных ячеек -->
-            </Trigger>
-        </Style.Triggers>
     </Style>
 </ResourceDictionary>

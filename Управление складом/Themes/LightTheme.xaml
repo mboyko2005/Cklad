@@ -10,6 +10,10 @@
     <Color x:Key="ButtonForegroundColor">#007AFF</Color>
     <Color x:Key="ButtonBorderColor">#007AFF</Color>
     <Color x:Key="ButtonBorderColorDelete">#FF3B30</Color>
+    <Color x:Key="RowBackgroundColor">#FFFFFF</Color>
+    <Color x:Key="AlternatingRowBackgroundColor">#FFF9F9F9</Color>
+    <Color x:Key="HeaderBackgroundColor">#FFB0C4DE</Color>
+    <Color x:Key="HeaderForegroundColor">#333333</Color>
 
     <!-- Определение кистей -->
     <SolidColorBrush x:Key="WindowBackgroundBrush" Color="{StaticResource WindowBackgroundColor}"/>
@@ -19,6 +23,12 @@
     <SolidColorBrush x:Key="ButtonForegroundBrush" Color="{StaticResource ButtonForegroundColor}"/>
     <SolidColorBrush x:Key="ButtonBorderBrush" Color="{StaticResource ButtonBorderColor}"/>
     <SolidColorBrush x:Key="ButtonBorderBrushDelete" Color="{StaticResource ButtonBorderColorDelete}"/>
+    <SolidColorBrush x:Key="RowBackgroundBrush" Color="{StaticResource RowBackgroundColor}"/>
+    <SolidColorBrush x:Key="AlternatingRowBackgroundBrush" Color="{StaticResource AlternatingRowBackgroundColor}"/>
+    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="{StaticResource HeaderBackgroundColor}"/>
+    <SolidColorBrush x:Key="HeaderForegroundBrush" Color="{StaticResource HeaderForegroundColor}"/>
+    <SolidColorBrush x:Key="ButtonHoverBackgroundBrush" Color="#FFE0E0E0"/>
+    <SolidColorBrush x:Key="ButtonPressedBackgroundBrush" Color="#FFD0D0D0"/>
 
     <!-- Стиль для заголовков столбцов DataGrid -->
     <Style TargetType="DataGridColumnHeader">
@@ -27,5 +37,15 @@
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="BorderBrush" Value="{StaticResource ButtonBorderBrush}"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="Padding" Value="5"/>
     </Style>
+
+    <!-- Стиль для строк DataGrid -->
+    <Style TargetType="DataGridRow">
+        <Setter Property="Background" Value="{StaticResource RowBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource ForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource ButtonBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    </Style>
+
 </ResourceDictionary>
