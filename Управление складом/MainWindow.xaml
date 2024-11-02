@@ -111,7 +111,11 @@
                 </Button>
 
                 <!-- Ссылка "Забыли пароль?" -->
-                <TextBlock Text="Забыли пароль?" Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                <TextBlock HorizontalAlignment="Center" Margin="0,10,0,0" Foreground="{DynamicResource PrimaryBrush}">
+                    <Hyperlink Click="ForgotPassword_Click" Foreground="Gray">
+                        Забыли пароль?
+                    </Hyperlink>
+                </TextBlock>
 
                 <!-- Кнопка для переключения темы -->
                 <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
