@@ -7,21 +7,27 @@ namespace УправлениеСкладом
 {
 	public class BoolToVisibilityConverter : IValueConverter
 	{
+		// Преобразование bool в Visibility
 		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
 		{
 			bool boolValue = (bool)value;
-			bool invert = parameter != null && bool.Parse(parameter.ToString());
-			if (invert)
+			if (parameter != null && bool.TryParse(parameter.ToString(), out bool invert) && invert)
 			{
 				boolValue = !boolValue;
 			}
 			return boolValue ? Visibility.Visible : Visibility.Collapsed;
 		}
 
+		// Преобразование Visibility обратно в bool (не используется)
 		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
 		{
 			Visibility vis = (Visibility)value;
-			return vis == Visibility.Visible;
+			bool result = vis == Visibility.Visible;
+			if (parameter != null && bool.TryParse(parameter.ToString(), out bool invert) && invert)
+			{
+				result = !result;
+			}
+			return result;
 		}
 	}
 }

@@ -1,5 +1,4 @@
-﻿<!-- MainWindow.xaml -->
-<Window x:Class="УправлениеСкладом.MainWindow"
+﻿<Window x:Class="УправлениеСкладом.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:УправлениеСкладом"
@@ -8,6 +7,7 @@
         WindowStartupLocation="CenterScreen" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         MouseDown="Window_MouseDown">
     <Window.Resources>
+        <!-- Конвертер для преобразования bool в Visibility -->
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Window.Resources>
     <Grid>
@@ -37,7 +37,8 @@
                     </Border>
                     <!-- Плейсхолдер для логина -->
                     <TextBlock Text="Логин" Foreground="Gray" Margin="15,0,0,0"
-                               VerticalAlignment="Center" IsHitTestVisible="False">
+                               VerticalAlignment="Center" IsHitTestVisible="False"
+                               Panel.ZIndex="1">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -54,13 +55,13 @@
                 <!-- Поле пароля с иконкой глаза -->
                 <Grid Margin="0,0,0,20">
                     <Border CornerRadius="10" Background="{DynamicResource ButtonBackgroundBrush}">
-                        <!-- Используем Grid для наложения элементов -->
+                        <!-- Grid для наложения элементов -->
                         <Grid>
                             <!-- PasswordBox (скрытый пароль) -->
                             <PasswordBox x:Name="PasswordBox" Height="40" Padding="10,0,40,0"
                                          Background="Transparent" BorderThickness="0"
                                          Foreground="{DynamicResource ForegroundBrush}" VerticalContentAlignment="Center"
-                                         Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=False}"
+                                         Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}"
                                          local:PasswordHelper.Attach="True"
                                          local:PasswordHelper.Password="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                          KeyDown="PasswordBox_KeyDown"/>
@@ -69,7 +70,7 @@
                                      Background="Transparent" BorderThickness="0"
                                      Foreground="{DynamicResource ForegroundBrush}" VerticalContentAlignment="Center"
                                      Text="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=True}"
+                                     Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                                      KeyDown="PasswordBox_KeyDown"/>
                             <!-- Кнопка глаза -->
                             <Button Width="24" Height="24" Background="Transparent" BorderThickness="0"
@@ -77,22 +78,23 @@
                                     Click="TogglePasswordVisibility">
                                 <iconPacks:PackIconMaterial Kind="{Binding EyeIcon}" Width="24" Height="24" Foreground="{DynamicResource ForegroundBrush}"/>
                             </Button>
+                            <!-- Плейсхолдер для пароля -->
+                            <TextBlock Text="Пароль" Foreground="Gray" Margin="15,0,0,0"
+                                       VerticalAlignment="Center" IsHitTestVisible="False"
+                                       Panel.ZIndex="1">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Password}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </Grid>
                     </Border>
-                    <!-- Плейсхолдер для пароля -->
-                    <TextBlock Text="Пароль" Foreground="Gray" Margin="15,0,0,0"
-                               VerticalAlignment="Center" IsHitTestVisible="False">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ElementName=PasswordBox, Path=Password}" Value="">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
                 </Grid>
 
                 <!-- Кнопка входа -->
