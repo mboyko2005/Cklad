@@ -4,51 +4,195 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:УправлениеСкладом"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        Title="Отчёты" Height="450" Width="800"
+        xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+        Title="Отчёты" Height="600" Width="1000"
         WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
-        MouseDown="Window_MouseDown">
+        MouseDown="Window_MouseDown" Loaded="Window_Loaded">
     <Window.Resources>
-        <!-- Подключение конвертера, если необходимо -->
+        <!-- Конвертер для преобразования bool в Visibility -->
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <!-- Общие стили для кнопок -->
+        <Style x:Key="ControlButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="MinWidth" Value="120"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для кнопки удаления -->
+        <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource ControlButtonStyle}">
+            <Setter Property="Foreground" Value="{StaticResource ButtonBorderBrushDelete}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource ButtonBorderBrushDelete}"/>
+        </Style>
+
+        <!-- Стиль для заголовков столбцов DataGrid -->
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="5"/>
+        </Style>
+
+        <!-- Стиль для строк DataGrid -->
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Стиль для ячеек DataGrid -->
+        <Style TargetType="DataGridCell">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="5"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Стиль для DataGrid -->
+        <Style TargetType="DataGrid" x:Key="StyledDataGrid">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="RowBackground" Value="Transparent"/>
+            <Setter Property="AlternatingRowBackground" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="SelectionMode" Value="Single"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ColumnWidth" Value="*"/>
+        </Style>
     </Window.Resources>
-    <Grid>
-        <Border Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="20" Padding="20">
+
+    <Grid x:Name="MainGrid">
+        <Border Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="20" Padding="10">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
             </Border.Effect>
-            <StackPanel>
-                <!-- Заголовок с кнопкой закрытия -->
-                <Grid Margin="0,0,0,10">
-                    <TextBlock Text="Отчёты" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
-                    <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
-                            HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseButton_Click">
-                        <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
-                    </Button>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="250"/>
+                    <!-- Левая панель -->
+                    <ColumnDefinition Width="10"/>
+                    <!-- Разделитель -->
+                    <ColumnDefinition Width="*"/>
+                    <!-- Правая панель -->
+                </Grid.ColumnDefinitions>
+
+                <!-- Левая боковая панель -->
+                <Border Grid.Column="0" Background="{DynamicResource ButtonBackgroundBrush}" Padding="10">
+                    <Border.RenderTransform>
+                        <TranslateTransform x:Name="LeftPanelTransform" X="-250"/>
+                    </Border.RenderTransform>
+                    <StackPanel>
+                        <!-- Заголовок панели -->
+                        <TextBlock Text="Выбор отчёта" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,10"/>
+
+                        <!-- Выбор типа отчёта -->
+                        <TextBlock Text="Тип отчёта:" Foreground="{DynamicResource ForegroundBrush}" Margin="0,5,0,0"/>
+                        <ComboBox x:Name="ReportTypeComboBox" SelectedIndex="0" Margin="0,0,0,10">
+                            <ComboBoxItem Content="Самые продаваемые товары"/>
+                            <ComboBoxItem Content="Пользователи системы"/>
+                            <ComboBoxItem Content="Общая стоимость товаров"/>
+                            <ComboBoxItem Content="Текущие складские позиции"/>
+                        </ComboBox>
+
+                        <!-- Выбор типа диаграммы -->
+                        <TextBlock Text="Тип диаграммы:" Foreground="{DynamicResource ForegroundBrush}" Margin="0,5,0,0"/>
+                        <ComboBox x:Name="ChartTypeComboBox" SelectedIndex="0" Margin="0,0,0,10">
+                            <ComboBoxItem Content="Столбчатая"/>
+                            <ComboBoxItem Content="Круговая"/>
+                            <ComboBoxItem Content="Линейная"/>
+                            <ComboBoxItem Content="Пирамидальная"/>
+                        </ComboBox>
+
+                        <!-- Кнопка генерации отчёта -->
+                        <Button Content="Сгенерировать отчёт" Width="200" Height="40" Click="GenerateReport_Click" Margin="0,10,0,10" Style="{StaticResource ControlButtonStyle}"/>
+
+                        <!-- Формат экспорта -->
+                        <TextBlock Text="Экспортировать как:" Foreground="{DynamicResource ForegroundBrush}" Margin="0,5,0,0"/>
+                        <ComboBox x:Name="ExportFormatComboBox" SelectedIndex="0" Margin="0,0,0,10">
+                            <ComboBoxItem Content="PDF"/>
+                            <ComboBoxItem Content="Excel (XLSX)"/>
+                            <ComboBoxItem Content="Word (DOCX)"/>
+                        </ComboBox>
+                        <Button Content="Экспортировать" Width="200" Height="40" Click="ExportReport_Click" Margin="0,10,0,10" Style="{StaticResource ControlButtonStyle}"/>
+
+                        <!-- Кнопка для переключения темы -->
+                        <StackPanel HorizontalAlignment="Center" Margin="0,20,0,0">
+                            <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
+                                    Click="ToggleTheme_Click">
+                                <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Разделитель -->
+                <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Gray"/>
+
+                <!-- Правая панель для отображения диаграммы -->
+                <Grid Grid.Column="2">
+                    <StackPanel>
+                        <!-- Заголовок -->
+                        <TextBlock Text="Отображение отчёта" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,10"/>
+
+                        <!-- Диаграммы -->
+                        <lvc:CartesianChart x:Name="ReportChart" Height="400" Visibility="Collapsed">
+                            <!-- Диаграмма будет динамически генерироваться -->
+                        </lvc:CartesianChart>
+
+                        <lvc:PieChart x:Name="PieReportChart" Height="400" Visibility="Collapsed">
+                            <!-- Диаграмма будет динамически генерироваться -->
+                        </lvc:PieChart>
+                    </StackPanel>
                 </Grid>
-
-                <!-- Основной контент -->
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Button Content="Сгенерировать отчёт" Width="200" Height="50" Click="GenerateReport_Click">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border CornerRadius="10" Background="{DynamicResource ButtonBackgroundBrush}" BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                        <iconPacks:PackIconMaterial Kind="ChartBar" Width="24" Height="24" Foreground="{DynamicResource ButtonForegroundBrush}" Margin="0,0,10,0"/>
-                                        <TextBlock Text="{TemplateBinding Content}" FontSize="16" Foreground="{DynamicResource ButtonForegroundBrush}"/>
-                                    </StackPanel>
-                                </Border>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
-
-                    <!-- Кнопка для переключения темы -->
-                    <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
-                            HorizontalAlignment="Center" Margin="0,20,0,0"
-                            Click="ToggleTheme_Click">
-                        <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
-                    </Button>
-                </StackPanel>
-            </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </Window>
