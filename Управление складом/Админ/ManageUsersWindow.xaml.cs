@@ -90,10 +90,10 @@ namespace УправлениеСкладом
 				{
 					connection.Open();
 					string query = @"
-                        SELECT Пользователи.ПользовательID, Пользователи.ИмяПользователя, Роли.Наименование AS RoleName, Роли.РольID
-                        FROM Пользователи
-                        INNER JOIN Роли ON Пользователи.РольID = Роли.РольID
-                        ORDER BY Пользователи.ПользовательID";
+                            SELECT Пользователи.ПользовательID, Пользователи.ИмяПользователя, Роли.Наименование AS RoleName, Роли.РольID
+                            FROM Пользователи
+                            INNER JOIN Роли ON Пользователи.РольID = Роли.РольID
+                            ORDER BY Пользователи.ПользовательID";
 
 					using (SqlCommand command = new SqlCommand(query, connection))
 					{
@@ -286,9 +286,9 @@ namespace УправлениеСкладом
 
 					// Добавление нового пользователя
 					string insertUserQuery = @"
-                        INSERT INTO Пользователи (ИмяПользователя, Пароль, РольID)
-                        VALUES (@Username, @Password, @RoleId);
-                        SELECT CAST(scope_identity() AS int);";
+                            INSERT INTO Пользователи (ИмяПользователя, Пароль, РольID)
+                            VALUES (@Username, @Password, @RoleId);
+                            SELECT CAST(scope_identity() AS int);";
 
 					int newUserId;
 					using (SqlCommand command = new SqlCommand(insertUserQuery, connection))
@@ -364,9 +364,9 @@ namespace УправлениеСкладом
 
 					// Обновление пользователя
 					string updateUserQuery = @"
-                        UPDATE Пользователи
-                        SET ИмяПользователя = @Username, РольID = @RoleId{0}
-                        WHERE ПользовательID = @UserId";
+                            UPDATE Пользователи
+                            SET ИмяПользователя = @Username, РольID = @RoleId{0}
+                            WHERE ПользовательID = @UserId";
 
 					string passwordUpdateClause = string.Empty;
 					if (!string.IsNullOrEmpty(password))

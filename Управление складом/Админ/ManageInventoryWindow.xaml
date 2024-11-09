@@ -104,6 +104,8 @@
             <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
             <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
             <Setter Property="ColumnWidth" Value="*"/>
+            <!-- Отключение заголовков строк -->
+            <Setter Property="HeadersVisibility" Value="Column"/>
         </Style>
 
         <!-- Анимации для панели добавления/редактирования -->
@@ -201,8 +203,12 @@
 
                         <!-- Заголовок панели -->
                         <Grid Grid.Row="0" Margin="0,0,0,20">
-                            <TextBlock x:Name="PanelTitle" Text="Добавить складскую позицию" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
-                            <Button Width="30" Height="30" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" Click="ClosePanel_Click">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="PanelTitle" Grid.Column="0" Text="Добавить складскую позицию" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Width="30" Height="30" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" Click="ClosePanel_Click">
                                 <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
                             </Button>
                         </Grid>

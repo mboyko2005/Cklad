@@ -53,7 +53,7 @@ namespace УправлениеСкладом
 
 		private bool IsEditMode = false;
 		private InventoryItem SelectedItem;
-		private string connectionString = "Data Source=DESKTOP-Q11QP9V\\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True"; // Замените на вашу строку подключения
+		private string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True"; // Замените на вашу строку подключения
 
 		public ManageInventoryWindow()
 		{
@@ -557,7 +557,7 @@ namespace УправлениеСкладом
 						}
 					}
 
-					// Теперь можем обновить складскую позицию
+					// Обновление складской позиции
 					string updateInventoryQuery = @"
                         UPDATE СкладскиеПозиции
                         SET ТоварID = @ItemId, СкладID = @WarehouseId, Количество = @Quantity, ДатаОбновления = GETDATE()
@@ -617,14 +617,7 @@ namespace УправлениеСкладом
 			if (product != null)
 			{
 				Supplier supplier = Suppliers.FirstOrDefault(s => s.Id == product.SupplierId);
-				if (supplier != null)
-				{
-					SupplierTextBox.Text = supplier.Name;
-				}
-				else
-				{
-					SupplierTextBox.Text = string.Empty;
-				}
+				SupplierTextBox.Text = supplier?.Name ?? string.Empty;
 			}
 			else
 			{

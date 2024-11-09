@@ -104,6 +104,8 @@
             <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
             <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
             <Setter Property="ColumnWidth" Value="*"/>
+            <!-- Отключение заголовков строк -->
+            <Setter Property="HeadersVisibility" Value="Column"/>
         </Style>
 
         <!-- Анимации для панели добавления/редактирования -->
