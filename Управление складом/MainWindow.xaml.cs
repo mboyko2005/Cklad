@@ -12,7 +12,7 @@ namespace УправлениеСкладом
 {
 	public partial class MainWindow : Window, INotifyPropertyChanged, IThemeable
 	{
-		private string _password;
+		private string _password = string.Empty; // Инициализируем пустой строкой
 		private bool _isPasswordVisible;
 		private PackIconMaterialKind _eyeIcon;
 		private DispatcherTimer _passwordVisibilityTimer;
@@ -35,6 +35,16 @@ namespace УправлениеСкладом
 				_isPasswordVisible = value;
 				OnPropertyChanged();
 				UpdateEyeIcon();
+
+				// Запускаем или останавливаем таймер в зависимости от состояния
+				if (_isPasswordVisible)
+				{
+					_passwordVisibilityTimer.Start();
+				}
+				else
+				{
+					_passwordVisibilityTimer.Stop();
+				}
 			}
 		}
 
@@ -53,8 +63,6 @@ namespace УправлениеСкладом
 			InitializeComponent();
 			UsernameTextBox.Focus();
 			DataContext = this;
-			IsPasswordVisible = false;
-			UpdateEyeIcon();
 
 			// Инициализация таймера для автоматического скрытия пароля
 			_passwordVisibilityTimer = new DispatcherTimer();
@@ -64,27 +72,23 @@ namespace УправлениеСкладом
 				IsPasswordVisible = false;
 				_passwordVisibilityTimer.Stop();
 			};
+
+			IsPasswordVisible = false;
+			UpdateEyeIcon();
+
+			// Обновляем иконку темы при загрузке
+			UpdateThemeIcon();
 		}
 
 		private void UpdateEyeIcon()
 		{
-			// Иконка закрытого глаза, когда пароль скрыт
-			EyeIcon = IsPasswordVisible ? PackIconMaterialKind.Eye : PackIconMaterialKind.EyeOff;
+			// Иконка глаза открыта, когда пароль видим
+			EyeIcon = IsPasswordVisible ? PackIconMaterialKind.EyeOff : PackIconMaterialKind.Eye;
 		}
 
 		private void TogglePasswordVisibility(object sender, RoutedEventArgs e)
 		{
 			IsPasswordVisible = !IsPasswordVisible;
-			if (IsPasswordVisible)
-			{
-				// Запускаем таймер на 20 секунд
-				_passwordVisibilityTimer.Start();
-			}
-			else
-			{
-				// Останавливаем таймер, если пароль скрыт вручную
-				_passwordVisibilityTimer.Stop();
-			}
 		}
 
 		private void LoginButton_Click(object sender, RoutedEventArgs e)

@@ -476,6 +476,7 @@ namespace УправлениеСкладом
 		}
 	}
 
+
 	public class Product
 	{
 		public int ProductID { get; set; }
