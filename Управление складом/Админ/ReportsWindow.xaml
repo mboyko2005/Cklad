@@ -4,7 +4,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:УправлениеСкладом"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+        xmlns:oxy="http://oxyplot.org/wpf"
         Title="Отчёты" Height="600" Width="1000"
         WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         MouseDown="Window_MouseDown" Loaded="Window_Loaded">
@@ -25,7 +25,8 @@
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}">
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -42,12 +43,6 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-        </Style>
-
-        <!-- Стиль для кнопки удаления -->
-        <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource ControlButtonStyle}">
-            <Setter Property="Foreground" Value="{StaticResource ButtonBorderBrushDelete}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource ButtonBorderBrushDelete}"/>
         </Style>
 
         <!-- Стиль для заголовков столбцов DataGrid -->
@@ -114,13 +109,10 @@
                 <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
             </Border.Effect>
 
-            <!-- Обернули существующий Grid в новый Grid с RowDefinitions -->
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <!-- Заголовок -->
                     <RowDefinition Height="*"/>
-                    <!-- Основное содержимое -->
                 </Grid.RowDefinitions>
 
                 <!-- Заголовок с кнопкой закрытия -->
@@ -164,10 +156,9 @@
                             <!-- Выбор типа диаграммы -->
                             <TextBlock Text="Тип диаграммы:" Foreground="{DynamicResource ForegroundBrush}" Margin="0,5,0,0"/>
                             <ComboBox x:Name="ChartTypeComboBox" SelectedIndex="0" Margin="0,0,0,10">
-                                <ComboBoxItem Content="Столбчатая"/>
+                                <ComboBoxItem Content="Гистограмма"/>
                                 <ComboBoxItem Content="Круговая"/>
                                 <ComboBoxItem Content="Линейная"/>
-                                <ComboBoxItem Content="Пирамидальная"/>
                             </ComboBox>
 
                             <!-- Кнопка генерации отчёта -->
@@ -176,6 +167,7 @@
                             <!-- Формат экспорта -->
                             <TextBlock Text="Экспортировать как:" Foreground="{DynamicResource ForegroundBrush}" Margin="0,5,0,0"/>
                             <ComboBox x:Name="ExportFormatComboBox" SelectedIndex="0" Margin="0,0,0,10">
+                                <ComboBoxItem Content="PNG"/>
                                 <ComboBoxItem Content="PDF"/>
                                 <ComboBoxItem Content="Excel (XLSX)"/>
                                 <ComboBoxItem Content="Word (DOCX)"/>
@@ -201,14 +193,8 @@
                             <!-- Заголовок -->
                             <TextBlock Text="Отображение отчёта" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,10"/>
 
-                            <!-- Диаграммы -->
-                            <lvc:CartesianChart x:Name="ReportChart" Height="400" Visibility="Collapsed">
-                                <!-- Диаграмма будет динамически генерироваться -->
-                            </lvc:CartesianChart>
-
-                            <lvc:PieChart x:Name="PieReportChart" Height="400" Visibility="Collapsed">
-                                <!-- Диаграмма будет динамически генерироваться -->
-                            </lvc:PieChart>
+                            <!-- Диаграмма -->
+                            <oxy:PlotView x:Name="PlotView" Height="500" Margin="0,10,0,0" Model="{Binding PlotModel}"/>
                         </StackPanel>
                     </Grid>
                 </Grid>

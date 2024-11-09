@@ -5,27 +5,33 @@ using System.ComponentModel;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using MahApps.Metro.IconPacks;
-using LiveCharts;
-using LiveCharts.Wpf;
-using ClosedXML.Excel;
-using Xceed.Words.NET;
-using PdfSharp.Pdf;
-using PdfSharp.Drawing;
-using System.Windows.Media.Imaging;
-using System.Windows.Media;
+using OxyPlot;
+using OxyPlot.Axes;
+using OxyPlot.Series; // Добавлено
 using Управление_складом.Themes;
+using OxyPlot.Wpf;
+using System.Windows.Media;
 
 namespace УправлениеСкладом
 {
 	public partial class ReportsWindow : Window, IThemeable, INotifyPropertyChanged
 	{
-		// Замените строку подключения на вашу
-		private string _connectionString = "Server=DESKTOP-Q11QP9V\\SQLEXPRESS;Database=УправлениеСкладом;Trusted_Connection=True;";
+		private string _connectionString = @"Server=DESKTOP-Q11QP9V\SQLEXPRESS;Database=УправлениеСкладом;Trusted_Connection=True;";
+
+		private PlotModel _plotModel;
+		public PlotModel PlotModel
+		{
+			get => _plotModel;
+			set
+			{
+				_plotModel = value;
+				OnPropertyChanged(nameof(PlotModel));
+			}
+		}
 
 		public ReportsWindow()
 		{
@@ -37,7 +43,7 @@ namespace УправлениеСкладом
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged;
-		protected void OnPropertyChanged([CallerMemberName] string name = null)
+		protected void OnPropertyChanged(string name = null)
 		{
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 		}
@@ -84,17 +90,17 @@ namespace УправлениеСкладом
 				using (SqlConnection conn = new SqlConnection(_connectionString))
 				{
 					conn.Open();
-					string query = @"SELECT TOP 10 t.Наименование, SUM(dt.Количество) AS Продано 
+					string query = @"SELECT TOP 10 t.Наименование, SUM(ABS(dt.Количество)) AS Продано 
                                      FROM ДвиженияТоваров dt
                                      INNER JOIN Товары t ON dt.ТоварID = t.ТоварID 
-                                     WHERE dt.ТипДвижения = N'Приход'
+                                     WHERE dt.ТипДвижения = N'Расход'
                                      GROUP BY t.Наименование 
                                      ORDER BY Продано DESC";
 					SqlCommand cmd = new SqlCommand(query, conn);
 					SqlDataReader reader = cmd.ExecuteReader();
 
 					List<string> productNames = new List<string>();
-					List<int> quantities = new List<int>();
+					List<double> quantities = new List<double>();
 
 					while (reader.Read())
 					{
@@ -102,7 +108,7 @@ namespace УправлениеСкладом
 						quantities.Add(reader.GetInt32(1));
 					}
 
-					DisplayChart(chartType, productNames, quantities.Cast<object>().ToList(), "Самые продаваемые товары", "Товар", "Количество продано");
+					CreateChart(chartType, productNames, quantities, "Самые продаваемые товары", "Количество продано", "Товары");
 				}
 			}
 			catch (Exception ex)
@@ -126,7 +132,7 @@ namespace УправлениеСкладом
 					SqlDataReader reader = cmd.ExecuteReader();
 
 					List<string> roles = new List<string>();
-					List<int> userCounts = new List<int>();
+					List<double> userCounts = new List<double>();
 
 					while (reader.Read())
 					{
@@ -134,7 +140,7 @@ namespace УправлениеСкладом
 						userCounts.Add(reader.GetInt32(1));
 					}
 
-					DisplayChart(chartType, roles, userCounts.Cast<object>().ToList(), "Пользователи системы", "Роль", "Количество пользователей");
+					CreateChart(chartType, roles, userCounts, "Пользователи системы", "Количество пользователей", "Роль");
 				}
 			}
 			catch (Exception ex)
@@ -158,15 +164,15 @@ namespace УправлениеСкладом
 					SqlDataReader reader = cmd.ExecuteReader();
 
 					List<string> productNames = new List<string>();
-					List<decimal> totalCosts = new List<decimal>();
+					List<double> totalCosts = new List<double>();
 
 					while (reader.Read())
 					{
 						productNames.Add(reader.GetString(0));
-						totalCosts.Add(reader.GetDecimal(1));
+						totalCosts.Add(Convert.ToDouble(reader.GetDecimal(1)));
 					}
 
-					DisplayChart(chartType, productNames, totalCosts.Cast<object>().ToList(), "Общая стоимость товаров", "Товар", "Стоимость (руб.)");
+					CreateChart(chartType, productNames, totalCosts, "Общая стоимость товаров", "Стоимость (руб.)", "Товары");
 				}
 			}
 			catch (Exception ex)
@@ -189,7 +195,7 @@ namespace УправлениеСкладом
 					SqlDataReader reader = cmd.ExecuteReader();
 
 					List<string> productNames = new List<string>();
-					List<int> quantities = new List<int>();
+					List<double> quantities = new List<double>();
 
 					while (reader.Read())
 					{
@@ -197,7 +203,7 @@ namespace УправлениеСкладом
 						quantities.Add(reader.GetInt32(1));
 					}
 
-					DisplayChart(chartType, productNames, quantities.Cast<object>().ToList(), "Текущие складские позиции", "Товар", "Количество");
+					CreateChart(chartType, productNames, quantities, "Текущие складские позиции", "Количество", "Товары");
 				}
 			}
 			catch (Exception ex)
@@ -206,236 +212,186 @@ namespace УправлениеСкладом
 			}
 		}
 
-		private void DisplayChart(string chartType, List<string> labels, List<object> values, string title, string xTitle, string yTitle)
+		private void CreateChart(string chartType, List<string> labels, List<double> values, string title, string xTitle, string yTitle)
 		{
-			ReportChart.Series.Clear();
-			ReportChart.Visibility = Visibility.Collapsed;
-			PieReportChart.Series.Clear();
-			PieReportChart.Visibility = Visibility.Collapsed;
+			PlotModel = new PlotModel { Title = title };
+			PlotModel.Background = OxyColors.White;
 
-			if (chartType == "Столбчатая")
+			if (chartType == "Гистограмма")
 			{
-				ReportChart.Visibility = Visibility.Visible;
-				ReportChart.Series = new SeriesCollection
+				var categoryAxis = new CategoryAxis
 				{
-					new ColumnSeries
-					{
-						Title = yTitle,
-						Values = new ChartValues<double>(values.Select(v => Convert.ToDouble(v)))
-					}
+					Position = AxisPosition.Left,
+					Title = yTitle
 				};
-				ReportChart.AxisX.Clear();
-				ReportChart.AxisY.Clear();
-				ReportChart.AxisX.Add(new Axis
+				categoryAxis.Labels.AddRange(labels);
+
+				var valueAxis = new LinearAxis
+				{
+					Position = AxisPosition.Bottom,
+					Title = xTitle
+				};
+
+				var series = new BarSeries
 				{
 					Title = xTitle,
-					Labels = labels
-				});
-				ReportChart.AxisY.Add(new Axis
-				{
-					Title = yTitle
-				});
-				ReportChart.LegendLocation = LegendLocation.Right;
+					FillColor = OxyColor.Parse("#1F77B4"),
+					ItemsSource = values.Select(v => new BarItem { Value = v }).ToList(),
+					LabelPlacement = LabelPlacement.Inside,
+					LabelFormatString = "{0}"
+				};
+
+				PlotModel.Series.Add(series);
+				PlotModel.Axes.Add(categoryAxis);
+				PlotModel.Axes.Add(valueAxis);
 			}
 			else if (chartType == "Круговая")
 			{
-				PieReportChart.Visibility = Visibility.Visible;
-				PieReportChart.Series = new SeriesCollection();
+				var pieSeries = new PieSeries
+				{
+					StartAngle = 0,
+					AngleSpan = 360,
+					InnerDiameter = 0.0,
+					StrokeThickness = 1.0,
+					InsideLabelPosition = 0.5,
+					OutsideLabelFormat = null,
+					InsideLabelFormat = "{1}: {0}",
+					TextColor = OxyColors.White,
+					FontSize = 14
+				};
+
 				for (int i = 0; i < labels.Count; i++)
 				{
-					PieReportChart.Series.Add(new PieSeries
-					{
-						Title = labels[i],
-						Values = new ChartValues<double> { Convert.ToDouble(values[i]) },
-						DataLabels = true
-					});
+					pieSeries.Slices.Add(new PieSlice(labels[i], values[i]));
 				}
-				PieReportChart.LegendLocation = LegendLocation.Right;
+
+				PlotModel.Series.Add(pieSeries);
 			}
 			else if (chartType == "Линейная")
 			{
-				ReportChart.Visibility = Visibility.Visible;
-				ReportChart.Series = new SeriesCollection
+				var categoryAxis = new CategoryAxis
 				{
-					new LineSeries
-					{
-						Title = yTitle,
-						Values = new ChartValues<double>(values.Select(v => Convert.ToDouble(v)))
-					}
-				};
-				ReportChart.AxisX.Clear();
-				ReportChart.AxisY.Clear();
-				ReportChart.AxisX.Add(new Axis
-				{
-					Title = xTitle,
-					Labels = labels
-				});
-				ReportChart.AxisY.Add(new Axis
-				{
+					Position = AxisPosition.Bottom,
 					Title = yTitle
-				});
-				ReportChart.LegendLocation = LegendLocation.Right;
-			}
-			else if (chartType == "Пирамидальная")
-			{
-				// Пирамидальная диаграмма не поддерживается LiveCharts по умолчанию.
-				// Можно использовать ColumnSeries с специальной настройкой или выбрать другой тип диаграммы.
-				MessageBox.Show("Пирамидальная диаграмма не поддерживается.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+				};
+				categoryAxis.Labels.AddRange(labels);
+
+				var valueAxis = new LinearAxis
+				{
+					Position = AxisPosition.Left,
+					Title = xTitle
+				};
+
+				var series = new LineSeries
+				{
+					Title = yTitle,
+					MarkerType = OxyPlot.MarkerType.Circle,
+					MarkerSize = 6,
+					MarkerStroke = OxyColors.White,
+					MarkerFill = OxyColors.SkyBlue,
+					StrokeThickness = 2
+				};
+
+				for (int i = 0; i < values.Count; i++)
+				{
+					series.Points.Add(new DataPoint(i, values[i]));
+				}
+
+				PlotModel.Series.Add(series);
+				PlotModel.Axes.Add(categoryAxis);
+				PlotModel.Axes.Add(valueAxis);
 			}
 			else
 			{
 				MessageBox.Show("Выбранный тип диаграммы не поддерживается.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
 			}
+
+			PlotView.Model = PlotModel;
 		}
 
 		private void ExportReport_Click(object sender, RoutedEventArgs e)
 		{
 			string exportFormat = (ExportFormatComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content.ToString();
-			string selectedReport = (ReportTypeComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content.ToString();
 
-			if (selectedReport == null)
+			if (PlotModel == null)
 			{
-				MessageBox.Show("Пожалуйста, выберите отчёт для экспорта.", "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
+				MessageBox.Show("Нет диаграммы для экспорта. Сгенерируйте отчёт сначала.", "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
 
-			if (ReportChart.Visibility == Visibility.Visible || PieReportChart.Visibility == Visibility.Visible)
+			Microsoft.Win32.SaveFileDialog dlg = new Microsoft.Win32.SaveFileDialog
 			{
-				ExportChartToImage(exportFormat);
-			}
-			else
-			{
-				MessageBox.Show("Нет диаграммы для экспорта. Сгенерируйте отчёт сначала.", "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
-			}
-		}
-
-		private void ExportChartToImage(string exportFormat)
-		{
-			try
-			{
-				RenderTargetBitmap bitmap = null;
-				FrameworkElement chartElement = null;
-
-				if (ReportChart.Visibility == Visibility.Visible)
+				FileName = "Report",
+				DefaultExt = exportFormat switch
 				{
-					chartElement = ReportChart;
-				}
-				else if (PieReportChart.Visibility == Visibility.Visible)
-				{
-					chartElement = PieReportChart;
-				}
-
-				if (chartElement != null)
-				{
-					bitmap = new RenderTargetBitmap(
-						(int)chartElement.ActualWidth, (int)chartElement.ActualHeight,
-						96, 96, PixelFormats.Pbgra32);
-					bitmap.Render(chartElement);
-				}
-
-				if (bitmap == null)
-				{
-					MessageBox.Show("Диаграмма не найдена для экспорта.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-					return;
-				}
-
-				Microsoft.Win32.SaveFileDialog dlg = new Microsoft.Win32.SaveFileDialog();
-				dlg.FileName = "Report";
-				dlg.DefaultExt = exportFormat switch
-				{
+					"PNG" => ".png",
 					"PDF" => ".pdf",
 					"Excel (XLSX)" => ".xlsx",
 					"Word (DOCX)" => ".docx",
 					_ => ".png"
-				};
-				dlg.Filter = exportFormat switch
+				},
+				Filter = exportFormat switch
 				{
+					"PNG" => "PNG Image (*.png)|*.png",
 					"PDF" => "PDF Documents (*.pdf)|*.pdf",
 					"Excel (XLSX)" => "Excel Documents (*.xlsx)|*.xlsx",
 					"Word (DOCX)" => "Word Documents (*.docx)|*.docx",
 					_ => "PNG Image (*.png)|*.png"
-				};
+				}
+			};
 
-				bool? result = dlg.ShowDialog();
+			bool? result = dlg.ShowDialog();
 
-				if (result == true)
+			if (result == true)
+			{
+				string filename = dlg.FileName;
+
+				switch (exportFormat)
 				{
-					string filename = dlg.FileName;
-
-					if (exportFormat == "PDF")
-					{
-						using (PdfDocument pdf = new PdfDocument())
-						{
-							PdfPage page = pdf.AddPage();
-							using (XGraphics gfx = XGraphics.FromPdfPage(page))
-							{
-								using (MemoryStream ms = new MemoryStream())
-								{
-									PngBitmapEncoder encoder = new PngBitmapEncoder();
-									encoder.Frames.Add(BitmapFrame.Create(bitmap));
-									encoder.Save(ms);
-									ms.Position = 0;
-									XImage image = XImage.FromStream(ms);
-									gfx.DrawImage(image, 0, 0, page.Width, page.Height);
-								}
-							}
-							pdf.Save(filename);
-						}
-						MessageBox.Show("Отчёт успешно экспортирован в PDF.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-					}
-					else if (exportFormat == "Excel (XLSX)")
-					{
-						using (var workbook = new XLWorkbook())
-						{
-							var worksheet = workbook.Worksheets.Add("Report");
-							using (MemoryStream ms = new MemoryStream())
-							{
-								PngBitmapEncoder encoder = new PngBitmapEncoder();
-								encoder.Frames.Add(BitmapFrame.Create(bitmap));
-								encoder.Save(ms);
-								ms.Position = 0;
-								var picture = worksheet.AddPicture(ms)
-									.MoveTo(worksheet.Cell("A1"))
-									.Scale(0.5);
-							}
-							workbook.SaveAs(filename);
-						}
-						MessageBox.Show("Отчёт успешно экспортирован в Excel.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-					}
-					else if (exportFormat == "Word (DOCX)")
-					{
-						using (var document = DocX.Create(filename))
-						{
-							using (MemoryStream ms = new MemoryStream())
-							{
-								PngBitmapEncoder encoder = new PngBitmapEncoder();
-								encoder.Frames.Add(BitmapFrame.Create(bitmap));
-								encoder.Save(ms);
-								ms.Position = 0;
-								var image = document.AddImage(ms);
-								var picture = image.CreatePicture();
-								document.InsertParagraph().InsertPicture(picture);
-							}
-							document.Save();
-						}
-						MessageBox.Show("Отчёт успешно экспортирован в Word.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-					}
-					else // PNG
-					{
-						using (FileStream fs = new FileStream(filename, FileMode.Create))
-						{
-							PngBitmapEncoder encoder = new PngBitmapEncoder();
-							encoder.Frames.Add(BitmapFrame.Create(bitmap));
-							encoder.Save(fs);
-						}
-						MessageBox.Show("Отчёт успешно экспортирован в PNG.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-					}
+					case "PNG":
+						ExportToPng(filename);
+						break;
+					case "PDF":
+						ExportToPdf(filename);
+						break;
+					case "Excel (XLSX)":
+						ExportToExcel(filename);
+						break;
+					case "Word (DOCX)":
+						ExportToWord(filename);
+						break;
+					default:
+						MessageBox.Show("Неподдерживаемый формат экспорта.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+						break;
 				}
 			}
-			catch (Exception ex)
-			{
-				MessageBox.Show("Ошибка при экспорте отчёта: " + ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-			}
+		}
+
+		private void ExportToPng(string filename)
+		{
+			var pngExporter = new PngExporter { Width = 800, Height = 600 };
+			pngExporter.ExportToFile(PlotModel, filename);
+			MessageBox.Show("Отчёт успешно экспортирован в PNG.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+		}
+
+		private void ExportToPdf(string filename)
+		{
+			var pdfExporter = new PdfExporter { Width = 800, Height = 600 };
+			pdfExporter.ExportToFile(PlotModel, filename);
+			MessageBox.Show("Отчёт успешно экспортирован в PDF.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+		}
+
+		private void ExportToExcel(string filename)
+		{
+			// Реализация экспорта в Excel (например, используя ClosedXML)
+			MessageBox.Show("Экспорт в Excel не реализован.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+		}
+
+		private void ExportToWord(string filename)
+		{
+			// Реализация экспорта в Word (например, используя DocX)
+			MessageBox.Show("Экспорт в Word не реализован.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 
 		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
@@ -474,12 +430,5 @@ namespace УправлениеСкладом
 			};
 			LeftPanelTransform.BeginAnimation(TranslateTransform.XProperty, slideInAnimation);
 		}
-	}
-
-
-	public class Product
-	{
-		public int ProductID { get; set; }
-		public string Name { get; set; }
 	}
 }
