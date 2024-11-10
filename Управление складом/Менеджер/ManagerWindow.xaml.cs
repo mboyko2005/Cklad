@@ -52,19 +52,26 @@ namespace УправлениеСкладом
 		// Метод для обработки нажатия на кнопку "Управление заказами"
 		private void ManageOrders_Click(object sender, RoutedEventArgs e)
 		{
-			// Логика управления заказами
+			// Открытие окна управления заказами
+			ManageOrdersWindow manageOrdersWindow = new ManageOrdersWindow();
+			manageOrdersWindow.Owner = this;
+			manageOrdersWindow.ShowDialog();
 		}
 
 		// Метод для обработки нажатия на кнопку "Управление клиентами"
 		private void ManageClients_Click(object sender, RoutedEventArgs e)
 		{
-			// Логика управления клиентами
+			// Открытие окна управления клиентами
+			
 		}
 
 		// Метод для обработки нажатия на кнопку "Просмотр отчетов"
 		private void ViewReports_Click(object sender, RoutedEventArgs e)
 		{
-			// Логика просмотра отчетов
+			// Открытие окна просмотра отчетов
+			ReportsWindow reportsWindow = new ReportsWindow();
+			reportsWindow.Owner = this;
+			reportsWindow.ShowDialog();
 		}
 
 		// Метод для обработки нажатия на кнопку "Настройки"
