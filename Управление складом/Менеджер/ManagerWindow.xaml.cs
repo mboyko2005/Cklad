@@ -1,13 +1,23 @@
-﻿using System.Windows;
+﻿// ManagerWindow.xaml.cs
+using System.Windows;
 using System.Windows.Input;
+using MahApps.Metro.IconPacks;
+using Управление_складом.Themes;
 
 namespace УправлениеСкладом
 {
-	public partial class ManagerWindow : Window, IRoleWindow
+	public partial class ManagerWindow : Window, IRoleWindow, IThemeable
 	{
 		public ManagerWindow()
 		{
 			InitializeComponent();
+			UpdateThemeIcon();
+		}
+
+		// Реализация метода ShowWindow из интерфейса IRoleWindow
+		public void ShowWindow()
+		{
+			this.Show();
 		}
 
 		// Метод для обработки события при нажатии на окно (перемещение окна)
@@ -23,10 +33,20 @@ namespace УправлениеСкладом
 			this.Close();
 		}
 
-		// Метод для обработки нажатия на кнопку "Переключение темы"
+		// Метод для переключения темы
 		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
 		{
-			// Логика переключения темы
+			ThemeManager.ToggleTheme();
+			UpdateThemeIcon();
+		}
+
+		// Обновление иконки темы
+		public void UpdateThemeIcon()
+		{
+			if (ThemeIcon != null)
+			{
+				ThemeIcon.Kind = ThemeManager.IsDarkTheme ? PackIconMaterialKind.WeatherNight : PackIconMaterialKind.WeatherSunny;
+			}
 		}
 
 		// Метод для обработки нажатия на кнопку "Управление заказами"
@@ -50,12 +70,10 @@ namespace УправлениеСкладом
 		// Метод для обработки нажатия на кнопку "Настройки"
 		private void Settings_Click(object sender, RoutedEventArgs e)
 		{
-			// Логика для настроек
-		}
-
-		public void ShowWindow()
-		{
-			Show();
+			// Открытие окна настроек
+			SettingsWindow settingsWindow = new SettingsWindow();
+			settingsWindow.Owner = this;
+			settingsWindow.ShowDialog();
 		}
 	}
 }
