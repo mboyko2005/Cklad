@@ -84,12 +84,14 @@
                     </Button>
 
                     <!-- Кнопка управления клиентами -->
+                    <!-- Кнопка управления сотрудниками -->
                     <Button Grid.Row="0" Grid.Column="1" Height="50" Margin="10" Click="ManageClients_Click" Style="{StaticResource ControlButtonStyle}">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <iconPacks:PackIconMaterial Kind="AccountGroupOutline" Width="24" Height="24" Margin="0,0,10,0"/>
-                            <TextBlock Text="Управление клиентами" FontSize="16" Foreground="{DynamicResource ButtonForegroundBrush}"/>
+                            <TextBlock Text="Управление сотрудниками" FontSize="16" Foreground="{DynamicResource ButtonForegroundBrush}"/>
                         </StackPanel>
                     </Button>
+
 
                     <!-- Кнопка просмотра отчетов -->
                     <Button Grid.Row="1" Grid.Column="0" Height="50" Margin="10" Click="ViewReports_Click" Style="{StaticResource ControlButtonStyle}">

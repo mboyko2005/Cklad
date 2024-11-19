@@ -1,8 +1,9 @@
-﻿// ManagerWindow.xaml.cs
+﻿
 using System.Windows;
 using System.Windows.Input;
 using MahApps.Metro.IconPacks;
 using Управление_складом.Themes;
+using УправлениеСкладом.Менеджер;
 
 namespace УправлениеСкладом
 {
@@ -58,11 +59,13 @@ namespace УправлениеСкладом
 			manageOrdersWindow.ShowDialog();
 		}
 
-		// Метод для обработки нажатия на кнопку "Управление клиентами"
+		// Метод для обработки нажатия на кнопку "Управление сотрудниками"
 		private void ManageClients_Click(object sender, RoutedEventArgs e)
 		{
-			// Открытие окна управления клиентами
-			
+			// Открытие окна управления сотрудниками склада
+			ManageEmployeesWindow manageEmployeesWindow = new ManageEmployeesWindow();
+			manageEmployeesWindow.Owner = this;
+			manageEmployeesWindow.ShowDialog();
 		}
 
 		// Метод для обработки нажатия на кнопку "Просмотр отчетов"
