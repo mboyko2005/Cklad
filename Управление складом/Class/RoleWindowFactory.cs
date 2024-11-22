@@ -1,4 +1,6 @@
-﻿namespace УправлениеСкладом
+﻿using УправлениеСкладом.Сотрудник_склада;
+
+namespace УправлениеСкладом
 {
 	public static class RoleWindowFactory
 	{

@@ -1,7 +1,4 @@
-﻿// ManageEmployeesWindow.xaml.cs
-using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
+﻿using System.Data.SqlClient;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -24,7 +21,7 @@ namespace УправлениеСкладом.Менеджер
 		private List<Employee> employees;
 		private bool isEditMode = false;
 		private Employee selectedEmployee;
-		private int warehouseRoleId; // РольID для "Сотрудник склада"
+		private int warehouseRoleId; 
 		private string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
 
 		public ManageEmployeesWindow()
