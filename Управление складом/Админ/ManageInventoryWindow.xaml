@@ -3,13 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:УправлениеСкладом"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        Title="Управление складскими позициями" Height="450" Width="800"
+        Title="Управление складскими позициями" Height="600" Width="1000"
         WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         MouseDown="Window_MouseDown">
     <Window.Resources>
-        <!-- Подключение конвертера -->
-        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-
         <!-- Общие стили для кнопок -->
         <Style x:Key="ControlButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
@@ -100,6 +97,7 @@
             <Setter Property="AutoGenerateColumns" Value="False"/>
             <Setter Property="CanUserAddRows" Value="False"/>
             <Setter Property="SelectionMode" Value="Single"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
             <Setter Property="IsReadOnly" Value="True"/>
             <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
             <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
@@ -117,7 +115,7 @@
         <Storyboard x:Key="HidePanelStoryboard">
             <DoubleAnimation Storyboard.TargetName="SlidePanel"
                              Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
-                             To="300" Duration="0:0:0.3"/>
+                             To="400" Duration="0:0:0.3"/>
         </Storyboard>
     </Window.Resources>
 
@@ -144,10 +142,12 @@
                     </Grid>
 
                     <!-- DataGrid для отображения складских позиций -->
-                    <DataGrid x:Name="InventoryDataGrid" Margin="0,0,0,10" Style="{StaticResource StyledDataGrid}">
+                    <DataGrid x:Name="InventoryDataGrid" Margin="0,0,0,10" Style="{StaticResource StyledDataGrid}" Language="ru-RU">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="Auto"/>
                             <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*"/>
+                            <!-- Отображение цены в рублях -->
+                            <DataGridTextColumn Header="Цена" Binding="{Binding Price, StringFormat={}{0:C}, ConverterCulture=ru-RU}" Width="Auto"/>
                             <DataGridTextColumn Header="Количество" Binding="{Binding Quantity}" Width="Auto"/>
                             <DataGridTextColumn Header="Местоположение" Binding="{Binding Location}" Width="*"/>
                         </DataGrid.Columns>
@@ -170,7 +170,7 @@
                         <Button Width="150" Margin="5" Click="DeleteInventory_Click" Style="{StaticResource DeleteButtonStyle}">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <iconPacks:PackIconMaterial Kind="DeleteOutline" Width="24" Height="24" Margin="0,0,10,0"/>
-                                <TextBlock Text="Удалить" FontSize="16" Foreground="{StaticResource ButtonBorderBrushDelete}"/>
+                                <TextBlock Text="Удалить" FontSize="16" Foreground="{DynamicResource ButtonBorderBrushDelete}"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -187,9 +187,9 @@
                 <!-- Панель добавления/редактирования -->
                 <Border x:Name="SlidePanel" Grid.Column="1" Background="{DynamicResource WindowBackgroundBrush}"
                         CornerRadius="10" Padding="20"
-                        RenderTransformOrigin="1,0.5" Width="300">
+                        RenderTransformOrigin="1,0.5" Width="400">
                     <Border.RenderTransform>
-                        <TranslateTransform X="300"/>
+                        <TranslateTransform X="400"/>
                     </Border.RenderTransform>
                     <Border.Effect>
                         <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.5"/>
@@ -218,6 +218,9 @@
                             <Label Content="Название товара:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <TextBox x:Name="NameTextBox" Margin="0,0,0,10" />
 
+                            <Label Content="Цена:" Foreground="{DynamicResource ForegroundBrush}"/>
+                            <TextBox x:Name="PriceTextBox" Margin="0,0,0,10" />
+
                             <Label Content="Количество:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <TextBox x:Name="QuantityTextBox" Margin="0,0,0,10" />
 
@@ -227,7 +230,12 @@
                                       SelectedValuePath="Id" />
 
                             <Label Content="Поставщик:" Foreground="{DynamicResource ForegroundBrush}"/>
-                            <TextBox x:Name="SupplierTextBox" Margin="0,0,0,10" />
+                            <ComboBox x:Name="SupplierComboBox" Margin="0,0,0,10"
+                                      DisplayMemberPath="Name"
+                                      SelectedValuePath="Id"
+                                      IsEditable="True"
+                                      IsTextSearchEnabled="False"
+                                      Text="{Binding SelectedSupplierName, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
 
                         <!-- Кнопки действия -->

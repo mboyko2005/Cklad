@@ -1,5 +1,4 @@
-﻿// ManageInventoryWindow.xaml.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data.SqlClient;
@@ -8,17 +7,18 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using MahApps.Metro.IconPacks;
-using Управление_складом.Themes;
+using Управление_складом.Themes; // Добавлено пространство имен для ThemeManager
 
 namespace УправлениеСкладом
 {
-	public partial class ManageInventoryWindow : Window, IThemeable
+	public partial class ManageInventoryWindow : Window, IThemeable // Реализуем IThemeable
 	{
 		// Модель складской позиции
 		public class InventoryItem
 		{
 			public int Id { get; set; }
 			public string Name { get; set; } // Название товара
+			public decimal Price { get; set; } // Цена товара
 			public int Quantity { get; set; }
 			public string Location { get; set; } // Название склада
 		}
@@ -28,7 +28,8 @@ namespace УправлениеСкладом
 		{
 			public int Id { get; set; }
 			public string Name { get; set; }
-			public int SupplierId { get; set; } // Добавлено поле ПоставщикID
+			public decimal Price { get; set; } // Цена товара
+			public int SupplierId { get; set; } // ПоставщикID
 		}
 
 		// Модель склада
@@ -60,7 +61,7 @@ namespace УправлениеСкладом
 			InitializeComponent();
 			LoadProducts();
 			LoadWarehouses();
-			LoadSuppliers(); // Загрузка поставщиков
+			LoadSuppliers();
 			LoadInventory();
 			UpdateThemeIcon();
 		}
@@ -75,7 +76,7 @@ namespace УправлениеСкладом
 				try
 				{
 					connection.Open();
-					string query = "SELECT ТоварID, Наименование, ПоставщикID FROM Товары";
+					string query = "SELECT ТоварID, Наименование, Цена, ПоставщикID FROM Товары";
 
 					using (SqlCommand command = new SqlCommand(query, connection))
 					{
@@ -85,9 +86,10 @@ namespace УправлениеСкладом
 							{
 								Products.Add(new Product
 								{
-									Id = reader.GetInt32(0),
-									Name = reader.GetString(1),
-									SupplierId = reader.GetInt32(2)
+									Id = reader.GetInt32(reader.GetOrdinal("ТоварID")),
+									Name = reader.GetString(reader.GetOrdinal("Наименование")),
+									Price = reader.IsDBNull(reader.GetOrdinal("Цена")) ? 0m : reader.GetDecimal(reader.GetOrdinal("Цена")),
+									SupplierId = reader.GetInt32(reader.GetOrdinal("ПоставщикID"))
 								});
 							}
 						}
@@ -120,8 +122,8 @@ namespace УправлениеСкладом
 							{
 								Warehouses.Add(new Warehouse
 								{
-									Id = reader.GetInt32(0),
-									Name = reader.GetString(1)
+									Id = reader.GetInt32(reader.GetOrdinal("СкладID")),
+									Name = reader.GetString(reader.GetOrdinal("Наименование"))
 								});
 							}
 						}
@@ -157,12 +159,15 @@ namespace УправлениеСкладом
 							{
 								Suppliers.Add(new Supplier
 								{
-									Id = reader.GetInt32(0),
-									Name = reader.GetString(1)
+									Id = reader.GetInt32(reader.GetOrdinal("ПоставщикID")),
+									Name = reader.GetString(reader.GetOrdinal("Наименование"))
 								});
 							}
 						}
 					}
+
+					// Привязка списка поставщиков к ComboBox
+					SupplierComboBox.ItemsSource = Suppliers;
 				}
 				catch (SqlException ex)
 				{
@@ -182,7 +187,7 @@ namespace УправлениеСкладом
 				{
 					connection.Open();
 					string query = @"
-                        SELECT sp.ПозицияID AS Id, t.Наименование AS Name, sp.Количество AS Quantity, s.Наименование AS Location
+                        SELECT sp.ПозицияID AS Id, t.Наименование AS Name, t.Цена AS Price, sp.Количество AS Quantity, s.Наименование AS Location
                         FROM СкладскиеПозиции sp
                         INNER JOIN Товары t ON sp.ТоварID = t.ТоварID
                         INNER JOIN Склады s ON sp.СкладID = s.СкладID";
@@ -195,10 +200,11 @@ namespace УправлениеСкладом
 							{
 								InventoryItems.Add(new InventoryItem
 								{
-									Id = reader.GetInt32(0),
-									Name = reader.GetString(1),
-									Quantity = reader.GetInt32(2),
-									Location = reader.GetString(3)
+									Id = reader.GetInt32(reader.GetOrdinal("Id")),
+									Name = reader.GetString(reader.GetOrdinal("Name")),
+									Price = reader.IsDBNull(reader.GetOrdinal("Price")) ? 0m : reader.GetDecimal(reader.GetOrdinal("Price")),
+									Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
+									Location = reader.GetString(reader.GetOrdinal("Location"))
 								});
 							}
 						}
@@ -253,6 +259,7 @@ namespace УправлениеСкладом
 		}
 
 		// Удаление складской позиции
+		// Удаление складской позиции
 		private void DeleteInventory_Click(object sender, RoutedEventArgs e)
 		{
 			if (InventoryDataGrid.SelectedItem is InventoryItem selectedItem)
@@ -265,16 +272,124 @@ namespace УправлениеСкладом
 						try
 						{
 							connection.Open();
-							string query = "DELETE FROM СкладскиеПозиции WHERE ПозицияID = @Id";
-							using (SqlCommand command = new SqlCommand(query, connection))
-							{
-								command.Parameters.AddWithValue("@Id", selectedItem.Id);
-								command.ExecuteNonQuery();
-							}
 
-							InventoryItems.Remove(selectedItem);
-							RefreshInventoryDataGrid();
-							MessageBox.Show("Позиция успешно удалена.", "Удаление позиции", MessageBoxButton.OK, MessageBoxImage.Information);
+							// Начинаем транзакцию для обеспечения целостности данных
+							using (SqlTransaction transaction = connection.BeginTransaction())
+							{
+								try
+								{
+									// Получаем идентификаторы товара и поставщика, связанные с позицией
+									int productId = 0;
+									int supplierId = 0;
+
+									// Получаем ProductID и SupplierID
+									string getProductQuery = @"
+                                SELECT t.ТоварID, t.ПоставщикID
+                                FROM СкладскиеПозиции sp
+                                INNER JOIN Товары t ON sp.ТоварID = t.ТоварID
+                                WHERE sp.ПозицияID = @PositionId";
+									using (SqlCommand command = new SqlCommand(getProductQuery, connection, transaction))
+									{
+										command.Parameters.AddWithValue("@PositionId", selectedItem.Id);
+										using (SqlDataReader reader = command.ExecuteReader())
+										{
+											if (reader.Read())
+											{
+												productId = reader.GetInt32(reader.GetOrdinal("ТоварID"));
+												supplierId = reader.GetInt32(reader.GetOrdinal("ПоставщикID"));
+											}
+										}
+									}
+
+									// Удаляем складскую позицию
+									string deletePositionQuery = "DELETE FROM СкладскиеПозиции WHERE ПозицияID = @Id";
+									using (SqlCommand command = new SqlCommand(deletePositionQuery, connection, transaction))
+									{
+										command.Parameters.AddWithValue("@Id", selectedItem.Id);
+										command.ExecuteNonQuery();
+									}
+
+									// Проверяем, используется ли товар в других позициях
+									bool isProductUsedElsewhere = false;
+									string checkProductUsageQuery = "SELECT COUNT(*) FROM СкладскиеПозиции WHERE ТоварID = @ProductId";
+									using (SqlCommand command = new SqlCommand(checkProductUsageQuery, connection, transaction))
+									{
+										command.Parameters.AddWithValue("@ProductId", productId);
+										int count = (int)command.ExecuteScalar();
+										isProductUsedElsewhere = count > 0;
+									}
+
+									if (!isProductUsedElsewhere)
+									{
+										// Удаляем товар
+										string deleteProductQuery = "DELETE FROM Товары WHERE ТоварID = @ProductId";
+										using (SqlCommand command = new SqlCommand(deleteProductQuery, connection, transaction))
+										{
+											command.Parameters.AddWithValue("@ProductId", productId);
+											command.ExecuteNonQuery();
+										}
+
+										// Проверяем, используется ли поставщик в других товарах
+										bool isSupplierUsedElsewhere = false;
+										string checkSupplierUsageQuery = "SELECT COUNT(*) FROM Товары WHERE ПоставщикID = @SupplierId";
+										using (SqlCommand command = new SqlCommand(checkSupplierUsageQuery, connection, transaction))
+										{
+											command.Parameters.AddWithValue("@SupplierId", supplierId);
+											int count = (int)command.ExecuteScalar();
+											isSupplierUsedElsewhere = count > 0;
+										}
+
+										if (!isSupplierUsedElsewhere)
+										{
+											// Удаляем поставщика
+											string deleteSupplierQuery = "DELETE FROM Поставщики WHERE ПоставщикID = @SupplierId";
+											using (SqlCommand command = new SqlCommand(deleteSupplierQuery, connection, transaction))
+											{
+												command.Parameters.AddWithValue("@SupplierId", supplierId);
+												command.ExecuteNonQuery();
+											}
+										}
+									}
+
+									// Подтверждаем транзакцию
+									transaction.Commit();
+
+									// Обновляем коллекции
+									InventoryItems.Remove(selectedItem);
+									RefreshInventoryDataGrid();
+
+									// Удаляем товар и поставщика из локальных коллекций, если они были удалены
+									if (!isProductUsedElsewhere)
+									{
+										Product productToRemove = Products.FirstOrDefault(p => p.Id == productId);
+										if (productToRemove != null)
+										{
+											Products.Remove(productToRemove);
+										}
+									}
+
+									if (!isProductUsedElsewhere && supplierId > 0)
+									{
+										bool isSupplierUsedInLocalProducts = Products.Any(p => p.SupplierId == supplierId);
+										if (!isSupplierUsedInLocalProducts)
+										{
+											Supplier supplierToRemove = Suppliers.FirstOrDefault(s => s.Id == supplierId);
+											if (supplierToRemove != null)
+											{
+												Suppliers.Remove(supplierToRemove);
+											}
+										}
+									}
+
+									MessageBox.Show("Позиция и связанные данные успешно удалены.", "Удаление позиции", MessageBoxButton.OK, MessageBoxImage.Information);
+								}
+								catch (Exception ex)
+								{
+									// Откатываем транзакцию в случае ошибки
+									transaction.Rollback();
+									MessageBox.Show($"Ошибка удаления из базы данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+								}
+							}
 						}
 						catch (SqlException ex)
 						{
@@ -289,11 +404,11 @@ namespace УправлениеСкладом
 			}
 		}
 
+
 		// Показать панель добавления/редактирования
 		private void ShowPanel()
 		{
-			// Установить ширину SlidePanel и начать анимацию
-			this.RootGrid.ColumnDefinitions[1].Width = new GridLength(300);
+			this.RootGrid.ColumnDefinitions[1].Width = new GridLength(400);
 			Storyboard showStoryboard = (Storyboard)FindResource("ShowPanelStoryboard");
 			showStoryboard.Begin();
 		}
@@ -338,13 +453,21 @@ namespace УправлениеСкладом
 		private void SaveAddInventory()
 		{
 			string name = NameTextBox.Text.Trim();
+			string priceText = PriceTextBox.Text.Trim();
 			string quantityText = QuantityTextBox.Text.Trim();
-			string supplierName = SupplierTextBox.Text.Trim();
+			string supplierName = SupplierComboBox.Text.Trim();
 			Warehouse selectedWarehouse = WarehouseComboBox.SelectedItem as Warehouse;
 
-			if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(quantityText) || string.IsNullOrEmpty(supplierName) || selectedWarehouse == null)
+			if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(priceText) ||
+				string.IsNullOrEmpty(quantityText) || string.IsNullOrEmpty(supplierName) || selectedWarehouse == null)
 			{
 				MessageBox.Show("Пожалуйста, заполните все поля и выберите склад.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				return;
+			}
+
+			if (!decimal.TryParse(priceText, out decimal price) || price < 0)
+			{
+				MessageBox.Show("Цена должна быть положительным числом.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
 
@@ -354,7 +477,6 @@ namespace УправлениеСкладом
 				return;
 			}
 
-			// Найти или добавить поставщика
 			Supplier selectedSupplier = Suppliers.FirstOrDefault(s => s.Name.Equals(supplierName, StringComparison.OrdinalIgnoreCase));
 			using (SqlConnection connection = new SqlConnection(connectionString))
 			{
@@ -364,7 +486,6 @@ namespace УправлениеСкладом
 
 					if (selectedSupplier == null)
 					{
-						// Добавить нового поставщика
 						string insertSupplierQuery = @"
                             INSERT INTO Поставщики (Наименование)
                             VALUES (@SupplierName);
@@ -388,24 +509,24 @@ namespace УправлениеСкладом
 						}
 					}
 
-					// Найти или добавить товар
 					Product selectedProduct = Products.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 					if (selectedProduct == null)
 					{
 						string insertProductQuery = @"
-                            INSERT INTO Товары (Наименование, ПоставщикID)
-                            VALUES (@ProductName, @SupplierID);
+                            INSERT INTO Товары (Наименование, Цена, ПоставщикID)
+                            VALUES (@ProductName, @Price, @SupplierID);
                             SELECT CAST(scope_identity() AS int);";
 
 						using (SqlCommand command = new SqlCommand(insertProductQuery, connection))
 						{
 							command.Parameters.AddWithValue("@ProductName", name);
+							command.Parameters.AddWithValue("@Price", price);
 							command.Parameters.AddWithValue("@SupplierID", selectedSupplier.Id);
 							object result = command.ExecuteScalar();
 							int newProductId = (result != null) ? (int)result : 0;
 							if (newProductId > 0)
 							{
-								selectedProduct = new Product { Id = newProductId, Name = name, SupplierId = selectedSupplier.Id };
+								selectedProduct = new Product { Id = newProductId, Name = name, Price = price, SupplierId = selectedSupplier.Id };
 								Products.Add(selectedProduct);
 							}
 							else
@@ -415,8 +536,22 @@ namespace УправлениеСкладом
 							}
 						}
 					}
+					else
+					{
+						if (selectedProduct.Price != price)
+						{
+							string updateProductQuery = "UPDATE Товары SET Цена = @Price WHERE ТоварID = @ProductId";
+							using (SqlCommand command = new SqlCommand(updateProductQuery, connection))
+							{
+								command.Parameters.AddWithValue("@Price", price);
+								command.Parameters.AddWithValue("@ProductId", selectedProduct.Id);
+								command.ExecuteNonQuery();
 
-					// Теперь можем добавить складскую позицию
+								selectedProduct.Price = price;
+							}
+						}
+					}
+
 					string insertInventoryQuery = @"
                         INSERT INTO СкладскиеПозиции (ТоварID, СкладID, Количество)
                         VALUES (@ItemId, @WarehouseId, @Quantity);
@@ -429,7 +564,6 @@ namespace УправлениеСкладом
 						command.Parameters.AddWithValue("@WarehouseId", selectedWarehouse.Id);
 						command.Parameters.AddWithValue("@Quantity", quantity);
 
-						// Получение сгенерированного ID
 						object result = command.ExecuteScalar();
 						newId = (result != null) ? (int)result : 0;
 					}
@@ -440,6 +574,7 @@ namespace УправлениеСкладом
 						{
 							Id = newId,
 							Name = selectedProduct.Name,
+							Price = selectedProduct.Price,
 							Quantity = quantity,
 							Location = selectedWarehouse.Name
 						});
@@ -464,13 +599,21 @@ namespace УправлениеСкладом
 		private void SaveEditInventory()
 		{
 			string name = NameTextBox.Text.Trim();
+			string priceText = PriceTextBox.Text.Trim();
 			string quantityText = QuantityTextBox.Text.Trim();
-			string supplierName = SupplierTextBox.Text.Trim();
+			string supplierName = SupplierComboBox.Text.Trim();
 			Warehouse selectedWarehouse = WarehouseComboBox.SelectedItem as Warehouse;
 
-			if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(quantityText) || string.IsNullOrEmpty(supplierName) || selectedWarehouse == null)
+			if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(priceText) ||
+				string.IsNullOrEmpty(quantityText) || string.IsNullOrEmpty(supplierName) || selectedWarehouse == null)
 			{
 				MessageBox.Show("Пожалуйста, заполните все поля и выберите склад.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				return;
+			}
+
+			if (!decimal.TryParse(priceText, out decimal price) || price < 0)
+			{
+				MessageBox.Show("Цена должна быть положительным числом.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
 
@@ -480,7 +623,6 @@ namespace УправлениеСкладом
 				return;
 			}
 
-			// Найти или добавить поставщика
 			Supplier selectedSupplier = Suppliers.FirstOrDefault(s => s.Name.Equals(supplierName, StringComparison.OrdinalIgnoreCase));
 			using (SqlConnection connection = new SqlConnection(connectionString))
 			{
@@ -490,7 +632,6 @@ namespace УправлениеСкладом
 
 					if (selectedSupplier == null)
 					{
-						// Добавить нового поставщика
 						string insertSupplierQuery = @"
                             INSERT INTO Поставщики (Наименование)
                             VALUES (@SupplierName);
@@ -514,24 +655,24 @@ namespace УправлениеСкладом
 						}
 					}
 
-					// Найти или добавить товар
 					Product selectedProduct = Products.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 					if (selectedProduct == null)
 					{
 						string insertProductQuery = @"
-                            INSERT INTO Товары (Наименование, ПоставщикID)
-                            VALUES (@ProductName, @SupplierID);
+                            INSERT INTO Товары (Наименование, Цена, ПоставщикID)
+                            VALUES (@ProductName, @Price, @SupplierID);
                             SELECT CAST(scope_identity() AS int);";
 
 						using (SqlCommand command = new SqlCommand(insertProductQuery, connection))
 						{
 							command.Parameters.AddWithValue("@ProductName", name);
+							command.Parameters.AddWithValue("@Price", price);
 							command.Parameters.AddWithValue("@SupplierID", selectedSupplier.Id);
 							object result = command.ExecuteScalar();
 							int newProductId = (result != null) ? (int)result : 0;
 							if (newProductId > 0)
 							{
-								selectedProduct = new Product { Id = newProductId, Name = name, SupplierId = selectedSupplier.Id };
+								selectedProduct = new Product { Id = newProductId, Name = name, Price = price, SupplierId = selectedSupplier.Id };
 								Products.Add(selectedProduct);
 							}
 							else
@@ -543,21 +684,20 @@ namespace УправлениеСкладом
 					}
 					else
 					{
-						// Обновить ПоставщикID у товара, если необходимо
-						if (selectedProduct.SupplierId != selectedSupplier.Id)
+						if (selectedProduct.Price != price)
 						{
-							string updateProductQuery = "UPDATE Товары SET ПоставщикID = @SupplierID WHERE ТоварID = @ProductId";
+							string updateProductQuery = "UPDATE Товары SET Цена = @Price WHERE ТоварID = @ProductId";
 							using (SqlCommand command = new SqlCommand(updateProductQuery, connection))
 							{
-								command.Parameters.AddWithValue("@SupplierID", selectedSupplier.Id);
+								command.Parameters.AddWithValue("@Price", price);
 								command.Parameters.AddWithValue("@ProductId", selectedProduct.Id);
 								command.ExecuteNonQuery();
-								selectedProduct.SupplierId = selectedSupplier.Id;
+
+								selectedProduct.Price = price;
 							}
 						}
 					}
 
-					// Обновление складской позиции
 					string updateInventoryQuery = @"
                         UPDATE СкладскиеПозиции
                         SET ТоварID = @ItemId, СкладID = @WarehouseId, Количество = @Quantity, ДатаОбновления = GETDATE()
@@ -574,8 +714,8 @@ namespace УправлениеСкладом
 
 						if (rowsAffected > 0)
 						{
-							// Обновление локального объекта
 							SelectedItem.Name = selectedProduct.Name;
+							SelectedItem.Price = selectedProduct.Price;
 							SelectedItem.Quantity = quantity;
 							SelectedItem.Location = selectedWarehouse.Name;
 							MessageBox.Show("Позиция успешно обновлена.", "Редактирование позиции", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -600,8 +740,9 @@ namespace УправлениеСкладом
 		private void ClearInputFields()
 		{
 			NameTextBox.Text = string.Empty;
+			PriceTextBox.Text = string.Empty;
 			QuantityTextBox.Text = string.Empty;
-			SupplierTextBox.Text = string.Empty;
+			SupplierComboBox.SelectedIndex = -1;
 			WarehouseComboBox.SelectedIndex = -1;
 		}
 
@@ -609,27 +750,20 @@ namespace УправлениеСкладом
 		private void PopulateInputFields(InventoryItem item)
 		{
 			NameTextBox.Text = item.Name;
+			PriceTextBox.Text = item.Price.ToString("F2");
 			QuantityTextBox.Text = item.Quantity.ToString();
 			WarehouseComboBox.SelectedItem = Warehouses.FirstOrDefault(w => w.Name == item.Location);
 
-			// Найти товар и поставить соответствующего поставщика
 			Product product = Products.FirstOrDefault(p => p.Name.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
 			if (product != null)
 			{
 				Supplier supplier = Suppliers.FirstOrDefault(s => s.Id == product.SupplierId);
-				SupplierTextBox.Text = supplier?.Name ?? string.Empty;
+				SupplierComboBox.SelectedItem = supplier;
 			}
 			else
 			{
-				SupplierTextBox.Text = string.Empty;
+				SupplierComboBox.SelectedIndex = -1;
 			}
-		}
-
-		// Переключение темы
-		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
-		{
-			ThemeManager.ToggleTheme();
-			UpdateThemeIcon();
 		}
 
 		// Обновление иконки темы
@@ -639,6 +773,13 @@ namespace УправлениеСкладом
 			{
 				ThemeIcon.Kind = ThemeManager.IsDarkTheme ? PackIconMaterialKind.WeatherNight : PackIconMaterialKind.WeatherSunny;
 			}
+		}
+
+		// Обработчик переключения темы
+		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
+		{
+			ThemeManager.ToggleTheme();
+			UpdateThemeIcon();
 		}
 
 		// Обработка перетаскивания окна
