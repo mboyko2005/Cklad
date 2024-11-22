@@ -80,21 +80,69 @@ namespace УправлениеСкладом.Сотрудник_склада
 			}
 		}
 
-		// Обработчик изменения текста в поле поиска
-		private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+		// Обработчик изменения текста в любых полях фильтрации
+		private void Filter_TextChanged(object sender, TextChangedEventArgs e)
+		{
+			ApplyFilters();
+		}
+
+		// Применение фильтров к списку товаров
+		private void ApplyFilters()
 		{
 			string searchText = SearchTextBox.Text.Trim().ToLower();
+			int quantityMin = 0;
+			int quantityMax = int.MaxValue;
+			decimal priceMin = 0m;
+			decimal priceMax = decimal.MaxValue;
 
-			if (string.IsNullOrEmpty(searchText))
+			// Парсинг минимального количества
+			if (!string.IsNullOrEmpty(QuantityMinTextBox.Text))
 			{
-				displayedItems = new List<Item>(items);
+				if (!int.TryParse(QuantityMinTextBox.Text, out quantityMin))
+				{
+					MessageBox.Show("Минимальное количество должно быть числом.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+					return;
+				}
 			}
-			else
+
+			// Парсинг максимального количества
+			if (!string.IsNullOrEmpty(QuantityMaxTextBox.Text))
 			{
-				displayedItems = items.Where(item =>
-					item.Наименование.ToLower().Contains(searchText) ||
-					item.Категория.ToLower().Contains(searchText)).ToList();
+				if (!int.TryParse(QuantityMaxTextBox.Text, out quantityMax))
+				{
+					MessageBox.Show("Максимальное количество должно быть числом.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+					return;
+				}
 			}
+
+			// Парсинг минимальной цены
+			if (!string.IsNullOrEmpty(PriceMinTextBox.Text))
+			{
+				if (!decimal.TryParse(PriceMinTextBox.Text, out priceMin))
+				{
+					MessageBox.Show("Минимальная цена должна быть числом.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+					return;
+				}
+			}
+
+			// Парсинг максимальной цены
+			if (!string.IsNullOrEmpty(PriceMaxTextBox.Text))
+			{
+				if (!decimal.TryParse(PriceMaxTextBox.Text, out priceMax))
+				{
+					MessageBox.Show("Максимальная цена должна быть числом.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+					return;
+				}
+			}
+
+			// Применение фильтрации
+			displayedItems = items.Where(item =>
+				(string.IsNullOrEmpty(searchText) ||
+				 item.Наименование.ToLower().Contains(searchText) ||
+				 item.Категория.ToLower().Contains(searchText)) &&
+				(item.Количество >= quantityMin && item.Количество <= quantityMax) &&
+				(item.Цена >= priceMin && item.Цена <= priceMax)
+			).ToList();
 
 			ItemsDataGrid.ItemsSource = displayedItems;
 			ItemsDataGrid.SelectedIndex = -1;
