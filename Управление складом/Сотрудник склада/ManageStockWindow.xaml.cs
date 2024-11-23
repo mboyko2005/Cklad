@@ -32,7 +32,8 @@ namespace УправлениеСкладом.Сотрудник_склада
 		{
 			InitializeComponent();
 			LoadItems(false); // По умолчанию загружаем только отсутствующие товары
-			UpdateThemeIcon();
+			UpdateShowAllIcon(false); // Устанавливаем иконку по умолчанию
+			ShowAllToggleButton.IsChecked = false;
 		}
 
 		// Загрузка товаров из базы данных
@@ -103,17 +104,22 @@ namespace УправлениеСкладом.Сотрудник_склада
 			ApplyFilters();
 		}
 
-		// Обработчики для чекбокса "Показывать все товары"
-		private void ShowAllCheckBox_Checked(object sender, RoutedEventArgs e)
+		// Обработчик нажатия на ToggleButton "Показывать все товары"
+		private void ShowAllToggleButton_Click(object sender, RoutedEventArgs e)
 		{
-			LoadItems(true);
-			ApplyFilters();
+			bool showAll = ShowAllToggleButton.IsChecked == true;
+			LoadItems(showAll);
+			UpdateShowAllIcon(showAll);
+			ApplyFilters(); // Применяем фильтры после загрузки новых данных
 		}
 
-		private void ShowAllCheckBox_Unchecked(object sender, RoutedEventArgs e)
+		// Метод для обновления иконки ToggleButton в зависимости от состояния
+		private void UpdateShowAllIcon(bool showAll)
 		{
-			LoadItems(false);
-			ApplyFilters();
+			if (ShowAllIcon != null)
+			{
+				ShowAllIcon.Kind = showAll ? PackIconMaterialKind.FilterRemove : PackIconMaterialKind.FilterVariant;
+			}
 		}
 
 		// Применение фильтров к списку товаров

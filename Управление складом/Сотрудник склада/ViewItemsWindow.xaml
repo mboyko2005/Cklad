@@ -6,6 +6,9 @@
         WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         MouseDown="Window_MouseDown">
     <Window.Resources>
+        <!-- Определение зелёного цвета для иконок цен -->
+        <SolidColorBrush x:Key="PriceIconForegroundBrush" Color="Green"/>
+
         <!-- Общие стили для кнопок -->
         <Style x:Key="ControlButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
@@ -63,13 +66,23 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <!-- Иконка -->
+                                <!-- Иконка PackIconMaterial -->
                                 <iconPacks:PackIconMaterial x:Name="Icon"
                                                             Width="20" Height="20"
                                                             Foreground="{TemplateBinding Foreground}"
                                                             VerticalAlignment="Center"
                                                             HorizontalAlignment="Left"
-                                                            Margin="5,0,5,0"/>
+                                                            Margin="5,0,5,0"
+                                                            Visibility="Visible"/>
+
+                                <!-- Иконка Image для рубля -->
+                                <Image x:Name="RubleIcon"
+                                       Width="20" Height="20"
+                                       Source="/Resource/ruble.png"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Left"
+                                       Margin="5,0,5,0"
+                                       Visibility="Collapsed"/>
 
                                 <!-- Содержимое TextBox -->
                                 <ScrollViewer Grid.Column="1"
@@ -96,21 +109,34 @@
                                 <Setter TargetName="Watermark" Property="Visibility" Value="Collapsed"/>
                             </Trigger>
 
-                            <!-- Установка иконки на основе значения Tag -->
+                            <!-- Установка иконки и цвета для поиска по наименованию или категории -->
                             <Trigger Property="Tag" Value="Поиск по наименованию или категории">
                                 <Setter TargetName="Icon" Property="Kind" Value="Magnify"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="RubleIcon" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="Icon" Property="Visibility" Value="Visible"/>
                             </Trigger>
+                            <!-- Установка иконки и зелёного цвета для Мин. Цена -->
+                            <Trigger Property="Tag" Value="Мин. Цена">
+                                <Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="RubleIcon" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <!-- Установка иконки и зелёного цвета для Макс. Цена -->
+                            <Trigger Property="Tag" Value="Макс. Цена">
+                                <Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="RubleIcon" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <!-- Установка иконки для Мин. Количество -->
                             <Trigger Property="Tag" Value="Мин. Количество">
                                 <Setter TargetName="Icon" Property="Kind" Value="Numeric0Box"/>
+                                <Setter TargetName="Icon" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="RubleIcon" Property="Visibility" Value="Collapsed"/>
                             </Trigger>
+                            <!-- Установка иконки для Макс. Количество -->
                             <Trigger Property="Tag" Value="Макс. Количество">
                                 <Setter TargetName="Icon" Property="Kind" Value="Numeric0Box"/>
-                            </Trigger>
-                            <Trigger Property="Tag" Value="Мин. Цена">
-                                <Setter TargetName="Icon" Property="Kind" Value="CurrencyUsd"/>
-                            </Trigger>
-                            <Trigger Property="Tag" Value="Макс. Цена">
-                                <Setter TargetName="Icon" Property="Kind" Value="CurrencyUsd"/>
+                                <Setter TargetName="Icon" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="RubleIcon" Property="Visibility" Value="Collapsed"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

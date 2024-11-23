@@ -39,6 +39,42 @@
             </Setter>
         </Style>
 
+        <!-- Стиль для ToggleButton -->
+        <Style x:Key="ControlToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="MinWidth" Value="30"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Стиль для TextBox с иконкой и водяным знаком -->
         <Style x:Key="IconWatermarkTextBoxStyle" TargetType="TextBox">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
@@ -96,9 +132,10 @@
                                 <Setter TargetName="Watermark" Property="Visibility" Value="Collapsed"/>
                             </Trigger>
 
-                            <!-- Установка иконки на основе значения Tag -->
+                            <!-- Установка иконки и цвета для поиска по наименованию или категории -->
                             <Trigger Property="Tag" Value="Поиск по наименованию или категории">
                                 <Setter TargetName="Icon" Property="Kind" Value="Magnify"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
                             </Trigger>
                             <Trigger Property="Tag" Value="Мин. Количество">
                                 <Setter TargetName="Icon" Property="Kind" Value="Numeric0Box"/>
@@ -208,9 +245,14 @@
                                  TextChanged="Filter_TextChanged" />
                     </StackPanel>
 
-                    <!-- Галочка для отображения всех товаров -->
-                    <CheckBox x:Name="ShowAllCheckBox" Content="Показывать все товары" Margin="0,0,0,10"
-                              Checked="ShowAllCheckBox_Checked" Unchecked="ShowAllCheckBox_Unchecked"/>
+                    <!-- Иконка для отображения всех товаров -->
+                    <ToggleButton x:Name="ShowAllToggleButton" Width="30" Height="30" Margin="0,0,0,10"
+                                  Click="ShowAllToggleButton_Click"
+                                  ToolTip="Показывать все товары"
+                                  Style="{StaticResource ControlToggleButtonStyle}">
+                        <iconPacks:PackIconMaterial x:Name="ShowAllIcon" Kind="FilterVariant" Width="24" Height="24" 
+                                                    Foreground="{DynamicResource PrimaryBrush}"/>
+                    </ToggleButton>
                 </StackPanel>
 
                 <!-- DataGrid для отображения товаров -->
