@@ -1,4 +1,4 @@
-﻿// Namespace и другие using
+﻿
 using MahApps.Metro.IconPacks;
 using System.Windows;
 using System.Windows.Input;
@@ -60,7 +60,9 @@ namespace УправлениеСкладом.Сотрудник_склада
 
 		private void MoveItems_Click(object sender, RoutedEventArgs e)
 		{
-			// Логика перемещения товаров
+			MoveItemsWindow moveItemsWindow = new MoveItemsWindow();
+			moveItemsWindow.Owner = this; // Устанавливаем владельца
+			moveItemsWindow.ShowDialog();
 		}
 
 		private void InventoryLog_Click(object sender, RoutedEventArgs e)
