@@ -6,20 +6,21 @@
         WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         MouseDown="Window_MouseDown">
     <Window.Resources>
-        <!-- Определение зелёного цвета для иконок цен (можно удалить, если больше не используется) -->
-        <SolidColorBrush x:Key="PriceIconForegroundBrush" Color="Green"/>
-
         <!-- DataTemplate для ComboBoxItem с иконкой -->
         <DataTemplate x:Key="ComboBoxItemWithIconTemplate">
             <StackPanel Orientation="Horizontal">
-                <iconPacks:PackIconMaterial x:Name="LocationIcon" Kind="Warehouse" Width="16" Height="16" Margin="0,0,5,0"/>
-                <TextBlock Text="{Binding}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <iconPacks:PackIconMaterial x:Name="LocationIcon" Kind="Warehouse" Width="16" Height="16" Margin="0,0,5,0" Foreground="{DynamicResource ForegroundBrush}"/>
+                <TextBlock Text="{Binding}" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{DynamicResource ForegroundBrush}"/>
             </StackPanel>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding}" Value="Нет мест хранения">
                     <Setter TargetName="LocationIcon" Property="Kind" Value="Information"/>
                 </DataTrigger>
             </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <DataTemplate x:Key="SimpleComboBoxItemTemplate">
+            <TextBlock Text="{Binding}" VerticalAlignment="Center" Foreground="{DynamicResource ForegroundBrush}"/>
         </DataTemplate>
 
         <!-- ControlTemplate для ToggleButton в ComboBox -->
@@ -54,7 +55,7 @@
                     CornerRadius="10"/>
         </ControlTemplate>
 
-        <!-- Новый стиль для ComboBox с улучшенным внешним видом -->
+        <!-- Стиль для ComboBox с полностью определённым шаблоном (включая Popup) -->
         <Style x:Key="StyledComboBox" TargetType="ComboBox">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -65,13 +66,17 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
                         <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
                             <ToggleButton Name="ToggleButton"
+                                          Grid.Column="1"
                                           Template="{StaticResource ComboBoxToggleButton}"
-                                          Grid.Column="2"
                                           Focusable="false"
                                           IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
                                           ClickMode="Press"/>
-                            <ContentPresenter Name="ContentSite" IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="30,0,0,0" />
+                            <ContentPresenter Name="ContentSite" IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="5,0,0,0" />
                             <TextBox x:Name="PART_EditableTextBox"
                                      Template="{StaticResource ComboBoxTextBox}"
                                      HorizontalAlignment="Left"
@@ -81,6 +86,24 @@
                                      Background="Transparent"
                                      Visibility="Hidden"
                                      IsReadOnly="{TemplateBinding IsReadOnly}"/>
+                            <Popup x:Name="PART_Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Grid MaxHeight="{TemplateBinding MaxDropDownHeight}" MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <Border x:Name="DropDownBorder"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            CornerRadius="10">
+                                        <ScrollViewer Margin="0,0,0,0" SnapsToDevicePixels="True">
+                                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                        </ScrollViewer>
+                                    </Border>
+                                </Grid>
+                            </Popup>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsEditable" Value="True">
@@ -94,11 +117,9 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-            <Setter Property="ItemTemplate" Value="{StaticResource ComboBoxItemWithIconTemplate}"/>
             <Setter Property="Width" Value="250"/>
         </Style>
 
-        <!-- Общие стили для кнопок -->
         <Style x:Key="ControlButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
@@ -131,7 +152,6 @@
             </Setter>
         </Style>
 
-        <!-- Стиль для TextBox с иконкой и водяным знаком -->
         <Style x:Key="IconWatermarkTextBoxStyle" TargetType="TextBox">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -142,20 +162,17 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
                         <Grid>
-                            <!-- Корневой Border -->
                             <Border Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
                                     CornerRadius="10"/>
 
-                            <!-- Содержимое TextBox -->
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <!-- Иконка PackIconMaterial -->
                                 <iconPacks:PackIconMaterial x:Name="Icon"
                                                             Width="20" Height="20"
                                                             Foreground="{TemplateBinding Foreground}"
@@ -164,12 +181,10 @@
                                                             Margin="5,0,10,0"
                                                             Visibility="Collapsed"/>
 
-                                <!-- Содержимое TextBox -->
                                 <ScrollViewer Grid.Column="1"
                                               Margin="0"
                                               x:Name="PART_ContentHost"/>
 
-                                <!-- Водяной знак -->
                                 <TextBlock x:Name="Watermark"
                                            Text="{TemplateBinding Tag}"
                                            Foreground="Gray"
@@ -180,24 +195,19 @@
                             </Grid>
                         </Grid>
                         <ControlTemplate.Triggers>
-                            <!-- Показать водяной знак, если текст пуст -->
                             <Trigger Property="Text" Value="">
                                 <Setter TargetName="Watermark" Property="Visibility" Value="Visible"/>
                                 <Setter TargetName="Icon" Property="Visibility" Value="Visible"/>
                             </Trigger>
-                            <!-- Скрыть водяной знак при фокусе -->
                             <Trigger Property="IsFocused" Value="True">
                                 <Setter TargetName="Watermark" Property="Visibility" Value="Collapsed"/>
                                 <Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/>
                             </Trigger>
-
-                            <!-- Установка иконки и цвета для поиска по наименованию или категории -->
                             <Trigger Property="Tag" Value="Поиск по наименованию или категории">
                                 <Setter TargetName="Icon" Property="Kind" Value="Magnify"/>
                                 <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
                                 <Setter TargetName="Icon" Property="Visibility" Value="Visible"/>
                             </Trigger>
-                            <!-- Установка иконки для Количество для перемещения -->
                             <Trigger Property="Tag" Value="Количество для перемещения">
                                 <Setter TargetName="Icon" Property="Kind" Value="Numeric0Box"/>
                                 <Setter TargetName="Icon" Property="Visibility" Value="Visible"/>
@@ -208,7 +218,6 @@
             </Setter>
         </Style>
 
-        <!-- Стиль для заголовков столбцов DataGrid -->
         <Style TargetType="DataGridColumnHeader">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -218,7 +227,6 @@
             <Setter Property="Padding" Value="5"/>
         </Style>
 
-        <!-- Стиль для строк DataGrid -->
         <Style TargetType="DataGridRow">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -231,7 +239,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Стиль для ячеек DataGrid -->
         <Style TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -245,7 +252,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Стиль для DataGrid -->
         <Style TargetType="DataGrid" x:Key="StyledDataGrid">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -272,36 +278,36 @@
                 <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
             </Border.Effect>
             <StackPanel>
-                <!-- Заголовок с кнопкой закрытия -->
                 <Grid Margin="0,0,0,10">
                     <TextBlock Text="Перемещение товаров" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
-                    <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
-                            HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseButton_Click">
-                        <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
-                    </Button>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
+                                Click="ToggleTheme_Click" Margin="0,0,5,0">
+                            <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
+                        </Button>
+                        <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
+                                Click="CloseButton_Click">
+                            <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
+                        </Button>
+                    </StackPanel>
                 </Grid>
 
-                <!-- Панель фильтров -->
                 <StackPanel Orientation="Vertical" Margin="0,0,0,10">
-                    <!-- Поиск -->
                     <TextBox x:Name="SearchTextBox" Width="300" Margin="0,0,0,10"
                              Style="{StaticResource IconWatermarkTextBoxStyle}" Tag="Поиск по наименованию или категории"
                              TextChanged="Filter_TextChanged" />
 
-                    <!-- Фильтр по категориям -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                         <TextBlock Text="Категория:" VerticalAlignment="Center" Margin="0,0,10,0"/>
                         <ComboBox x:Name="CategoryComboBox" Width="250" 
                                   Style="{StaticResource StyledComboBox}"
-                                  SelectionChanged="Filter_TextChanged">
-                            <!-- Остальные категории будут загружены динамически -->
-                        </ComboBox>
+                                  ItemTemplate="{StaticResource SimpleComboBoxItemTemplate}"
+                                  SelectionChanged="Filter_TextChanged"/>
                     </StackPanel>
                 </StackPanel>
 
-                <!-- DataGrid для отображения товаров -->
                 <DataGrid x:Name="ItemsDataGrid" Margin="0,0,0,10" Style="{StaticResource StyledDataGrid}"
-                          SelectionChanged="ItemsDataGrid_SelectionChanged">
+                          SelectionChanged="ItemsDataGrid_SelectionChanged" Loaded="ItemsDataGrid_Loaded">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="ID" Binding="{Binding ТоварID}" Width="Auto"/>
                         <DataGridTextColumn Header="Наименование" Binding="{Binding Наименование}" Width="*"/>
@@ -310,7 +316,6 @@
                     </DataGrid.Columns>
                 </DataGrid>
 
-                <!-- Панель параметров перемещения -->
                 <Border Background="{DynamicResource ButtonBackgroundBrush}" CornerRadius="10" Padding="15" Margin="0,0,0,20">
                     <StackPanel Orientation="Vertical" >
                         <TextBlock Text="Параметры перемещения" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,0,10"/>
@@ -319,19 +324,15 @@
                             <TextBlock Text="Исходное местоположение:" VerticalAlignment="Center" Width="180"/>
                             <ComboBox x:Name="SourceLocationComboBox" Width="250" 
                                       Style="{StaticResource StyledComboBox}"
-                                      ItemTemplate="{StaticResource ComboBoxItemWithIconTemplate}"
-                                      IsEnabled="False">
-                                <!-- Остальные местоположения будут загружены динамически -->
-                            </ComboBox>
+                                      ItemTemplate="{StaticResource SimpleComboBoxItemTemplate}"
+                                      IsEnabled="False"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                             <TextBlock Text="Целевое местоположение:" VerticalAlignment="Center" Width="180"/>
                             <ComboBox x:Name="TargetLocationComboBox" Width="250" 
                                       Style="{StaticResource StyledComboBox}"
-                                      ItemTemplate="{StaticResource ComboBoxItemWithIconTemplate}">
-                                <!-- Остальные местоположения будут загружены динамически -->
-                            </ComboBox>
+                                      ItemTemplate="{StaticResource ComboBoxItemWithIconTemplate}"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
@@ -341,20 +342,12 @@
                                      PreviewTextInput="NumberValidationTextBox" />
                         </StackPanel>
 
-                        <!-- Кнопка для выполнения перемещения -->
                         <Button Content="Переместить" Width="150" Height="40" 
                                 HorizontalAlignment="Right" 
                                 Style="{StaticResource ControlButtonStyle}"
                                 Click="MoveButton_Click"/>
                     </StackPanel>
                 </Border>
-
-                <!-- Кнопка для переключения темы -->
-                <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
-                        HorizontalAlignment="Center" Margin="0,20,0,0"
-                        Click="ToggleTheme_Click">
-                    <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
-                </Button>
             </StackPanel>
         </Border>
     </Grid>
