@@ -10,7 +10,7 @@ namespace УправлениеСкладом
 {
     public partial class SettingsWindow : Window, INotifyPropertyChanged
     {
-        // Свойства для биндинга, если необходимо
+        // Свойства для биндинга
         private string _newPassword;
         public string NewPassword
         {
@@ -42,11 +42,10 @@ namespace УправлениеСкладом
         {
             InitializeComponent();
             DataContext = this;
-            // Инициализация настроек, если необходимо
             InitializeSettings();
 
             // Автоматическое определение текущего пользователя
-            UserManager.LoadCurrentUser();
+            UserManager.LoadCurrentUser(connectionString);
         }
 
         private void InitializeSettings()
@@ -162,7 +161,7 @@ namespace УправлениеСкладом
             }
 
             // Логика смены пароля для текущего пользователя
-            bool isChanged = UserManager.ChangePassword(NewPassword);
+            bool isChanged = UserManager.ChangePassword(connectionString, NewPassword);
             if (isChanged)
             {
                 MessageBox.Show("Пароль успешно изменен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -202,99 +201,100 @@ namespace УправлениеСкладом
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-    }
-
-    /// <summary>
-    /// Класс для управления пользователями.
-    /// Весь функционал реализован здесь без добавления новых классов.
-    /// </summary>
-    public static class UserManager
-    {
-        // Текущее состояние пользователя
-        public static User CurrentUser { get; set; }
-
-        // Строка подключения к базе данных
-        private static readonly string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
 
         /// <summary>
-        /// Класс пользователя.
+        /// Класс для управления пользователями.
+        /// Весь функционал реализован здесь без добавления новых классов.
         /// </summary>
-        public class User
+        public static class UserManager
         {
-            public string Username { get; set; }
-            public int RoleID { get; set; }
-        }
+            // Текущее состояние пользователя
+            public static User CurrentUser { get; set; }
 
-        /// <summary>
-        /// Метод для автоматического определения текущего пользователя.
-        /// Этот метод можно вызывать при инициализации приложения или окна.
-        /// В данном примере предполагается, что имя пользователя уже известно.
-        /// </summary>
-        public static void LoadCurrentUser()
-        {
-            try
+            /// <summary>
+            /// Класс пользователя.
+            /// </summary>
+            public class User
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    conn.Open();
-                    string query = "SELECT TOP 1 ИмяПользователя, РольID FROM Пользователи";
+                public string Username { get; set; }
+                public int RoleID { get; set; }
+            }
 
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+            /// <summary>
+            /// Метод для автоматического определения текущего пользователя.
+            /// В данном примере выбирается первый пользователь из базы данных.
+            /// </summary>
+            /// <param name="connectionString">Строка подключения к базе данных.</param>
+            public static void LoadCurrentUser(string connectionString)
+            {
+                try
+                {
+                    using (SqlConnection conn = new SqlConnection(connectionString))
                     {
-                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        conn.Open();
+                        // Здесь можно реализовать логику определения текущего пользователя
+                        // Например, выбор пользователя по сессии, токену и т.д.
+                        // В этом примере выбирается первый пользователь из таблицы
+                        string query = "SELECT TOP 1 ИмяПользователя, РольID FROM Пользователи";
+
+                        using (SqlCommand cmd = new SqlCommand(query, conn))
                         {
-                            if (reader.Read())
+                            using (SqlDataReader reader = cmd.ExecuteReader())
                             {
-                                CurrentUser = new User
+                                if (reader.Read())
                                 {
-                                    Username = reader["ИмяПользователя"].ToString(),
-                                    RoleID = Convert.ToInt32(reader["РольID"])
-                                };
+                                    CurrentUser = new User
+                                    {
+                                        Username = reader["ИмяПользователя"].ToString(),
+                                        RoleID = Convert.ToInt32(reader["РольID"])
+                                    };
+                                }
                             }
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при загрузке текущего пользователя: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// Метод для смены пароля текущего пользователя.
-        /// </summary>
-        /// <param name="newPassword">Новый пароль.</param>
-        /// <returns>Возвращает true, если пароль успешно изменен; иначе false.</returns>
-        public static bool ChangePassword(string newPassword)
-        {
-            if (CurrentUser == null)
-                return false;
-
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                catch (Exception ex)
                 {
-                    conn.Open();
-
-                    string query = "UPDATE Пользователи SET Пароль = @Пароль WHERE ИмяПользователя = @ИмяПользователя";
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@Пароль", newPassword);
-                        cmd.Parameters.AddWithValue("@ИмяПользователя", CurrentUser.Username);
-
-                        int rowsAffected = cmd.ExecuteNonQuery();
-
-                        return rowsAffected > 0;
-                    }
+                    MessageBox.Show($"Ошибка при загрузке текущего пользователя: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
-            catch (Exception ex)
+
+            /// <summary>
+            /// Метод для смены пароля текущего пользователя.
+            /// </summary>
+            /// <param name="connectionString">Строка подключения к базе данных.</param>
+            /// <param name="newPassword">Новый пароль.</param>
+            /// <returns>Возвращает true, если пароль успешно изменен; иначе false.</returns>
+            public static bool ChangePassword(string connectionString, string newPassword)
             {
-                // Логирование ошибки или вывод сообщения
-                MessageBox.Show($"Ошибка при смене пароля: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return false;
+                if (CurrentUser == null)
+                    return false;
+
+                try
+                {
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    {
+                        conn.Open();
+
+                        string query = "UPDATE Пользователи SET Пароль = @Пароль WHERE ИмяПользователя = @ИмяПользователя";
+
+                        using (SqlCommand cmd = new SqlCommand(query, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@Пароль", newPassword);
+                            cmd.Parameters.AddWithValue("@ИмяПользователя", CurrentUser.Username);
+
+                            int rowsAffected = cmd.ExecuteNonQuery();
+
+                            return rowsAffected > 0;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Логирование ошибки или вывод сообщения
+                    MessageBox.Show($"Ошибка при смене пароля: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return false;
+                }
             }
         }
     }
