@@ -61,13 +61,16 @@ namespace УправлениеСкладом.Сотрудник_склада
 		private void MoveItems_Click(object sender, RoutedEventArgs e)
 		{
 			MoveItemsWindow moveItemsWindow = new MoveItemsWindow();
-			moveItemsWindow.Owner = this; // Устанавливаем владельца
+			moveItemsWindow.Owner = this; 
 			moveItemsWindow.ShowDialog();
 		}
 
 		private void InventoryLog_Click(object sender, RoutedEventArgs e)
 		{
-			// Логика для журнала инвентаризации
+			InventoryLogWindow inventoryLogWindow = new InventoryLogWindow();
+			inventoryLogWindow.Owner = this;
+			inventoryLogWindow.ShowDialog();
 		}
+
 	}
 }
