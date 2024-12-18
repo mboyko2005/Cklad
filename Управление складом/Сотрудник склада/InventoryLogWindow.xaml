@@ -5,6 +5,7 @@
         Title="Учёт приходов/расходов" Height="600" Width="800"
         WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         MouseDown="Window_MouseDown">
+
     <Grid>
         <Border Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="20" Padding="20">
             <Border.Effect>
@@ -25,6 +26,7 @@
                            FontSize="16" Foreground="{DynamicResource ForegroundBrush}" TextWrapping="Wrap"
                            HorizontalAlignment="Center" Margin="0,0,0,20"/>
 
+               
                 <!-- Основной контент: Таблица с записями журнала -->
                 <StackPanel>
                     <!-- Панель с кнопками добавления и удаления записей -->
@@ -68,6 +70,8 @@
                             </Button.Template>
                         </Button>
                     </StackPanel>
+                    <!-- Заголовок истории учёта -->
+                    <TextBlock Text="История учёта" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,10" HorizontalAlignment="Center"/>
 
                     <!-- DataGrid для отображения данных о приходах/расходах -->
                     <DataGrid x:Name="InventoryLogDataGrid"
