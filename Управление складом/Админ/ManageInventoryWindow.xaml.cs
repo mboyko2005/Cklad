@@ -7,12 +7,17 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using MahApps.Metro.IconPacks;
-using Управление_складом.Themes; // Добавлено пространство имен для ThemeManager
+using Управление_складом.Themes; // Пространство имен для ThemeManager
 
 namespace УправлениеСкладом
 {
-	public partial class ManageInventoryWindow : Window, IThemeable // Реализуем IThemeable
+	/// <summary>
+	/// Логика взаимодействия для ManageInventoryWindow.xaml
+	/// </summary>
+	public partial class ManageInventoryWindow : Window, IThemeable
 	{
+		#region Модели
+
 		// Модель складской позиции
 		public class InventoryItem
 		{
@@ -28,7 +33,7 @@ namespace УправлениеСкладом
 		{
 			public int Id { get; set; }
 			public string Name { get; set; }
-			public decimal Price { get; set; } // Цена товара
+			public decimal Price { get; set; }
 			public int SupplierId { get; set; } // ПоставщикID
 		}
 
@@ -46,7 +51,10 @@ namespace УправлениеСкладом
 			public string Name { get; set; }
 		}
 
-		// Коллекции для DataGrid и хранения данных товаров, складов и поставщиков
+		#endregion
+
+		#region Поля
+
 		private ObservableCollection<InventoryItem> InventoryItems;
 		private List<Product> Products;
 		private List<Warehouse> Warehouses;
@@ -54,185 +62,207 @@ namespace УправлениеСкладом
 
 		private bool IsEditMode = false;
 		private InventoryItem SelectedItem;
-		private string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True"; // Замените на вашу строку подключения
+		private readonly string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
+
+		#endregion
+
+		#region Конструктор
 
 		public ManageInventoryWindow()
 		{
 			InitializeComponent();
+
+			// Инициализация коллекций
+			Products = new List<Product>();
+			Warehouses = new List<Warehouse>();
+			Suppliers = new List<Supplier>();
+
+			// Загрузка данных
 			LoadProducts();
 			LoadWarehouses();
 			LoadSuppliers();
 			LoadInventory();
+
 			UpdateThemeIcon();
 		}
 
-		// Загрузка товаров из базы данных
+		#endregion
+
+		#region Загрузка данных из БД
+
 		private void LoadProducts()
 		{
-			Products = new List<Product>();
+			Products.Clear();
+			const string query = "SELECT ТоварID, Наименование, Цена, ПоставщикID FROM Товары";
 
-			using (SqlConnection connection = new SqlConnection(connectionString))
+			try
 			{
-				try
+				using var connection = new SqlConnection(connectionString);
+				connection.Open();
+				using var command = new SqlCommand(query, connection);
+				using var reader = command.ExecuteReader();
+				while (reader.Read())
 				{
-					connection.Open();
-					string query = "SELECT ТоварID, Наименование, Цена, ПоставщикID FROM Товары";
-
-					using (SqlCommand command = new SqlCommand(query, connection))
+					Products.Add(new Product
 					{
-						using (SqlDataReader reader = command.ExecuteReader())
-						{
-							while (reader.Read())
-							{
-								Products.Add(new Product
-								{
-									Id = reader.GetInt32(reader.GetOrdinal("ТоварID")),
-									Name = reader.GetString(reader.GetOrdinal("Наименование")),
-									Price = reader.IsDBNull(reader.GetOrdinal("Цена")) ? 0m : reader.GetDecimal(reader.GetOrdinal("Цена")),
-									SupplierId = reader.GetInt32(reader.GetOrdinal("ПоставщикID"))
-								});
-							}
-						}
-					}
+						Id = reader.GetInt32(reader.GetOrdinal("ТоварID")),
+						Name = reader.GetString(reader.GetOrdinal("Наименование")),
+						Price = reader.IsDBNull(reader.GetOrdinal("Цена")) ? 0m : reader.GetDecimal(reader.GetOrdinal("Цена")),
+						SupplierId = reader.GetInt32(reader.GetOrdinal("ПоставщикID"))
+					});
 				}
-				catch (SqlException ex)
-				{
-					MessageBox.Show($"Ошибка загрузки товаров: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-				}
+			}
+			catch (SqlException ex)
+			{
+				MessageBox.Show($"Ошибка загрузки товаров: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 		}
 
-		// Загрузка складов из базы данных
 		private void LoadWarehouses()
 		{
-			Warehouses = new List<Warehouse>();
+			Warehouses.Clear();
+			const string query = "SELECT СкладID, Наименование FROM Склады";
 
-			using (SqlConnection connection = new SqlConnection(connectionString))
+			try
 			{
-				try
+				using var connection = new SqlConnection(connectionString);
+				connection.Open();
+				using var command = new SqlCommand(query, connection);
+				using var reader = command.ExecuteReader();
+				while (reader.Read())
 				{
-					connection.Open();
-					string query = "SELECT СкладID, Наименование FROM Склады";
-
-					using (SqlCommand command = new SqlCommand(query, connection))
+					Warehouses.Add(new Warehouse
 					{
-						using (SqlDataReader reader = command.ExecuteReader())
-						{
-							while (reader.Read())
-							{
-								Warehouses.Add(new Warehouse
-								{
-									Id = reader.GetInt32(reader.GetOrdinal("СкладID")),
-									Name = reader.GetString(reader.GetOrdinal("Наименование"))
-								});
-							}
-						}
-					}
-
-					// Привязка списка складов к ComboBox
-					WarehouseComboBox.ItemsSource = Warehouses;
+						Id = reader.GetInt32(reader.GetOrdinal("СкладID")),
+						Name = reader.GetString(reader.GetOrdinal("Наименование"))
+					});
 				}
-				catch (SqlException ex)
-				{
-					MessageBox.Show($"Ошибка загрузки складов: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-				}
+				WarehouseComboBox.ItemsSource = Warehouses;
+			}
+			catch (SqlException ex)
+			{
+				MessageBox.Show($"Ошибка загрузки складов: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 		}
 
-		// Загрузка поставщиков из базы данных
 		private void LoadSuppliers()
 		{
-			Suppliers = new List<Supplier>();
+			Suppliers.Clear();
+			const string query = "SELECT ПоставщикID, Наименование FROM Поставщики";
 
-			using (SqlConnection connection = new SqlConnection(connectionString))
+			try
 			{
-				try
+				using var connection = new SqlConnection(connectionString);
+				connection.Open();
+				using var command = new SqlCommand(query, connection);
+				using var reader = command.ExecuteReader();
+				while (reader.Read())
 				{
-					connection.Open();
-					string query = "SELECT ПоставщикID, Наименование FROM Поставщики";
-
-					using (SqlCommand command = new SqlCommand(query, connection))
+					Suppliers.Add(new Supplier
 					{
-						using (SqlDataReader reader = command.ExecuteReader())
-						{
-							while (reader.Read())
-							{
-								Suppliers.Add(new Supplier
-								{
-									Id = reader.GetInt32(reader.GetOrdinal("ПоставщикID")),
-									Name = reader.GetString(reader.GetOrdinal("Наименование"))
-								});
-							}
-						}
-					}
-
-					// Привязка списка поставщиков к ComboBox
-					SupplierComboBox.ItemsSource = Suppliers;
+						Id = reader.GetInt32(reader.GetOrdinal("ПоставщикID")),
+						Name = reader.GetString(reader.GetOrdinal("Наименование"))
+					});
 				}
-				catch (SqlException ex)
-				{
-					MessageBox.Show($"Ошибка загрузки поставщиков: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-				}
+				SupplierComboBox.ItemsSource = Suppliers;
+			}
+			catch (SqlException ex)
+			{
+				MessageBox.Show($"Ошибка загрузки поставщиков: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 		}
 
-		// Загрузка складских позиций из базы данных
 		private void LoadInventory()
 		{
 			InventoryItems = new ObservableCollection<InventoryItem>();
+			const string query = @"
+                SELECT sp.ПозицияID AS Id, t.Наименование AS Name, t.Цена AS Price, sp.Количество AS Quantity, s.Наименование AS Location
+                FROM СкладскиеПозиции sp
+                INNER JOIN Товары t ON sp.ТоварID = t.ТоварID
+                INNER JOIN Склады s ON sp.СкладID = s.СкладID";
 
-			using (SqlConnection connection = new SqlConnection(connectionString))
+			try
 			{
-				try
+				using var connection = new SqlConnection(connectionString);
+				connection.Open();
+				using var command = new SqlCommand(query, connection);
+				using var reader = command.ExecuteReader();
+				while (reader.Read())
 				{
-					connection.Open();
-					string query = @"
-                        SELECT sp.ПозицияID AS Id, t.Наименование AS Name, t.Цена AS Price, sp.Количество AS Quantity, s.Наименование AS Location
-                        FROM СкладскиеПозиции sp
-                        INNER JOIN Товары t ON sp.ТоварID = t.ТоварID
-                        INNER JOIN Склады s ON sp.СкладID = s.СкладID";
-
-					using (SqlCommand command = new SqlCommand(query, connection))
+					InventoryItems.Add(new InventoryItem
 					{
-						using (SqlDataReader reader = command.ExecuteReader())
-						{
-							while (reader.Read())
-							{
-								InventoryItems.Add(new InventoryItem
-								{
-									Id = reader.GetInt32(reader.GetOrdinal("Id")),
-									Name = reader.GetString(reader.GetOrdinal("Name")),
-									Price = reader.IsDBNull(reader.GetOrdinal("Price")) ? 0m : reader.GetDecimal(reader.GetOrdinal("Price")),
-									Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
-									Location = reader.GetString(reader.GetOrdinal("Location"))
-								});
-							}
-						}
-					}
-				}
-				catch (SqlException ex)
-				{
-					MessageBox.Show($"Ошибка подключения к базе данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+						Id = reader.GetInt32(reader.GetOrdinal("Id")),
+						Name = reader.GetString(reader.GetOrdinal("Name")),
+						Price = reader.IsDBNull(reader.GetOrdinal("Price")) ? 0m : reader.GetDecimal(reader.GetOrdinal("Price")),
+						Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
+						Location = reader.GetString(reader.GetOrdinal("Location"))
+					});
 				}
 			}
-
+			catch (SqlException ex)
+			{
+				MessageBox.Show($"Ошибка подключения к базе данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
 			RefreshInventoryDataGrid();
 		}
 
-		// Обновление DataGrid
+		#endregion
+
+		#region Обновление UI
+
 		private void RefreshInventoryDataGrid()
 		{
 			InventoryDataGrid.ItemsSource = null;
 			InventoryDataGrid.ItemsSource = InventoryItems;
 		}
 
+		private void ClearInputFields()
+		{
+			NameTextBox.Text = string.Empty;
+			PriceTextBox.Text = string.Empty;
+			QuantityTextBox.Text = string.Empty;
+			SupplierComboBox.SelectedIndex = -1;
+			WarehouseComboBox.SelectedIndex = -1;
+		}
+
+		private void PopulateInputFields(InventoryItem item)
+		{
+			NameTextBox.Text = item.Name;
+			PriceTextBox.Text = item.Price.ToString("F2");
+			QuantityTextBox.Text = item.Quantity.ToString();
+			WarehouseComboBox.SelectedItem = Warehouses.FirstOrDefault(w => w.Name == item.Location);
+
+			// Определяем поставщика по связанному товару
+			var product = Products.FirstOrDefault(p => p.Name.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+			if (product != null)
+			{
+				var supplier = Suppliers.FirstOrDefault(s => s.Id == product.SupplierId);
+				SupplierComboBox.SelectedItem = supplier;
+			}
+			else
+			{
+				SupplierComboBox.SelectedIndex = -1;
+			}
+		}
+
+		#endregion
+
+		#region Обработчики событий
+
+		// Перетаскивание окна
+		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+		{
+			if (e.ChangedButton == MouseButton.Left)
+				DragMove();
+		}
+
 		// Закрытие окна
 		private void CloseButton_Click(object sender, RoutedEventArgs e)
 		{
-			this.Close();
+			Close();
 		}
 
-		// Показать панель добавления
+		// Показ панели добавления позиции
 		private void AddInventory_Click(object sender, RoutedEventArgs e)
 		{
 			IsEditMode = false;
@@ -241,7 +271,7 @@ namespace УправлениеСкладом
 			ShowPanel();
 		}
 
-		// Показать панель редактирования
+		// Показ панели редактирования позиции
 		private void EditInventory_Click(object sender, RoutedEventArgs e)
 		{
 			if (InventoryDataGrid.SelectedItem is InventoryItem selectedItem)
@@ -258,144 +288,15 @@ namespace УправлениеСкладом
 			}
 		}
 
-		// Удаление складской позиции
-		// Удаление складской позиции
+		// Удаление позиции и связанных записей
 		private void DeleteInventory_Click(object sender, RoutedEventArgs e)
 		{
 			if (InventoryDataGrid.SelectedItem is InventoryItem selectedItem)
 			{
-				MessageBoxResult result = MessageBox.Show($"Вы уверены, что хотите удалить позицию: {selectedItem.Name}?", "Удаление позиции", MessageBoxButton.YesNo, MessageBoxImage.Question);
+				var result = MessageBox.Show($"Вы уверены, что хотите удалить позицию: {selectedItem.Name}?", "Удаление позиции", MessageBoxButton.YesNo, MessageBoxImage.Question);
 				if (result == MessageBoxResult.Yes)
 				{
-					using (SqlConnection connection = new SqlConnection(connectionString))
-					{
-						try
-						{
-							connection.Open();
-
-							// Начинаем транзакцию для обеспечения целостности данных
-							using (SqlTransaction transaction = connection.BeginTransaction())
-							{
-								try
-								{
-									// Получаем идентификаторы товара и поставщика, связанные с позицией
-									int productId = 0;
-									int supplierId = 0;
-
-									// Получаем ProductID и SupplierID
-									string getProductQuery = @"
-                                SELECT t.ТоварID, t.ПоставщикID
-                                FROM СкладскиеПозиции sp
-                                INNER JOIN Товары t ON sp.ТоварID = t.ТоварID
-                                WHERE sp.ПозицияID = @PositionId";
-									using (SqlCommand command = new SqlCommand(getProductQuery, connection, transaction))
-									{
-										command.Parameters.AddWithValue("@PositionId", selectedItem.Id);
-										using (SqlDataReader reader = command.ExecuteReader())
-										{
-											if (reader.Read())
-											{
-												productId = reader.GetInt32(reader.GetOrdinal("ТоварID"));
-												supplierId = reader.GetInt32(reader.GetOrdinal("ПоставщикID"));
-											}
-										}
-									}
-
-									// Удаляем складскую позицию
-									string deletePositionQuery = "DELETE FROM СкладскиеПозиции WHERE ПозицияID = @Id";
-									using (SqlCommand command = new SqlCommand(deletePositionQuery, connection, transaction))
-									{
-										command.Parameters.AddWithValue("@Id", selectedItem.Id);
-										command.ExecuteNonQuery();
-									}
-
-									// Проверяем, используется ли товар в других позициях
-									bool isProductUsedElsewhere = false;
-									string checkProductUsageQuery = "SELECT COUNT(*) FROM СкладскиеПозиции WHERE ТоварID = @ProductId";
-									using (SqlCommand command = new SqlCommand(checkProductUsageQuery, connection, transaction))
-									{
-										command.Parameters.AddWithValue("@ProductId", productId);
-										int count = (int)command.ExecuteScalar();
-										isProductUsedElsewhere = count > 0;
-									}
-
-									if (!isProductUsedElsewhere)
-									{
-										// Удаляем товар
-										string deleteProductQuery = "DELETE FROM Товары WHERE ТоварID = @ProductId";
-										using (SqlCommand command = new SqlCommand(deleteProductQuery, connection, transaction))
-										{
-											command.Parameters.AddWithValue("@ProductId", productId);
-											command.ExecuteNonQuery();
-										}
-
-										// Проверяем, используется ли поставщик в других товарах
-										bool isSupplierUsedElsewhere = false;
-										string checkSupplierUsageQuery = "SELECT COUNT(*) FROM Товары WHERE ПоставщикID = @SupplierId";
-										using (SqlCommand command = new SqlCommand(checkSupplierUsageQuery, connection, transaction))
-										{
-											command.Parameters.AddWithValue("@SupplierId", supplierId);
-											int count = (int)command.ExecuteScalar();
-											isSupplierUsedElsewhere = count > 0;
-										}
-
-										if (!isSupplierUsedElsewhere)
-										{
-											// Удаляем поставщика
-											string deleteSupplierQuery = "DELETE FROM Поставщики WHERE ПоставщикID = @SupplierId";
-											using (SqlCommand command = new SqlCommand(deleteSupplierQuery, connection, transaction))
-											{
-												command.Parameters.AddWithValue("@SupplierId", supplierId);
-												command.ExecuteNonQuery();
-											}
-										}
-									}
-
-									// Подтверждаем транзакцию
-									transaction.Commit();
-
-									// Обновляем коллекции
-									InventoryItems.Remove(selectedItem);
-									RefreshInventoryDataGrid();
-
-									// Удаляем товар и поставщика из локальных коллекций, если они были удалены
-									if (!isProductUsedElsewhere)
-									{
-										Product productToRemove = Products.FirstOrDefault(p => p.Id == productId);
-										if (productToRemove != null)
-										{
-											Products.Remove(productToRemove);
-										}
-									}
-
-									if (!isProductUsedElsewhere && supplierId > 0)
-									{
-										bool isSupplierUsedInLocalProducts = Products.Any(p => p.SupplierId == supplierId);
-										if (!isSupplierUsedInLocalProducts)
-										{
-											Supplier supplierToRemove = Suppliers.FirstOrDefault(s => s.Id == supplierId);
-											if (supplierToRemove != null)
-											{
-												Suppliers.Remove(supplierToRemove);
-											}
-										}
-									}
-
-									MessageBox.Show("Позиция и связанные данные успешно удалены.", "Удаление позиции", MessageBoxButton.OK, MessageBoxImage.Information);
-								}
-								catch (Exception ex)
-								{
-									// Откатываем транзакцию в случае ошибки
-									transaction.Rollback();
-									MessageBox.Show($"Ошибка удаления из базы данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-								}
-							}
-						}
-						catch (SqlException ex)
-						{
-							MessageBox.Show($"Ошибка удаления из базы данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-						}
-					}
+					DeleteInventoryPosition(selectedItem);
 				}
 			}
 			else
@@ -404,59 +305,138 @@ namespace УправлениеСкладом
 			}
 		}
 
-
-		// Показать панель добавления/редактирования
-		private void ShowPanel()
-		{
-			this.RootGrid.ColumnDefinitions[1].Width = new GridLength(400);
-			Storyboard showStoryboard = (Storyboard)FindResource("ShowPanelStoryboard");
-			showStoryboard.Begin();
-		}
-
-		// Скрыть панель добавления/редактирования
-		private void HidePanel()
-		{
-			Storyboard hideStoryboard = (Storyboard)FindResource("HidePanelStoryboard");
-			hideStoryboard.Completed += (s, e) =>
-			{
-				this.RootGrid.ColumnDefinitions[1].Width = new GridLength(0);
-			};
-			hideStoryboard.Begin();
-		}
-
-		// Обработчик кнопки закрытия панели
+		// Закрытие панели
 		private void ClosePanel_Click(object sender, RoutedEventArgs e)
 		{
 			HidePanel();
 		}
 
-		// Обработчик кнопки отмены
+		// Отмена операции
 		private void CancelInventory_Click(object sender, RoutedEventArgs e)
 		{
 			HidePanel();
 		}
 
-		// Сохранение новой позиции или обновление существующей
+		// Сохранение изменений (добавление или редактирование)
 		private void SaveInventory_Click(object sender, RoutedEventArgs e)
 		{
 			if (IsEditMode)
-			{
 				SaveEditInventory();
+			else
+				SaveAddInventory();
+		}
+
+		// Переключение темы
+		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
+		{
+			ThemeManager.ToggleTheme();
+			UpdateThemeIcon();
+		}
+
+		#endregion
+
+		#region Методы панели анимации
+
+		private void ShowPanel()
+		{
+			RootGrid.ColumnDefinitions[1].Width = new GridLength(400);
+			var showStoryboard = (Storyboard)FindResource("ShowPanelStoryboard");
+			showStoryboard.Begin();
+		}
+
+		private void HidePanel()
+		{
+			var hideStoryboard = (Storyboard)FindResource("HidePanelStoryboard");
+			hideStoryboard.Completed += (s, e) =>
+			{
+				RootGrid.ColumnDefinitions[1].Width = new GridLength(0);
+			};
+			hideStoryboard.Begin();
+		}
+
+		#endregion
+
+		#region Методы работы с базой данных
+
+		/// <summary>
+		/// Метод для вставки нового поставщика или получения существующего.
+		/// </summary>
+		private Supplier GetOrInsertSupplier(string supplierName, SqlConnection connection, SqlTransaction transaction)
+		{
+			var supplier = Suppliers.FirstOrDefault(s => s.Name.Equals(supplierName, StringComparison.OrdinalIgnoreCase));
+			if (supplier != null)
+				return supplier;
+
+			const string insertSupplierQuery = @"
+                INSERT INTO Поставщики (Наименование)
+                VALUES (@SupplierName);
+                SELECT CAST(scope_identity() AS int);";
+
+			using var command = new SqlCommand(insertSupplierQuery, connection, transaction);
+			command.Parameters.AddWithValue("@SupplierName", supplierName);
+			var result = command.ExecuteScalar();
+			int newSupplierId = (result != null) ? (int)result : 0;
+			if (newSupplierId > 0)
+			{
+				supplier = new Supplier { Id = newSupplierId, Name = supplierName };
+				Suppliers.Add(supplier);
 			}
 			else
 			{
-				SaveAddInventory();
+				throw new Exception("Не удалось добавить нового поставщика.");
 			}
+			return supplier;
 		}
 
-		// Сохранение новой позиции
+		/// <summary>
+		/// Метод для вставки нового товара или обновления цены, если товар существует.
+		/// </summary>
+		private Product GetOrInsertProduct(string productName, decimal price, int supplierId, SqlConnection connection, SqlTransaction transaction)
+		{
+			var product = Products.FirstOrDefault(p => p.Name.Equals(productName, StringComparison.OrdinalIgnoreCase));
+			if (product == null)
+			{
+				const string insertProductQuery = @"
+                    INSERT INTO Товары (Наименование, Цена, ПоставщикID)
+                    VALUES (@ProductName, @Price, @SupplierID);
+                    SELECT CAST(scope_identity() AS int);";
+
+				using var command = new SqlCommand(insertProductQuery, connection, transaction);
+				command.Parameters.AddWithValue("@ProductName", productName);
+				command.Parameters.AddWithValue("@Price", price);
+				command.Parameters.AddWithValue("@SupplierID", supplierId);
+				var result = command.ExecuteScalar();
+				int newProductId = (result != null) ? (int)result : 0;
+				if (newProductId > 0)
+				{
+					product = new Product { Id = newProductId, Name = productName, Price = price, SupplierId = supplierId };
+					Products.Add(product);
+				}
+				else
+				{
+					throw new Exception("Не удалось добавить новый товар.");
+				}
+			}
+			else if (product.Price != price)
+			{
+				// Обновление цены товара, если необходимо
+				const string updateProductQuery = "UPDATE Товары SET Цена = @Price WHERE ТоварID = @ProductId";
+				using var command = new SqlCommand(updateProductQuery, connection, transaction);
+				command.Parameters.AddWithValue("@Price", price);
+				command.Parameters.AddWithValue("@ProductId", product.Id);
+				command.ExecuteNonQuery();
+				product.Price = price;
+			}
+			return product;
+		}
+
 		private void SaveAddInventory()
 		{
 			string name = NameTextBox.Text.Trim();
 			string priceText = PriceTextBox.Text.Trim();
 			string quantityText = QuantityTextBox.Text.Trim();
 			string supplierName = SupplierComboBox.Text.Trim();
-			Warehouse selectedWarehouse = WarehouseComboBox.SelectedItem as Warehouse;
+			var selectedWarehouse = WarehouseComboBox.SelectedItem as Warehouse;
 
 			if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(priceText) ||
 				string.IsNullOrEmpty(quantityText) || string.IsNullOrEmpty(supplierName) || selectedWarehouse == null)
@@ -477,132 +457,68 @@ namespace УправлениеСкладом
 				return;
 			}
 
-			Supplier selectedSupplier = Suppliers.FirstOrDefault(s => s.Name.Equals(supplierName, StringComparison.OrdinalIgnoreCase));
-			using (SqlConnection connection = new SqlConnection(connectionString))
+			try
 			{
-				try
+				using var connection = new SqlConnection(connectionString);
+				connection.Open();
+				using var transaction = connection.BeginTransaction();
+
+				// Получение или вставка поставщика
+				var supplier = GetOrInsertSupplier(supplierName, connection, transaction);
+				// Получение или вставка товара
+				var product = GetOrInsertProduct(name, price, supplier.Id, connection, transaction);
+
+				const string insertInventoryQuery = @"
+                    INSERT INTO СкладскиеПозиции (ТоварID, СкладID, Количество)
+                    VALUES (@ItemId, @WarehouseId, @Quantity);
+                    SELECT CAST(scope_identity() AS int);";
+
+				using var command = new SqlCommand(insertInventoryQuery, connection, transaction);
+				command.Parameters.AddWithValue("@ItemId", product.Id);
+				command.Parameters.AddWithValue("@WarehouseId", selectedWarehouse.Id);
+				command.Parameters.AddWithValue("@Quantity", quantity);
+
+				var result = command.ExecuteScalar();
+				int newId = (result != null) ? (int)result : 0;
+				if (newId > 0)
 				{
-					connection.Open();
-
-					if (selectedSupplier == null)
+					transaction.Commit();
+					InventoryItems.Add(new InventoryItem
 					{
-						string insertSupplierQuery = @"
-                            INSERT INTO Поставщики (Наименование)
-                            VALUES (@SupplierName);
-                            SELECT CAST(scope_identity() AS int);";
-
-						using (SqlCommand command = new SqlCommand(insertSupplierQuery, connection))
-						{
-							command.Parameters.AddWithValue("@SupplierName", supplierName);
-							object result = command.ExecuteScalar();
-							int newSupplierId = (result != null) ? (int)result : 0;
-							if (newSupplierId > 0)
-							{
-								selectedSupplier = new Supplier { Id = newSupplierId, Name = supplierName };
-								Suppliers.Add(selectedSupplier);
-							}
-							else
-							{
-								MessageBox.Show("Не удалось добавить нового поставщика.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-								return;
-							}
-						}
-					}
-
-					Product selectedProduct = Products.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-					if (selectedProduct == null)
-					{
-						string insertProductQuery = @"
-                            INSERT INTO Товары (Наименование, Цена, ПоставщикID)
-                            VALUES (@ProductName, @Price, @SupplierID);
-                            SELECT CAST(scope_identity() AS int);";
-
-						using (SqlCommand command = new SqlCommand(insertProductQuery, connection))
-						{
-							command.Parameters.AddWithValue("@ProductName", name);
-							command.Parameters.AddWithValue("@Price", price);
-							command.Parameters.AddWithValue("@SupplierID", selectedSupplier.Id);
-							object result = command.ExecuteScalar();
-							int newProductId = (result != null) ? (int)result : 0;
-							if (newProductId > 0)
-							{
-								selectedProduct = new Product { Id = newProductId, Name = name, Price = price, SupplierId = selectedSupplier.Id };
-								Products.Add(selectedProduct);
-							}
-							else
-							{
-								MessageBox.Show("Не удалось добавить новый товар.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-								return;
-							}
-						}
-					}
-					else
-					{
-						if (selectedProduct.Price != price)
-						{
-							string updateProductQuery = "UPDATE Товары SET Цена = @Price WHERE ТоварID = @ProductId";
-							using (SqlCommand command = new SqlCommand(updateProductQuery, connection))
-							{
-								command.Parameters.AddWithValue("@Price", price);
-								command.Parameters.AddWithValue("@ProductId", selectedProduct.Id);
-								command.ExecuteNonQuery();
-
-								selectedProduct.Price = price;
-							}
-						}
-					}
-
-					string insertInventoryQuery = @"
-                        INSERT INTO СкладскиеПозиции (ТоварID, СкладID, Количество)
-                        VALUES (@ItemId, @WarehouseId, @Quantity);
-                        SELECT CAST(scope_identity() AS int);";
-
-					int newId;
-					using (SqlCommand command = new SqlCommand(insertInventoryQuery, connection))
-					{
-						command.Parameters.AddWithValue("@ItemId", selectedProduct.Id);
-						command.Parameters.AddWithValue("@WarehouseId", selectedWarehouse.Id);
-						command.Parameters.AddWithValue("@Quantity", quantity);
-
-						object result = command.ExecuteScalar();
-						newId = (result != null) ? (int)result : 0;
-					}
-
-					if (newId > 0)
-					{
-						InventoryItems.Add(new InventoryItem
-						{
-							Id = newId,
-							Name = selectedProduct.Name,
-							Price = selectedProduct.Price,
-							Quantity = quantity,
-							Location = selectedWarehouse.Name
-						});
-						MessageBox.Show("Позиция успешно добавлена.", "Добавление позиции", MessageBoxButton.OK, MessageBoxImage.Information);
-						RefreshInventoryDataGrid();
-						HidePanel();
-						ClearInputFields();
-					}
-					else
-					{
-						MessageBox.Show("Не удалось добавить позицию.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-					}
+						Id = newId,
+						Name = product.Name,
+						Price = product.Price,
+						Quantity = quantity,
+						Location = selectedWarehouse.Name
+					});
+					MessageBox.Show("Позиция успешно добавлена.", "Добавление позиции", MessageBoxButton.OK, MessageBoxImage.Information);
+					RefreshInventoryDataGrid();
+					HidePanel();
+					ClearInputFields();
 				}
-				catch (SqlException ex)
+				else
 				{
-					MessageBox.Show($"Ошибка сохранения в базу данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+					transaction.Rollback();
+					MessageBox.Show("Не удалось добавить позицию.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 				}
+			}
+			catch (SqlException ex)
+			{
+				MessageBox.Show($"Ошибка сохранения в базу данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 		}
 
-		// Сохранение изменений в существующей позиции
 		private void SaveEditInventory()
 		{
 			string name = NameTextBox.Text.Trim();
 			string priceText = PriceTextBox.Text.Trim();
 			string quantityText = QuantityTextBox.Text.Trim();
 			string supplierName = SupplierComboBox.Text.Trim();
-			Warehouse selectedWarehouse = WarehouseComboBox.SelectedItem as Warehouse;
+			var selectedWarehouse = WarehouseComboBox.SelectedItem as Warehouse;
 
 			if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(priceText) ||
 				string.IsNullOrEmpty(quantityText) || string.IsNullOrEmpty(supplierName) || selectedWarehouse == null)
@@ -623,150 +539,180 @@ namespace УправлениеСкладом
 				return;
 			}
 
-			Supplier selectedSupplier = Suppliers.FirstOrDefault(s => s.Name.Equals(supplierName, StringComparison.OrdinalIgnoreCase));
-			using (SqlConnection connection = new SqlConnection(connectionString))
+			try
 			{
-				try
+				using var connection = new SqlConnection(connectionString);
+				connection.Open();
+				using var transaction = connection.BeginTransaction();
+
+				// Получение или вставка поставщика
+				var supplier = GetOrInsertSupplier(supplierName, connection, transaction);
+				// Получение или вставка товара
+				var product = GetOrInsertProduct(name, price, supplier.Id, connection, transaction);
+
+				const string updateInventoryQuery = @"
+                    UPDATE СкладскиеПозиции
+                    SET ТоварID = @ItemId, СкладID = @WarehouseId, Количество = @Quantity, ДатаОбновления = GETDATE()
+                    WHERE ПозицияID = @Id";
+
+				using var command = new SqlCommand(updateInventoryQuery, connection, transaction);
+				command.Parameters.AddWithValue("@ItemId", product.Id);
+				command.Parameters.AddWithValue("@WarehouseId", selectedWarehouse.Id);
+				command.Parameters.AddWithValue("@Quantity", quantity);
+				command.Parameters.AddWithValue("@Id", SelectedItem.Id);
+
+				int rowsAffected = command.ExecuteNonQuery();
+				if (rowsAffected > 0)
 				{
-					connection.Open();
+					transaction.Commit();
+					// Обновление локальной коллекции
+					SelectedItem.Name = product.Name;
+					SelectedItem.Price = product.Price;
+					SelectedItem.Quantity = quantity;
+					SelectedItem.Location = selectedWarehouse.Name;
 
-					if (selectedSupplier == null)
+					MessageBox.Show("Позиция успешно обновлена.", "Редактирование позиции", MessageBoxButton.OK, MessageBoxImage.Information);
+					RefreshInventoryDataGrid();
+					HidePanel();
+					ClearInputFields();
+				}
+				else
+				{
+					transaction.Rollback();
+					MessageBox.Show("Не удалось обновить позицию.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+				}
+			}
+			catch (SqlException ex)
+			{
+				MessageBox.Show($"Ошибка обновления в базе данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+		}
+
+		/// <summary>
+		/// Удаление позиции, а также удаление товара и поставщика (если не используются в других записях)
+		/// </summary>
+		private void DeleteInventoryPosition(InventoryItem selectedItem)
+		{
+			try
+			{
+				using var connection = new SqlConnection(connectionString);
+				connection.Open();
+				using var transaction = connection.BeginTransaction();
+
+				int productId = 0;
+				int supplierId = 0;
+
+				// Получение идентификаторов товара и поставщика
+				const string getProductQuery = @"
+                    SELECT t.ТоварID, t.ПоставщикID
+                    FROM СкладскиеПозиции sp
+                    INNER JOIN Товары t ON sp.ТоварID = t.ТоварID
+                    WHERE sp.ПозицияID = @PositionId";
+				using (var command = new SqlCommand(getProductQuery, connection, transaction))
+				{
+					command.Parameters.AddWithValue("@PositionId", selectedItem.Id);
+					using var reader = command.ExecuteReader();
+					if (reader.Read())
 					{
-						string insertSupplierQuery = @"
-                            INSERT INTO Поставщики (Наименование)
-                            VALUES (@SupplierName);
-                            SELECT CAST(scope_identity() AS int);";
+						productId = reader.GetInt32(reader.GetOrdinal("ТоварID"));
+						supplierId = reader.GetInt32(reader.GetOrdinal("ПоставщикID"));
+					}
+				}
 
-						using (SqlCommand command = new SqlCommand(insertSupplierQuery, connection))
-						{
-							command.Parameters.AddWithValue("@SupplierName", supplierName);
-							object result = command.ExecuteScalar();
-							int newSupplierId = (result != null) ? (int)result : 0;
-							if (newSupplierId > 0)
-							{
-								selectedSupplier = new Supplier { Id = newSupplierId, Name = supplierName };
-								Suppliers.Add(selectedSupplier);
-							}
-							else
-							{
-								MessageBox.Show("Не удалось добавить нового поставщика.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-								return;
-							}
-						}
+				// Удаление позиции
+				const string deletePositionQuery = "DELETE FROM СкладскиеПозиции WHERE ПозицияID = @Id";
+				using (var command = new SqlCommand(deletePositionQuery, connection, transaction))
+				{
+					command.Parameters.AddWithValue("@Id", selectedItem.Id);
+					command.ExecuteNonQuery();
+				}
+
+				// Проверка, используется ли товар в других позициях
+				bool isProductUsedElsewhere = false;
+				const string checkProductUsageQuery = "SELECT COUNT(*) FROM СкладскиеПозиции WHERE ТоварID = @ProductId";
+				using (var command = new SqlCommand(checkProductUsageQuery, connection, transaction))
+				{
+					command.Parameters.AddWithValue("@ProductId", productId);
+					int count = (int)command.ExecuteScalar();
+					isProductUsedElsewhere = count > 0;
+				}
+
+				if (!isProductUsedElsewhere)
+				{
+					// Удаление товара
+					const string deleteProductQuery = "DELETE FROM Товары WHERE ТоварID = @ProductId";
+					using (var command = new SqlCommand(deleteProductQuery, connection, transaction))
+					{
+						command.Parameters.AddWithValue("@ProductId", productId);
+						command.ExecuteNonQuery();
 					}
 
-					Product selectedProduct = Products.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-					if (selectedProduct == null)
+					// Проверка использования поставщика
+					bool isSupplierUsedElsewhere = false;
+					const string checkSupplierUsageQuery = "SELECT COUNT(*) FROM Товары WHERE ПоставщикID = @SupplierId";
+					using (var command = new SqlCommand(checkSupplierUsageQuery, connection, transaction))
 					{
-						string insertProductQuery = @"
-                            INSERT INTO Товары (Наименование, Цена, ПоставщикID)
-                            VALUES (@ProductName, @Price, @SupplierID);
-                            SELECT CAST(scope_identity() AS int);";
-
-						using (SqlCommand command = new SqlCommand(insertProductQuery, connection))
-						{
-							command.Parameters.AddWithValue("@ProductName", name);
-							command.Parameters.AddWithValue("@Price", price);
-							command.Parameters.AddWithValue("@SupplierID", selectedSupplier.Id);
-							object result = command.ExecuteScalar();
-							int newProductId = (result != null) ? (int)result : 0;
-							if (newProductId > 0)
-							{
-								selectedProduct = new Product { Id = newProductId, Name = name, Price = price, SupplierId = selectedSupplier.Id };
-								Products.Add(selectedProduct);
-							}
-							else
-							{
-								MessageBox.Show("Не удалось добавить новый товар.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-								return;
-							}
-						}
-					}
-					else
-					{
-						if (selectedProduct.Price != price)
-						{
-							string updateProductQuery = "UPDATE Товары SET Цена = @Price WHERE ТоварID = @ProductId";
-							using (SqlCommand command = new SqlCommand(updateProductQuery, connection))
-							{
-								command.Parameters.AddWithValue("@Price", price);
-								command.Parameters.AddWithValue("@ProductId", selectedProduct.Id);
-								command.ExecuteNonQuery();
-
-								selectedProduct.Price = price;
-							}
-						}
+						command.Parameters.AddWithValue("@SupplierId", supplierId);
+						int count = (int)command.ExecuteScalar();
+						isSupplierUsedElsewhere = count > 0;
 					}
 
-					string updateInventoryQuery = @"
-                        UPDATE СкладскиеПозиции
-                        SET ТоварID = @ItemId, СкладID = @WarehouseId, Количество = @Quantity, ДатаОбновления = GETDATE()
-                        WHERE ПозицияID = @Id";
-
-					using (SqlCommand command = new SqlCommand(updateInventoryQuery, connection))
+					if (!isSupplierUsedElsewhere)
 					{
-						command.Parameters.AddWithValue("@ItemId", selectedProduct.Id);
-						command.Parameters.AddWithValue("@WarehouseId", selectedWarehouse.Id);
-						command.Parameters.AddWithValue("@Quantity", quantity);
-						command.Parameters.AddWithValue("@Id", SelectedItem.Id);
-
-						int rowsAffected = command.ExecuteNonQuery();
-
-						if (rowsAffected > 0)
+						// Удаление поставщика
+						const string deleteSupplierQuery = "DELETE FROM Поставщики WHERE ПоставщикID = @SupplierId";
+						using (var command = new SqlCommand(deleteSupplierQuery, connection, transaction))
 						{
-							SelectedItem.Name = selectedProduct.Name;
-							SelectedItem.Price = selectedProduct.Price;
-							SelectedItem.Quantity = quantity;
-							SelectedItem.Location = selectedWarehouse.Name;
-							MessageBox.Show("Позиция успешно обновлена.", "Редактирование позиции", MessageBoxButton.OK, MessageBoxImage.Information);
-							RefreshInventoryDataGrid();
-							HidePanel();
-							ClearInputFields();
-						}
-						else
-						{
-							MessageBox.Show("Не удалось обновить позицию.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+							command.Parameters.AddWithValue("@SupplierId", supplierId);
+							command.ExecuteNonQuery();
 						}
 					}
 				}
-				catch (SqlException ex)
+
+				transaction.Commit();
+
+				// Обновление локальных коллекций
+				InventoryItems.Remove(selectedItem);
+				RefreshInventoryDataGrid();
+
+				if (!isProductUsedElsewhere)
 				{
-					MessageBox.Show($"Ошибка обновления в базе данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+					var productToRemove = Products.FirstOrDefault(p => p.Id == productId);
+					if (productToRemove != null)
+						Products.Remove(productToRemove);
 				}
+
+				if (!isProductUsedElsewhere && supplierId > 0)
+				{
+					bool isSupplierUsedInLocalProducts = Products.Any(p => p.SupplierId == supplierId);
+					if (!isSupplierUsedInLocalProducts)
+					{
+						var supplierToRemove = Suppliers.FirstOrDefault(s => s.Id == supplierId);
+						if (supplierToRemove != null)
+							Suppliers.Remove(supplierToRemove);
+					}
+				}
+
+				MessageBox.Show("Позиция и связанные данные успешно удалены.", "Удаление позиции", MessageBoxButton.OK, MessageBoxImage.Information);
 			}
-		}
-
-		// Очистка полей ввода
-		private void ClearInputFields()
-		{
-			NameTextBox.Text = string.Empty;
-			PriceTextBox.Text = string.Empty;
-			QuantityTextBox.Text = string.Empty;
-			SupplierComboBox.SelectedIndex = -1;
-			WarehouseComboBox.SelectedIndex = -1;
-		}
-
-		// Заполнение полей редактирования
-		private void PopulateInputFields(InventoryItem item)
-		{
-			NameTextBox.Text = item.Name;
-			PriceTextBox.Text = item.Price.ToString("F2");
-			QuantityTextBox.Text = item.Quantity.ToString();
-			WarehouseComboBox.SelectedItem = Warehouses.FirstOrDefault(w => w.Name == item.Location);
-
-			Product product = Products.FirstOrDefault(p => p.Name.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
-			if (product != null)
+			catch (SqlException ex)
 			{
-				Supplier supplier = Suppliers.FirstOrDefault(s => s.Id == product.SupplierId);
-				SupplierComboBox.SelectedItem = supplier;
+				MessageBox.Show($"Ошибка удаления из базы данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
-			else
+			catch (Exception ex)
 			{
-				SupplierComboBox.SelectedIndex = -1;
+				MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 		}
 
-		// Обновление иконки темы
+		#endregion
+
+		#region Методы темы
+
 		public void UpdateThemeIcon()
 		{
 			if (ThemeIcon != null)
@@ -775,18 +721,6 @@ namespace УправлениеСкладом
 			}
 		}
 
-		// Обработчик переключения темы
-		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
-		{
-			ThemeManager.ToggleTheme();
-			UpdateThemeIcon();
-		}
-
-		// Обработка перетаскивания окна
-		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
-		{
-			if (e.ChangedButton == MouseButton.Left)
-				this.DragMove();
-		}
+		#endregion
 	}
 }
