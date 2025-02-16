@@ -102,7 +102,6 @@
             <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
             <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
             <Setter Property="ColumnWidth" Value="*"/>
-            <!-- Отключение заголовков строк -->
             <Setter Property="HeadersVisibility" Value="Column"/>
         </Style>
 
@@ -124,20 +123,20 @@
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
             </Border.Effect>
-
             <Grid x:Name="RootGrid">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="0"/>
                 </Grid.ColumnDefinitions>
-
                 <StackPanel Grid.Column="0">
                     <!-- Заголовок с кнопкой закрытия -->
                     <Grid Margin="0,0,0,10">
-                        <TextBlock Text="Управление складскими позициями" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Управление складскими позициями" FontSize="18" FontWeight="Bold" 
+                                   Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
                         <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
                                 HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseButton_Click">
-                            <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
+                            <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" 
+                                                        Foreground="{DynamicResource PrimaryBrush}"/>
                         </Button>
                     </Grid>
 
@@ -146,7 +145,6 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="Auto"/>
                             <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*"/>
-                            <!-- Отображение цены в рублях -->
                             <DataGridTextColumn Header="Цена" Binding="{Binding Price, StringFormat={}{0:C}, ConverterCulture=ru-RU}" Width="Auto"/>
                             <DataGridTextColumn Header="Количество" Binding="{Binding Quantity}" Width="Auto"/>
                             <DataGridTextColumn Header="Местоположение" Binding="{Binding Location}" Width="*"/>
@@ -173,13 +171,21 @@
                                 <TextBlock Text="Удалить" FontSize="16" Foreground="{DynamicResource ButtonBorderBrushDelete}"/>
                             </StackPanel>
                         </Button>
+                        <!-- Кнопка для просмотра QR-кода -->
+                        <Button Width="150" Margin="5" Click="ShowQr_Click" Style="{StaticResource ControlButtonStyle}">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <iconPacks:PackIconMaterial Kind="Qrcode" Width="24" Height="24" Margin="0,0,10,0"/>
+                                <TextBlock Text="Показать QR" FontSize="16" Foreground="{DynamicResource ButtonForegroundBrush}"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
 
                     <!-- Кнопка для переключения темы -->
                     <StackPanel HorizontalAlignment="Center" Margin="0,10,0,0">
                         <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
                                 Click="ToggleTheme_Click">
-                            <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
+                            <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24"
+                                                        Foreground="{DynamicResource PrimaryBrush}"/>
                         </Button>
                     </StackPanel>
                 </StackPanel>
@@ -200,19 +206,18 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-
                         <!-- Заголовок панели -->
                         <Grid Grid.Row="0" Margin="0,0,0,20">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="PanelTitle" Grid.Column="0" Text="Добавить складскую позицию" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="PanelTitle" Grid.Column="0" Text="Добавить складскую позицию" 
+                                       FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
                             <Button Grid.Column="1" Width="30" Height="30" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" Click="ClosePanel_Click">
                                 <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
                             </Button>
                         </Grid>
-
                         <!-- Поля для ввода данных -->
                         <StackPanel Grid.Row="1">
                             <Label Content="Название товара:" Foreground="{DynamicResource ForegroundBrush}"/>
@@ -226,29 +231,23 @@
 
                             <Label Content="Склад:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <ComboBox x:Name="WarehouseComboBox" Margin="0,0,0,10"
-                                      DisplayMemberPath="Name"
-                                      SelectedValuePath="Id" />
+                                      DisplayMemberPath="Name" SelectedValuePath="Id" />
 
                             <Label Content="Поставщик:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <ComboBox x:Name="SupplierComboBox" Margin="0,0,0,10"
-                                      DisplayMemberPath="Name"
-                                      SelectedValuePath="Id"
-                                      IsEditable="True"
-                                      IsTextSearchEnabled="False"
+                                      DisplayMemberPath="Name" SelectedValuePath="Id"
+                                      IsEditable="True" IsTextSearchEnabled="False"
                                       Text="{Binding SelectedSupplierName, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
-
                         <!-- Кнопки действия -->
                         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Width="100" Margin="5" Click="SaveInventory_Click"
-                                    Style="{StaticResource ControlButtonStyle}">
+                            <Button Width="100" Margin="5" Click="SaveInventory_Click" Style="{StaticResource ControlButtonStyle}">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <iconPacks:PackIconMaterial Kind="CheckCircleOutline" Width="24" Height="24" Margin="0,0,10,0"/>
                                     <TextBlock Text="Сохранить" FontSize="16" Foreground="{DynamicResource ButtonForegroundBrush}"/>
                                 </StackPanel>
                             </Button>
-                            <Button Width="100" Margin="5" Click="CancelInventory_Click"
-                                    Style="{StaticResource ControlButtonStyle}">
+                            <Button Width="100" Margin="5" Click="CancelInventory_Click" Style="{StaticResource ControlButtonStyle}">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <iconPacks:PackIconMaterial Kind="CloseCircleOutline" Width="24" Height="24" Margin="0,0,10,0"/>
                                     <TextBlock Text="Отмена" FontSize="16" Foreground="{DynamicResource ButtonForegroundBrush}"/>

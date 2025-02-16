@@ -1,5 +1,4 @@
-﻿// AdministratorWindow.xaml.cs
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using MahApps.Metro.IconPacks;
 using Управление_складом.Themes;
@@ -11,12 +10,10 @@ namespace УправлениеСкладом
 		public AdministratorWindow()
 		{
 			InitializeComponent();
+			UpdateThemeIcon();
 		}
 
-		public void ShowWindow()
-		{
-			Show();
-		}
+		public void ShowWindow() => Show();
 
 		private void CloseButton_Click(object sender, RoutedEventArgs e)
 		{
@@ -25,37 +22,25 @@ namespace УправлениеСкладом
 
 		private void ManageUsers_Click(object sender, RoutedEventArgs e)
 		{
-			ManageUsersWindow usersWindow = new ManageUsersWindow
-			{
-				Owner = this
-			};
-			usersWindow.ShowDialog(); // Открытие как модального окна
+			var usersWindow = new ManageUsersWindow { Owner = this };
+			usersWindow.ShowDialog();
 		}
 
 		private void ManageInventory_Click(object sender, RoutedEventArgs e)
 		{
-			ManageInventoryWindow inventoryWindow = new ManageInventoryWindow
-			{
-				Owner = this
-			};
+			var inventoryWindow = new ManageInventoryWindow { Owner = this };
 			inventoryWindow.ShowDialog();
 		}
 
 		private void Reports_Click(object sender, RoutedEventArgs e)
 		{
-			ReportsWindow reportsWindow = new ReportsWindow
-			{
-				Owner = this
-			};
+			var reportsWindow = new ReportsWindow { Owner = this };
 			reportsWindow.ShowDialog();
 		}
 
 		private void Settings_Click(object sender, RoutedEventArgs e)
 		{
-			SettingsWindow settingsWindow = new SettingsWindow
-			{
-				Owner = this
-			};
+			var settingsWindow = new SettingsWindow { Owner = this };
 			settingsWindow.ShowDialog();
 		}
 
@@ -69,14 +54,18 @@ namespace УправлениеСкладом
 		{
 			if (ThemeIcon != null)
 			{
-				ThemeIcon.Kind = ThemeManager.IsDarkTheme ? PackIconMaterialKind.WeatherNight : PackIconMaterialKind.WeatherSunny;
+				ThemeIcon.Kind = ThemeManager.IsDarkTheme
+					? PackIconMaterialKind.WeatherNight
+					: PackIconMaterialKind.WeatherSunny;
 			}
 		}
 
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
 		{
 			if (e.ChangedButton == MouseButton.Left)
-				this.DragMove();
+			{
+				DragMove();
+			}
 		}
 	}
 }
