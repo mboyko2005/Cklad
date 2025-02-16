@@ -10,7 +10,7 @@ using System.Windows.Input;
 using Microsoft.Win32;
 using System.Windows.Media.Imaging;
 using System.Windows.Controls;
-using QRCoder;                     // Библиотека QRCode
+using QRCoder;                     // Библиотека QRCoder
 using ZXing;                      // Для декодирования QR-кодов
 using ZXing.Common;               // Для BinaryBitmap, DecodingOptions, MultiFormatReader и т.п.
 
