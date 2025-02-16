@@ -1,9 +1,9 @@
-﻿// ManageOrdersWindow.xaml.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls; // <-- Нужно для SelectionChangedEventArgs
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using MahApps.Metro.IconPacks;
@@ -13,7 +13,7 @@ namespace УправлениеСкладом
 {
 	public partial class ManageOrdersWindow : Window, IThemeable
 	{
-		// Модель товара
+		// Модель товара (добавили свойство Location для местоположения)
 		public class Product
 		{
 			public int Id { get; set; }
@@ -22,6 +22,7 @@ namespace УправлениеСкладом
 			public string Name { get; set; }
 			public string Category { get; set; }
 			public decimal Price { get; set; }
+			public string Location { get; set; }  // <-- Добавлено
 		}
 
 		// Модель поставщика
@@ -33,8 +34,12 @@ namespace УправлениеСкладом
 
 		private List<Product> Products;
 		private List<Supplier> Suppliers;
+
+		// Режим редактирования (true = редактирование, false = добавление)
 		private bool IsEditMode = false;
 		private Product SelectedProduct;
+
+		// Строка подключения к базе
 		private string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
 
 		public ManageOrdersWindow()
@@ -45,7 +50,9 @@ namespace УправлениеСкладом
 			UpdateThemeIcon();
 		}
 
-		// Загрузка поставщиков из базы данных
+		/// <summary>
+		/// Загрузка списка поставщиков из таблицы "Поставщики".
+		/// </summary>
 		private void LoadSuppliers()
 		{
 			Suppliers = new List<Supplier>();
@@ -72,17 +79,22 @@ namespace УправлениеСкладом
 						}
 					}
 
-					// Привязка списка поставщиков к ComboBox
+					// Привязываем список поставщиков к ComboBox
 					ClientComboBox.ItemsSource = Suppliers;
 				}
 				catch (SqlException ex)
 				{
-					MessageBox.Show($"Ошибка загрузки поставщиков: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+					MessageBox.Show($"Ошибка загрузки поставщиков: {ex.Message}",
+						"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 				}
 			}
 		}
 
-		// Загрузка товаров из базы данных
+		/// <summary>
+		/// Загрузка списка товаров из базы данных.
+		/// Для получения местоположения делаем LEFT JOIN на СкладскиеПозиции и Склады,
+		/// используя MIN(...) — если у товара несколько складских позиций, берём первое.
+		/// </summary>
 		private void LoadProducts()
 		{
 			Products = new List<Product>();
@@ -93,10 +105,20 @@ namespace УправлениеСкладом
 				{
 					connection.Open();
 					string query = @"
-                        SELECT t.ТоварID, t.ПоставщикID, p.Наименование AS Поставщик, t.Наименование, t.Категория, t.Цена
+                        SELECT t.ТоварID,
+                               t.ПоставщикID,
+                               p.Наименование AS Поставщик,
+                               t.Наименование,
+                               t.Категория,
+                               t.Цена,
+                               MIN(s.Наименование) AS Местоположение
                         FROM Товары t
                         INNER JOIN Поставщики p ON t.ПоставщикID = p.ПоставщикID
-                        ORDER BY t.ТоварID";
+                        LEFT JOIN СкладскиеПозиции sp ON t.ТоварID = sp.ТоварID
+                        LEFT JOIN Склады s ON sp.СкладID = s.СкладID
+                        GROUP BY t.ТоварID, t.ПоставщикID, p.Наименование, t.Наименование, t.Категория, t.Цена
+                        ORDER BY t.ТоварID;
+                    ";
 
 					using (SqlCommand command = new SqlCommand(query, connection))
 					{
@@ -104,36 +126,57 @@ namespace УправлениеСкладом
 						{
 							while (reader.Read())
 							{
-								Products.Add(new Product
+								Product product = new Product
 								{
-									Id = reader.GetInt32(0),
-									SupplierId = reader.GetInt32(1),
-									SupplierName = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
-									Name = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
-									Category = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
-									Price = reader.IsDBNull(5) ? 0m : reader.GetDecimal(5)
-								});
+									Id = reader.GetInt32(reader.GetOrdinal("ТоварID")),
+									SupplierId = reader.GetInt32(reader.GetOrdinal("ПоставщикID")),
+									SupplierName = reader.GetString(reader.GetOrdinal("Поставщик")),
+									Name = reader.GetString(reader.GetOrdinal("Наименование")),
+									Category = reader.IsDBNull(reader.GetOrdinal("Категория"))
+										? string.Empty
+										: reader.GetString(reader.GetOrdinal("Категория")),
+									Price = reader.IsDBNull(reader.GetOrdinal("Цена"))
+										? 0m
+										: reader.GetDecimal(reader.GetOrdinal("Цена")),
+									Location = reader.IsDBNull(reader.GetOrdinal("Местоположение"))
+										? string.Empty
+										: reader.GetString(reader.GetOrdinal("Местоположение"))
+								};
+								Products.Add(product);
 							}
 						}
 					}
 
-					// Привязка списка товаров к DataGrid
+					// Привязываем список товаров к DataGrid
 					OrdersDataGrid.ItemsSource = Products;
 				}
 				catch (SqlException ex)
 				{
-					MessageBox.Show($"Ошибка загрузки товаров: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+					MessageBox.Show($"Ошибка загрузки товаров: {ex.Message}",
+						"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 				}
 			}
 		}
 
-		// Обработчик кнопки закрытия окна
+		/// <summary>
+		/// Обработчик изменения выделения в DataGrid (пустой, чтобы не было ошибки).
+		/// </summary>
+		private void OrdersDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			// Оставляем пустым или реализуйте свою логику, если нужно
+		}
+
+		/// <summary>
+		/// Закрытие окна
+		/// </summary>
 		private void CloseButton_Click(object sender, RoutedEventArgs e)
 		{
 			this.Close();
 		}
 
-		// Показать панель добавления
+		/// <summary>
+		/// Кнопка "Добавить" – показ панели для добавления нового товара
+		/// </summary>
 		private void AddOrder_Click(object sender, RoutedEventArgs e)
 		{
 			IsEditMode = false;
@@ -142,7 +185,9 @@ namespace УправлениеСкладом
 			ShowPanel();
 		}
 
-		// Показать панель редактирования
+		/// <summary>
+		/// Кнопка "Редактировать" – показ панели для редактирования выбранного товара
+		/// </summary>
 		private void EditOrder_Click(object sender, RoutedEventArgs e)
 		{
 			if (OrdersDataGrid.SelectedItem is Product selectedProduct)
@@ -155,16 +200,20 @@ namespace УправлениеСкладом
 			}
 			else
 			{
-				MessageBox.Show("Пожалуйста, выберите товар для редактирования.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				MessageBox.Show("Пожалуйста, выберите товар для редактирования.",
+					"Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
 			}
 		}
 
-		// Удаление товара
+		/// <summary>
+		/// Кнопка "Удалить" – удаление выбранного товара
+		/// </summary>
 		private void DeleteOrder_Click(object sender, RoutedEventArgs e)
 		{
 			if (OrdersDataGrid.SelectedItem is Product selectedProduct)
 			{
-				MessageBoxResult result = MessageBox.Show($"Вы уверены, что хотите удалить товар '{selectedProduct.Name}'?",
+				MessageBoxResult result = MessageBox.Show(
+					$"Вы уверены, что хотите удалить товар '{selectedProduct.Name}'?",
 					"Удаление товара", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
 				if (result == MessageBoxResult.Yes)
@@ -174,7 +223,6 @@ namespace УправлениеСкладом
 						try
 						{
 							connection.Open();
-
 							// Удаление товара
 							string deleteQuery = "DELETE FROM Товары WHERE ТоварID = @ProductId";
 							using (SqlCommand deleteCommand = new SqlCommand(deleteQuery, connection))
@@ -183,71 +231,96 @@ namespace УправлениеСкладом
 								deleteCommand.ExecuteNonQuery();
 							}
 
-							// Обновление списка товаров
+							// Удаляем из списка и обновляем DataGrid
 							Products.Remove(selectedProduct);
 							OrdersDataGrid.ItemsSource = null;
 							OrdersDataGrid.ItemsSource = Products;
-							MessageBox.Show("Товар успешно удалён.", "Удаление товара", MessageBoxButton.OK, MessageBoxImage.Information);
+
+							MessageBox.Show("Товар успешно удалён.",
+								"Удаление товара", MessageBoxButton.OK, MessageBoxImage.Information);
 						}
 						catch (SqlException ex)
 						{
-							MessageBox.Show($"Ошибка при удалении товара: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+							MessageBox.Show($"Ошибка при удалении товара: {ex.Message}",
+								"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 						}
 					}
 				}
 			}
 			else
 			{
-				MessageBox.Show("Пожалуйста, выберите товар для удаления.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				MessageBox.Show("Пожалуйста, выберите товар для удаления.",
+					"Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
 			}
 		}
 
-		// Показать панель добавления/редактирования
-		private void ShowPanel()
+		/// <summary>
+		/// Кнопка "Сохранить" в правой панели
+		/// </summary>
+		private void SaveOrder_Click(object sender, RoutedEventArgs e)
 		{
-			// Установить ширину SlidePanel и начать анимацию
-			this.RootGrid.ColumnDefinitions[1].Width = new GridLength(300);
-			Storyboard showStoryboard = (Storyboard)FindResource("ShowPanelStoryboard");
-			showStoryboard.Begin();
+			if (IsEditMode)
+				SaveEditProduct();
+			else
+				SaveAddProduct();
 		}
 
-		// Скрыть панель добавления/редактирования
-		private void HidePanel()
-		{
-			Storyboard hideStoryboard = (Storyboard)FindResource("HidePanelStoryboard");
-			hideStoryboard.Completed += (s, e) =>
-			{
-				this.RootGrid.ColumnDefinitions[1].Width = new GridLength(0);
-			};
-			hideStoryboard.Begin();
-		}
-
-		// Обработчик кнопки закрытия панели
-		private void ClosePanel_Click(object sender, RoutedEventArgs e)
-		{
-			HidePanel();
-		}
-
-		// Обработчик кнопки отмены
+		/// <summary>
+		/// Кнопка "Отмена" в правой панели
+		/// </summary>
 		private void CancelOrder_Click(object sender, RoutedEventArgs e)
 		{
 			HidePanel();
 		}
 
-		// Сохранение нового товара или обновление существующего
-		private void SaveOrder_Click(object sender, RoutedEventArgs e)
+		/// <summary>
+		/// Отображение правой панели
+		/// </summary>
+		private void ShowPanel()
 		{
-			if (IsEditMode)
-			{
-				SaveEditProduct();
-			}
-			else
-			{
-				SaveAddProduct();
-			}
+			RootGrid.ColumnDefinitions[1].Width = new GridLength(300);
+			Storyboard showStoryboard = (Storyboard)FindResource("ShowPanelStoryboard");
+			showStoryboard.Begin();
 		}
 
-		// Сохранение нового товара
+		/// <summary>
+		/// Сокрытие правой панели
+		/// </summary>
+		private void HidePanel()
+		{
+			Storyboard hideStoryboard = (Storyboard)FindResource("HidePanelStoryboard");
+			hideStoryboard.Completed += (s, e) =>
+			{
+				RootGrid.ColumnDefinitions[1].Width = new GridLength(0);
+			};
+			hideStoryboard.Begin();
+		}
+
+		/// <summary>
+		/// Очистка полей для добавления/редактирования
+		/// </summary>
+		private void ClearInputFields()
+		{
+			ClientComboBox.SelectedIndex = -1;
+			NameTextBox.Text = string.Empty;
+			CategoryTextBox.Text = string.Empty;
+			PriceTextBox.Text = string.Empty;
+		}
+
+		/// <summary>
+		/// Заполнение полей для редактирования выбранного товара
+		/// </summary>
+		private void PopulateInputFields(Product product)
+		{
+			ClientComboBox.SelectedItem = Suppliers.FirstOrDefault(s => s.Id == product.SupplierId);
+			NameTextBox.Text = product.Name;
+			CategoryTextBox.Text = product.Category;
+			PriceTextBox.Text = product.Price.ToString("F2");
+		}
+
+		/// <summary>
+		/// Сохранение нового товара (INSERT)
+		/// </summary>
 		private void SaveAddProduct()
 		{
 			Supplier selectedSupplier = ClientComboBox.SelectedItem as Supplier;
@@ -255,15 +328,18 @@ namespace УправлениеСкладом
 			string category = CategoryTextBox.Text.Trim();
 			string priceText = PriceTextBox.Text.Trim();
 
-			if (selectedSupplier == null || string.IsNullOrEmpty(productName) || string.IsNullOrEmpty(category) || string.IsNullOrEmpty(priceText))
+			if (selectedSupplier == null || string.IsNullOrEmpty(productName) ||
+				string.IsNullOrEmpty(category) || string.IsNullOrEmpty(priceText))
 			{
-				MessageBox.Show("Пожалуйста, заполните все поля.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				MessageBox.Show("Пожалуйста, заполните все поля.",
+					"Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
 
 			if (!decimal.TryParse(priceText, out decimal price))
 			{
-				MessageBox.Show("Некорректная цена.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				MessageBox.Show("Некорректная цена.",
+					"Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
 
@@ -272,12 +348,10 @@ namespace УправлениеСкладом
 				try
 				{
 					connection.Open();
-
-					// Добавление нового товара
 					string insertProductQuery = @"
                         INSERT INTO Товары (Наименование, Категория, Цена, ПоставщикID)
                         VALUES (@Name, @Category, @Price, @SupplierId);
-                        SELECT CAST(scope_identity() AS int);";
+                        SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
 					int newProductId;
 					using (SqlCommand command = new SqlCommand(insertProductQuery, connection))
@@ -300,44 +374,59 @@ namespace УправлениеСкладом
 							SupplierName = selectedSupplier.Name,
 							Name = productName,
 							Category = category,
-							Price = price
+							Price = price,
+							Location = "" // Новому товару пока не присвоено местоположение
 						};
 						Products.Add(newProduct);
+
 						OrdersDataGrid.ItemsSource = null;
 						OrdersDataGrid.ItemsSource = Products;
-						MessageBox.Show("Товар успешно добавлен.", "Добавление товара", MessageBoxButton.OK, MessageBoxImage.Information);
+
+						MessageBox.Show("Товар успешно добавлен.",
+							"Добавление товара", MessageBoxButton.OK, MessageBoxImage.Information);
+
 						HidePanel();
 						ClearInputFields();
 					}
 					else
 					{
-						MessageBox.Show("Не удалось добавить товар.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+						MessageBox.Show("Не удалось добавить товар.",
+							"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 					}
 				}
 				catch (SqlException ex)
 				{
-					MessageBox.Show($"Ошибка сохранения в базу данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+					MessageBox.Show($"Ошибка сохранения в базу данных: {ex.Message}",
+						"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 				}
 			}
 		}
 
-		// Сохранение изменений в существующем товаре
+		/// <summary>
+		/// Сохранение изменений в существующем товаре (UPDATE)
+		/// </summary>
 		private void SaveEditProduct()
 		{
+			if (SelectedProduct == null)
+				return;
+
 			Supplier selectedSupplier = ClientComboBox.SelectedItem as Supplier;
 			string productName = NameTextBox.Text.Trim();
 			string category = CategoryTextBox.Text.Trim();
 			string priceText = PriceTextBox.Text.Trim();
 
-			if (selectedSupplier == null || string.IsNullOrEmpty(productName) || string.IsNullOrEmpty(category) || string.IsNullOrEmpty(priceText))
+			if (selectedSupplier == null || string.IsNullOrEmpty(productName) ||
+				string.IsNullOrEmpty(category) || string.IsNullOrEmpty(priceText))
 			{
-				MessageBox.Show("Пожалуйста, заполните все поля.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				MessageBox.Show("Пожалуйста, заполните все поля.",
+					"Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
 
 			if (!decimal.TryParse(priceText, out decimal price))
 			{
-				MessageBox.Show("Некорректная цена.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				MessageBox.Show("Некорректная цена.",
+					"Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
 
@@ -346,11 +435,12 @@ namespace УправлениеСкладом
 				try
 				{
 					connection.Open();
-
-					// Обновление товара
 					string updateProductQuery = @"
                         UPDATE Товары
-                        SET Наименование = @Name, Категория = @Category, Цена = @Price, ПоставщикID = @SupplierId
+                        SET Наименование = @Name,
+                            Категория = @Category,
+                            Цена = @Price,
+                            ПоставщикID = @SupplierId
                         WHERE ТоварID = @ProductId";
 
 					using (SqlCommand command = new SqlCommand(updateProductQuery, connection))
@@ -362,72 +452,76 @@ namespace УправлениеСкладом
 						command.Parameters.AddWithValue("@ProductId", SelectedProduct.Id);
 
 						int rowsAffected = command.ExecuteNonQuery();
-
 						if (rowsAffected > 0)
 						{
+							// Обновляем свойства в SelectedProduct
 							SelectedProduct.SupplierId = selectedSupplier.Id;
 							SelectedProduct.SupplierName = selectedSupplier.Name;
 							SelectedProduct.Name = productName;
 							SelectedProduct.Category = category;
 							SelectedProduct.Price = price;
+
 							OrdersDataGrid.ItemsSource = null;
 							OrdersDataGrid.ItemsSource = Products;
-							MessageBox.Show("Товар успешно обновлён.", "Редактирование товара", MessageBoxButton.OK, MessageBoxImage.Information);
+
+							MessageBox.Show("Товар успешно обновлён.",
+								"Редактирование товара", MessageBoxButton.OK, MessageBoxImage.Information);
+
 							HidePanel();
 							ClearInputFields();
 						}
 						else
 						{
-							MessageBox.Show("Не удалось обновить товар.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+							MessageBox.Show("Не удалось обновить товар.",
+								"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 						}
 					}
 				}
 				catch (SqlException ex)
 				{
-					MessageBox.Show($"Ошибка обновления в базе данных: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+					MessageBox.Show($"Ошибка обновления в базе данных: {ex.Message}",
+						"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 				}
 			}
 		}
 
-		// Очистка полей ввода
-		private void ClearInputFields()
+		/// <summary>
+		/// Перетаскивание окна (для стилизованного окна без стандартного заголовка)
+		/// </summary>
+		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
 		{
-			ClientComboBox.SelectedIndex = -1;
-			NameTextBox.Text = string.Empty;
-			CategoryTextBox.Text = string.Empty;
-			PriceTextBox.Text = string.Empty;
+			if (e.ChangedButton == MouseButton.Left)
+				this.DragMove();
 		}
 
-		// Заполнение полей редактирования
-		private void PopulateInputFields(Product product)
+		/// <summary>
+		/// Закрытие панели редактирования
+		/// </summary>
+		private void ClosePanel_Click(object sender, RoutedEventArgs e)
 		{
-			ClientComboBox.SelectedItem = Suppliers.FirstOrDefault(s => s.Id == product.SupplierId);
-			NameTextBox.Text = product.Name;
-			CategoryTextBox.Text = product.Category;
-			PriceTextBox.Text = product.Price.ToString();
+			HidePanel();
 		}
 
-		// Переключение темы
+		/// <summary>
+		/// Переключение темы приложения
+		/// </summary>
 		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
 		{
 			ThemeManager.ToggleTheme();
 			UpdateThemeIcon();
 		}
 
-		// Обновление иконки темы
+		/// <summary>
+		/// Обновление иконки темы (день/ночь)
+		/// </summary>
 		public void UpdateThemeIcon()
 		{
 			if (ThemeIcon != null)
 			{
-				ThemeIcon.Kind = ThemeManager.IsDarkTheme ? PackIconMaterialKind.WeatherNight : PackIconMaterialKind.WeatherSunny;
+				ThemeIcon.Kind = ThemeManager.IsDarkTheme
+					? PackIconMaterialKind.WeatherNight
+					: PackIconMaterialKind.WeatherSunny;
 			}
-		}
-
-		// Обработка перетаскивания окна
-		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
-		{
-			if (e.ChangedButton == MouseButton.Left)
-				this.DragMove();
 		}
 	}
 }

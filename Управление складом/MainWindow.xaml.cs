@@ -12,7 +12,7 @@ namespace УправлениеСкладом
 {
 	public partial class MainWindow : Window, INotifyPropertyChanged, IThemeable
 	{
-		private string _password = string.Empty; // Инициализируем пустой строкой
+		private string _password = string.Empty;
 		private bool _isPasswordVisible;
 		private PackIconMaterialKind _eyeIcon;
 		private DispatcherTimer _passwordVisibilityTimer;
@@ -36,15 +36,10 @@ namespace УправлениеСкладом
 				OnPropertyChanged();
 				UpdateEyeIcon();
 
-				// Запускаем или останавливаем таймер в зависимости от состояния
 				if (_isPasswordVisible)
-				{
 					_passwordVisibilityTimer.Start();
-				}
 				else
-				{
 					_passwordVisibilityTimer.Stop();
-				}
 			}
 		}
 
@@ -64,7 +59,6 @@ namespace УправлениеСкладом
 			UsernameTextBox.Focus();
 			DataContext = this;
 
-			// Инициализация таймера для автоматического скрытия пароля
 			_passwordVisibilityTimer = new DispatcherTimer();
 			_passwordVisibilityTimer.Interval = TimeSpan.FromSeconds(20);
 			_passwordVisibilityTimer.Tick += (s, e) =>
@@ -73,17 +67,15 @@ namespace УправлениеСкладом
 				_passwordVisibilityTimer.Stop();
 			};
 
-			IsPasswordVisible = false;
+			IsPasswordVisible = false; // Изначально пароль скрыт
 			UpdateEyeIcon();
-
-			// Обновляем иконку темы при загрузке
 			UpdateThemeIcon();
 		}
 
 		private void UpdateEyeIcon()
 		{
-			// Иконка глаза открыта, когда пароль видим
-			EyeIcon = IsPasswordVisible ? PackIconMaterialKind.EyeOff : PackIconMaterialKind.Eye;
+			// Если пароль скрыт, показываем закрытый глаз (EyeOff); если видим – открытый глаз (Eye)
+			EyeIcon = IsPasswordVisible ? PackIconMaterialKind.Eye : PackIconMaterialKind.EyeOff;
 		}
 
 		private void TogglePasswordVisibility(object sender, RoutedEventArgs e)
@@ -100,14 +92,12 @@ namespace УправлениеСкладом
 
 			if (user != null)
 			{
-				// Определение роли по RoleID
 				string roleName = GetRoleName(user.RoleID);
-
 				IRoleWindow roleWindow = RoleWindowFactory.CreateWindow(roleName);
 				if (roleWindow != null)
 				{
 					roleWindow.ShowWindow();
-					Close(); // Закрываем окно авторизации
+					Close();
 				}
 				else
 				{
@@ -143,7 +133,7 @@ namespace УправлениеСкладом
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
 		{
 			if (e.ChangedButton == MouseButton.Left)
-				this.DragMove();
+				DragMove();
 		}
 
 		private void PasswordBox_KeyDown(object sender, KeyEventArgs e)
@@ -156,10 +146,7 @@ namespace УправлениеСкладом
 
 		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
 		{
-			// Используем ThemeManager для переключения темы
 			ThemeManager.ToggleTheme();
-
-			// Обновляем иконку темы в текущем окне
 			UpdateThemeIcon();
 		}
 
@@ -171,12 +158,9 @@ namespace УправлениеСкладом
 			}
 		}
 
-		// Обработчик события для ссылки "Забыли пароль?"
 		private void ForgotPassword_Click(object sender, RoutedEventArgs e)
 		{
-			// Укажите вашу ссылку в Telegram здесь
-			string telegramLink = "https://t.me/HolyRider17"; // Замените на вашу ссылку
-
+			string telegramLink = "https://t.me/HolyRider17";
 			try
 			{
 				Process.Start(new ProcessStartInfo

@@ -58,14 +58,12 @@
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
                                     CornerRadius="10"/>
-
-                            <!-- Содержимое TextBox -->
+                            <!-- Содержимое TextBox с двумя столбцами -->
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-
                                 <!-- Иконка PackIconMaterial -->
                                 <iconPacks:PackIconMaterial x:Name="Icon"
                                                             Width="20" Height="20"
@@ -74,7 +72,6 @@
                                                             HorizontalAlignment="Left"
                                                             Margin="5,0,5,0"
                                                             Visibility="Visible"/>
-
                                 <!-- Иконка Image для рубля -->
                                 <Image x:Name="RubleIcon"
                                        Width="20" Height="20"
@@ -83,12 +80,10 @@
                                        HorizontalAlignment="Left"
                                        Margin="5,0,5,0"
                                        Visibility="Collapsed"/>
-
                                 <!-- Содержимое TextBox -->
                                 <ScrollViewer Grid.Column="1"
                                               Margin="0"
                                               x:Name="PART_ContentHost"/>
-
                                 <!-- Водяной знак -->
                                 <TextBlock x:Name="Watermark"
                                            Text="{TemplateBinding Tag}"
@@ -100,39 +95,34 @@
                             </Grid>
                         </Grid>
                         <ControlTemplate.Triggers>
-                            <!-- Показать водяной знак, если текст пуст -->
+                            <!-- Если текст пустой, показываем водяной знак -->
                             <Trigger Property="Text" Value="">
                                 <Setter TargetName="Watermark" Property="Visibility" Value="Visible"/>
                             </Trigger>
-                            <!-- Скрыть водяной знак при фокусе -->
+                            <!-- При фокусе водяной знак скрывается -->
                             <Trigger Property="IsFocused" Value="True">
                                 <Setter TargetName="Watermark" Property="Visibility" Value="Collapsed"/>
                             </Trigger>
-
-                            <!-- Установка иконки и цвета для поиска по наименованию или категории -->
+                            <!-- Пример триггеров для разных значений Tag -->
                             <Trigger Property="Tag" Value="Поиск по наименованию или категории">
                                 <Setter TargetName="Icon" Property="Kind" Value="Magnify"/>
                                 <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
                                 <Setter TargetName="RubleIcon" Property="Visibility" Value="Collapsed"/>
                                 <Setter TargetName="Icon" Property="Visibility" Value="Visible"/>
                             </Trigger>
-                            <!-- Установка иконки и зелёного цвета для Мин. Цена -->
                             <Trigger Property="Tag" Value="Мин. Цена">
                                 <Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/>
                                 <Setter TargetName="RubleIcon" Property="Visibility" Value="Visible"/>
                             </Trigger>
-                            <!-- Установка иконки и зелёного цвета для Макс. Цена -->
                             <Trigger Property="Tag" Value="Макс. Цена">
                                 <Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/>
                                 <Setter TargetName="RubleIcon" Property="Visibility" Value="Visible"/>
                             </Trigger>
-                            <!-- Установка иконки для Мин. Количество -->
                             <Trigger Property="Tag" Value="Мин. Количество">
                                 <Setter TargetName="Icon" Property="Kind" Value="Numeric0Box"/>
                                 <Setter TargetName="Icon" Property="Visibility" Value="Visible"/>
                                 <Setter TargetName="RubleIcon" Property="Visibility" Value="Collapsed"/>
                             </Trigger>
-                            <!-- Установка иконки для Макс. Количество -->
                             <Trigger Property="Tag" Value="Макс. Количество">
                                 <Setter TargetName="Icon" Property="Kind" Value="Numeric0Box"/>
                                 <Setter TargetName="Icon" Property="Visibility" Value="Visible"/>
@@ -144,7 +134,7 @@
             </Setter>
         </Style>
 
-        <!-- Стиль для заголовков столбцов DataGrid -->
+        <!-- Стиль для заголовков столбцов DataGrid (повторно для ViewItemsWindow) -->
         <Style TargetType="DataGridColumnHeader">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -210,7 +200,8 @@
             <StackPanel>
                 <!-- Заголовок с кнопкой закрытия -->
                 <Grid Margin="0,0,0,10">
-                    <TextBlock Text="Просмотр товаров" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Просмотр товаров" FontSize="18" FontWeight="Bold" 
+                               Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
                     <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseButton_Click">
                         <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
@@ -256,11 +247,22 @@
                     </DataGrid.Columns>
                 </DataGrid>
 
+                <!-- Кнопка для просмотра QR-кода -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+                    <Button Width="150" Margin="5" Click="ShowQr_Click" Style="{StaticResource ControlButtonStyle}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <iconPacks:PackIconMaterial Kind="Qrcode" Width="24" Height="24" Margin="0,0,10,0"/>
+                            <TextBlock Text="Показать QR" FontSize="16" Foreground="{DynamicResource ButtonForegroundBrush}"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
                 <!-- Кнопка для переключения темы -->
                 <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
                         HorizontalAlignment="Center" Margin="0,20,0,0"
                         Click="ToggleTheme_Click">
-                    <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
+                    <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24" 
+                                                Foreground="{DynamicResource PrimaryBrush}"/>
                 </Button>
             </StackPanel>
         </Border>

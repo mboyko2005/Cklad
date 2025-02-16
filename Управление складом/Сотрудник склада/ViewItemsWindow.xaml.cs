@@ -22,8 +22,8 @@ namespace УправлениеСкладом.Сотрудник_склада
 			public decimal Цена { get; set; }
 		}
 
-		private List<Item> items; // Полный список товаров
-		private List<Item> displayedItems; // Список отображаемых товаров после фильтрации
+		private List<Item> items;           // Полный список товаров
+		private List<Item> displayedItems;  // Список товаров после фильтрации
 		private string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
 
 		public ViewItemsWindow()
@@ -47,24 +47,20 @@ namespace УправлениеСкладом.Сотрудник_склада
                         SELECT t.ТоварID, t.Наименование, t.Категория, ISNULL(SUM(sp.Количество), 0) AS Количество, ISNULL(t.Цена, 0) AS Цена
                         FROM Товары t
                         LEFT JOIN СкладскиеПозиции sp ON t.ТоварID = sp.ТоварID
-                        GROUP BY t.ТоварID, t.Наименование, t.Категория, t.Цена
-                    ";
-
+                        GROUP BY t.ТоварID, t.Наименование, t.Категория, t.Цена";
 					using (SqlCommand command = new SqlCommand(query, connection))
+					using (SqlDataReader reader = command.ExecuteReader())
 					{
-						using (SqlDataReader reader = command.ExecuteReader())
+						while (reader.Read())
 						{
-							while (reader.Read())
+							items.Add(new Item
 							{
-								items.Add(new Item
-								{
-									ТоварID = reader.GetInt32(reader.GetOrdinal("ТоварID")),
-									Наименование = reader.GetString(reader.GetOrdinal("Наименование")),
-									Категория = reader.IsDBNull(reader.GetOrdinal("Категория")) ? string.Empty : reader.GetString(reader.GetOrdinal("Категория")),
-									Количество = reader.GetInt32(reader.GetOrdinal("Количество")),
-									Цена = reader.GetDecimal(reader.GetOrdinal("Цена"))
-								});
-							}
+								ТоварID = reader.GetInt32(reader.GetOrdinal("ТоварID")),
+								Наименование = reader.GetString(reader.GetOrdinal("Наименование")),
+								Категория = reader.IsDBNull(reader.GetOrdinal("Категория")) ? string.Empty : reader.GetString(reader.GetOrdinal("Категория")),
+								Количество = reader.GetInt32(reader.GetOrdinal("Количество")),
+								Цена = reader.GetDecimal(reader.GetOrdinal("Цена"))
+							});
 						}
 					}
 
@@ -80,13 +76,12 @@ namespace УправлениеСкладом.Сотрудник_склада
 			}
 		}
 
-		// Обработчик изменения текста в любых полях фильтрации
+		// Фильтрация товаров по заданным параметрам
 		private void Filter_TextChanged(object sender, TextChangedEventArgs e)
 		{
 			ApplyFilters();
 		}
 
-		// Применение фильтров к списку товаров
 		private void ApplyFilters()
 		{
 			string searchText = SearchTextBox.Text.Trim().ToLower();
@@ -95,7 +90,6 @@ namespace УправлениеСкладом.Сотрудник_склада
 			decimal priceMin = 0m;
 			decimal priceMax = decimal.MaxValue;
 
-			// Парсинг минимального количества
 			if (!string.IsNullOrEmpty(QuantityMinTextBox.Text))
 			{
 				if (!int.TryParse(QuantityMinTextBox.Text, out quantityMin))
@@ -104,8 +98,6 @@ namespace УправлениеСкладом.Сотрудник_склада
 					return;
 				}
 			}
-
-			// Парсинг максимального количества
 			if (!string.IsNullOrEmpty(QuantityMaxTextBox.Text))
 			{
 				if (!int.TryParse(QuantityMaxTextBox.Text, out quantityMax))
@@ -114,8 +106,6 @@ namespace УправлениеСкладом.Сотрудник_склада
 					return;
 				}
 			}
-
-			// Парсинг минимальной цены
 			if (!string.IsNullOrEmpty(PriceMinTextBox.Text))
 			{
 				if (!decimal.TryParse(PriceMinTextBox.Text, out priceMin))
@@ -124,8 +114,6 @@ namespace УправлениеСкладом.Сотрудник_склада
 					return;
 				}
 			}
-
-			// Парсинг максимальной цены
 			if (!string.IsNullOrEmpty(PriceMaxTextBox.Text))
 			{
 				if (!decimal.TryParse(PriceMaxTextBox.Text, out priceMax))
@@ -135,7 +123,6 @@ namespace УправлениеСкладом.Сотрудник_склада
 				}
 			}
 
-			// Применение фильтрации
 			displayedItems = items.Where(item =>
 				(string.IsNullOrEmpty(searchText) ||
 				 item.Наименование.ToLower().Contains(searchText) ||
@@ -149,32 +136,44 @@ namespace УправлениеСкладом.Сотрудник_склада
 			ItemsDataGrid.UnselectAll();
 		}
 
-		// Метод для обработки события при нажатии на окно (перемещение окна)
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
 		{
 			if (e.LeftButton == MouseButtonState.Pressed)
 				this.DragMove();
 		}
 
-		// Метод для обработки нажатия на кнопку "Закрыть"
 		private void CloseButton_Click(object sender, RoutedEventArgs e)
 		{
 			this.Close();
 		}
 
-		// Метод для переключения темы
 		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
 		{
 			ThemeManager.ToggleTheme();
 			UpdateThemeIcon();
 		}
 
-		// Обновление иконки темы
 		public void UpdateThemeIcon()
 		{
 			if (ThemeIcon != null)
 			{
 				ThemeIcon.Kind = ThemeManager.IsDarkTheme ? PackIconMaterialKind.WeatherNight : PackIconMaterialKind.WeatherSunny;
+			}
+		}
+
+		// Добавляем обработчик кнопки "Показать QR"
+		private void ShowQr_Click(object sender, RoutedEventArgs e)
+		{
+			if (ItemsDataGrid.SelectedItem is Item selectedItem)
+			{
+				// Открываем окно ViewQrWindow, передавая идентификатор выбранного товара (ТоварID)
+				var qrWindow = new ViewQrWindow(selectedItem.ТоварID);
+				qrWindow.Owner = this;
+				qrWindow.ShowDialog();
+			}
+			else
+			{
+				MessageBox.Show("Пожалуйста, выберите товар для просмотра QR-кода.", "Информация", MessageBoxButton.OK, MessageBoxImage.Warning);
 			}
 		}
 	}
