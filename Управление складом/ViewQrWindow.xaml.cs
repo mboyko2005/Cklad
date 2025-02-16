@@ -1,18 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Drawing;              // Для Bitmap
+using System.Drawing;              
 using System.Drawing.Printing;
-using System.Drawing.Imaging;      // Для ImageFormat
+using System.Drawing.Imaging;      
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Win32;
 using System.Windows.Media.Imaging;
 using System.Windows.Controls;
-using QRCoder;                     // Библиотека QRCoder
-using ZXing;                      // Для декодирования QR-кодов
-using ZXing.Common;               // Для BinaryBitmap, DecodingOptions, MultiFormatReader и т.п.
+using QRCoder;                     
+using ZXing;                     
+using ZXing.Common;           
 
 namespace УправлениеСкладом
 {
@@ -88,11 +88,8 @@ namespace УправлениеСкладом
 						}
 					}
 
-					// Формируем строку для QR-кода в одну строку (без переводов строк)
-					// Это улучшает совместимость с iPhone-сканерами
 					string freshQrText = $"ID={positionId};Наименование={productName};Местоположение={warehouseName}";
 
-					// Если QR-кода нет – генерируем новый
 					if (existingQr == null || existingQr.Length == 0)
 					{
 						byte[] newQr = GenerateQrCode(freshQrText);
@@ -102,11 +99,9 @@ namespace УправлениеСкладом
 					}
 					else
 					{
-						// Если QR-код уже есть – декодируем его и сравниваем с актуальными данными
 						string decodedText = DecodeQrBytes(existingQr);
 						if (decodedText == null || !decodedText.Equals(freshQrText, StringComparison.Ordinal))
 						{
-							// Если данные не совпадают или декодирование не удалось, удаляем старый QR и генерируем новый
 							RemoveQrFromDatabase(conn, positionId);
 							byte[] newQr = GenerateQrCode(freshQrText);
 							SaveQrToDatabase(conn, positionId, newQr);
@@ -138,7 +133,6 @@ namespace УправлениеСкладом
 		{
 			using (var generator = new QRCodeGenerator())
 			{
-				// Используем принудительно UTF-8 для поддержки кириллицы
 				var data = generator.CreateQrCode(
 					content,
 					QRCodeGenerator.ECCLevel.Q,
@@ -148,7 +142,6 @@ namespace УправлениеСкладом
 
 				using (var qrCode = new QRCode(data))
 				{
-					// Используем масштаб 20, явно указываем рисование quiet zone (true)
 					using (Bitmap bitmap = qrCode.GetGraphic(20, Color.Black, Color.White, true))
 					{
 						using (var ms = new MemoryStream())
@@ -244,9 +237,6 @@ namespace УправлениеСкладом
 			}
 			return image;
 		}
-
-		// --- Обработчики кнопок ---
-
 		private void CloseButton_Click(object sender, RoutedEventArgs e)
 		{
 			this.Close();
@@ -360,7 +350,6 @@ namespace УправлениеСкладом
 					byte b = pixelData[index];
 					byte g = pixelData[index + 1];
 					byte r = pixelData[index + 2];
-					// Взвешенное среднее: 0.299*R + 0.587*G + 0.114*B
 					luminances[y * width + x] = (byte)((r * 299 + g * 587 + b * 114) / 1000);
 				}
 			}
