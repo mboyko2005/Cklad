@@ -90,7 +90,7 @@ namespace УправлениеСкладом
 
 					// Формируем строку для QR-кода в одну строку (без переводов строк)
 					// Это улучшает совместимость с iPhone-сканерами
-					string freshQrText = $"ID:{positionId};Наименование:{productName};Местоположение:{warehouseName}";
+					string freshQrText = $"ID={positionId};Наименование={productName};Местоположение={warehouseName}";
 
 					// Если QR-кода нет – генерируем новый
 					if (existingQr == null || existingQr.Length == 0)
