@@ -56,25 +56,13 @@ namespace УправлениеСкладом
 		private InventoryItem SelectedItem;
 		private string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
 
-		#endregion
-
-		#region Конструктор
-
 		public ManageInventoryWindow()
 		{
 			InitializeComponent();
-
-			// Инициализация коллекций
-			Products = new List<Product>();
-			Warehouses = new List<Warehouse>();
-			Suppliers = new List<Supplier>();
-
-			// Загрузка данных
 			LoadProducts();
 			LoadWarehouses();
 			LoadSuppliers();
 			LoadInventory();
-
 			UpdateThemeIcon();
 		}
 
@@ -247,7 +235,7 @@ namespace УправлениеСкладом
 
 		private void CloseButton_Click(object sender, RoutedEventArgs e)
 		{
-			Close();
+			this.Close();
 		}
 
 		private void AddInventory_Click(object sender, RoutedEventArgs e)
@@ -403,9 +391,8 @@ namespace УправлениеСкладом
 			}
 			else
 			{
-				throw new Exception("Не удалось добавить нового поставщика.");
+				MessageBox.Show("Пожалуйста, выберите позицию для удаления.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
 			}
-			return supplier;
 		}
 
 		private void SaveInventory_Click(object sender, RoutedEventArgs e)
@@ -416,13 +403,14 @@ namespace УправлениеСкладом
 				SaveAddInventory();
 		}
 
+		// Сохранение новой позиции
 		private void SaveAddInventory()
 		{
 			string name = NameTextBox.Text.Trim();
 			string priceText = PriceTextBox.Text.Trim();
 			string quantityText = QuantityTextBox.Text.Trim();
 			string supplierName = SupplierComboBox.Text.Trim();
-			var selectedWarehouse = WarehouseComboBox.SelectedItem as Warehouse;
+			Warehouse selectedWarehouse = WarehouseComboBox.SelectedItem as Warehouse;
 
 			if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(priceText) ||
 				string.IsNullOrEmpty(quantityText) || string.IsNullOrEmpty(supplierName) || selectedWarehouse == null)
@@ -570,13 +558,14 @@ namespace УправлениеСкладом
 			}
 		}
 
+		// Сохранение изменений в существующей позиции
 		private void SaveEditInventory()
 		{
 			string name = NameTextBox.Text.Trim();
 			string priceText = PriceTextBox.Text.Trim();
 			string quantityText = QuantityTextBox.Text.Trim();
 			string supplierName = SupplierComboBox.Text.Trim();
-			var selectedWarehouse = WarehouseComboBox.SelectedItem as Warehouse;
+			Warehouse selectedWarehouse = WarehouseComboBox.SelectedItem as Warehouse;
 
 			if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(priceText) ||
 				string.IsNullOrEmpty(quantityText) || string.IsNullOrEmpty(supplierName) || selectedWarehouse == null)
