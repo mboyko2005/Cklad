@@ -5,19 +5,8 @@
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         Title="Управление складскими позициями" Height="600" Width="1000"
         WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
-        MouseDown="Window_MouseDown"
-        FontFamily="Segoe UI">
+        MouseDown="Window_MouseDown">
     <Window.Resources>
-        <!-- Глобальный стиль для всех TextBlock -->
-        <Style TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Segoe UI"/>
-        </Style>
-
-        <!-- Стиль для TextBlock в DataGrid колонках -->
-        <Style x:Key="DataGridTextBlockStyle" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Segoe UI"/>
-        </Style>
-
         <!-- Общие стили для кнопок -->
         <Style x:Key="ControlButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
@@ -26,7 +15,6 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="10,5"/>
             <Setter Property="MinWidth" Value="120"/>
-            <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -60,7 +48,6 @@
 
         <!-- Стиль для заголовков столбцов DataGrid -->
         <Style TargetType="DataGridColumnHeader">
-            <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -71,7 +58,6 @@
 
         <!-- Стиль для строк DataGrid -->
         <Style TargetType="DataGridRow">
-            <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
@@ -86,7 +72,6 @@
 
         <!-- Стиль для ячеек DataGrid -->
         <Style TargetType="DataGridCell">
-            <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
@@ -102,7 +87,6 @@
 
         <!-- Стиль для DataGrid -->
         <Style TargetType="DataGrid" x:Key="StyledDataGrid">
-            <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
             <Setter Property="RowBackground" Value="Transparent"/>
@@ -157,13 +141,10 @@
                     </Grid>
 
                     <!-- DataGrid для отображения складских позиций -->
-                    <DataGrid x:Name="InventoryDataGrid" Margin="0,0,0,10" 
-                              Style="{StaticResource StyledDataGrid}" 
-                              Language="ru-RU">
+                    <DataGrid x:Name="InventoryDataGrid" Margin="0,0,0,10" Style="{StaticResource StyledDataGrid}" Language="ru-RU">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="Auto"/>
                             <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*"/>
-                            <!-- Отображение цены в рублях -->
                             <DataGridTextColumn Header="Цена" Binding="{Binding Price, StringFormat={}{0:C}, ConverterCulture=ru-RU}" Width="Auto"/>
                             <DataGridTextColumn Header="Количество" Binding="{Binding Quantity}" Width="Auto"/>
                             <DataGridTextColumn Header="Местоположение" Binding="{Binding Location}" Width="*"/>
@@ -203,7 +184,8 @@
                     <StackPanel HorizontalAlignment="Center" Margin="0,10,0,0">
                         <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
                                 Click="ToggleTheme_Click">
-                            <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
+                            <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24"
+                                                        Foreground="{DynamicResource PrimaryBrush}"/>
                         </Button>
                     </StackPanel>
                 </StackPanel>
@@ -230,7 +212,8 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="PanelTitle" Grid.Column="0" Text="Добавить складскую позицию" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="PanelTitle" Grid.Column="0" Text="Добавить складскую позицию" 
+                                       FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
                             <Button Grid.Column="1" Width="30" Height="30" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" Click="ClosePanel_Click">
                                 <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
                             </Button>
@@ -238,22 +221,22 @@
                         <!-- Поля для ввода данных -->
                         <StackPanel Grid.Row="1">
                             <Label Content="Название товара:" Foreground="{DynamicResource ForegroundBrush}"/>
-                            <TextBox x:Name="NameTextBox" Margin="0,0,0,10"/>
+                            <TextBox x:Name="NameTextBox" Margin="0,0,0,10" />
+
                             <Label Content="Цена:" Foreground="{DynamicResource ForegroundBrush}"/>
-                            <TextBox x:Name="PriceTextBox" Margin="0,0,0,10"/>
+                            <TextBox x:Name="PriceTextBox" Margin="0,0,0,10" />
+
                             <Label Content="Количество:" Foreground="{DynamicResource ForegroundBrush}"/>
-                            <TextBox x:Name="QuantityTextBox" Margin="0,0,0,10"/>
+                            <TextBox x:Name="QuantityTextBox" Margin="0,0,0,10" />
+
                             <Label Content="Склад:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <ComboBox x:Name="WarehouseComboBox" Margin="0,0,0,10"
-                                      DisplayMemberPath="Name"
-                                      SelectedValuePath="Id" />
+                                      DisplayMemberPath="Name" SelectedValuePath="Id" />
 
                             <Label Content="Поставщик:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <ComboBox x:Name="SupplierComboBox" Margin="0,0,0,10"
-                                      DisplayMemberPath="Name"
-                                      SelectedValuePath="Id"
-                                      IsEditable="True"
-                                      IsTextSearchEnabled="False"
+                                      DisplayMemberPath="Name" SelectedValuePath="Id"
+                                      IsEditable="True" IsTextSearchEnabled="False"
                                       Text="{Binding SelectedSupplierName, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
                         <!-- Кнопки действия -->
