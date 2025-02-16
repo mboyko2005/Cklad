@@ -45,7 +45,7 @@ namespace УправлениеСкладом
 		/// </summary>
 		private void LoadQrFromDatabase(int positionId)
 		{
-			// Выполняем JOIN, чтобы получить QRCode, Наименование товара и Наименование склада
+			// Выполняем JOIN, чтобы получить: sp.QRCode, t.Наименование (как Товар) и s.Наименование (как Склад)
 			const string selectQuery = @"
                 SELECT
                     sp.QRCode,
@@ -88,11 +88,11 @@ namespace УправлениеСкладом
 						}
 					}
 
-					// Формируем строку для QR-кода в одну строку, разделяя данные точкой с запятой.
-					string freshQrText =
-						$"ID:{positionId};Наименование:{productName};Местоположение:{warehouseName}";
+					// Формируем строку для QR-кода в одну строку (без переводов строк)
+					// Это улучшает совместимость с iPhone-сканерами
+					string freshQrText = $"ID:{positionId};Наименование:{productName};Местоположение:{warehouseName}";
 
-					// Если QR-кода нет — генерируем новый
+					// Если QR-кода нет – генерируем новый
 					if (existingQr == null || existingQr.Length == 0)
 					{
 						byte[] newQr = GenerateQrCode(freshQrText);
@@ -102,11 +102,11 @@ namespace УправлениеСкладом
 					}
 					else
 					{
-						// Если QR-код есть, декодируем его и сравниваем с актуальными данными
+						// Если QR-код уже есть – декодируем его и сравниваем с актуальными данными
 						string decodedText = DecodeQrBytes(existingQr);
 						if (decodedText == null || !decodedText.Equals(freshQrText, StringComparison.Ordinal))
 						{
-							// Если данные не совпадают или декодирование не удалось, удаляем старый и генерируем новый
+							// Если данные не совпадают или декодирование не удалось, удаляем старый QR и генерируем новый
 							RemoveQrFromDatabase(conn, positionId);
 							byte[] newQr = GenerateQrCode(freshQrText);
 							SaveQrToDatabase(conn, positionId, newQr);
@@ -131,13 +131,14 @@ namespace УправлениеСкладом
 
 		/// <summary>
 		/// Генерирует PNG (массив байтов) с QR-кодом, используя QRCoder.
-		/// Принудительно использует кодировку UTF-8 для корректного отображения кириллицы.
+		/// Принудительно использует кодировку UTF-8 для поддержки кириллицы.
+		/// Для повышения совместимости с iPhone-сканерами QR-код формируется в одну строку.
 		/// </summary>
 		private byte[] GenerateQrCode(string content)
 		{
 			using (var generator = new QRCodeGenerator())
 			{
-				// Принудительно использовать UTF-8 для правильного отображения кириллицы
+				// Используем принудительно UTF-8 для поддержки кириллицы
 				var data = generator.CreateQrCode(
 					content,
 					QRCodeGenerator.ECCLevel.Q,
@@ -147,8 +148,8 @@ namespace УправлениеСкладом
 
 				using (var qrCode = new QRCode(data))
 				{
-					// Масштаб 20 – можно регулировать по необходимости (при проблемах со сканированием попробуйте 10 или 30)
-					using (Bitmap bitmap = qrCode.GetGraphic(20))
+					// Используем масштаб 20, явно указываем рисование quiet zone (true)
+					using (Bitmap bitmap = qrCode.GetGraphic(20, Color.Black, Color.White, true))
 					{
 						using (var ms = new MemoryStream())
 						{
@@ -194,7 +195,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// "Удаляет" старый QR-код, устанавливая поле QRCode в NULL для заданной позиции.
+		/// "Удаляет" старый QR-код (устанавливает поле QRCode в NULL) для заданной позиции.
 		/// </summary>
 		private void RemoveQrFromDatabase(SqlConnection conn, int positionId)
 		{
@@ -227,7 +228,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Преобразует массив байтов (PNG) в BitmapImage для отображения в WPF Image.
+		/// Преобразует массив байтов (PNG) в BitmapImage для отображения в WPF.
 		/// </summary>
 		private BitmapImage BytesToBitmapImage(byte[] bytes)
 		{
@@ -307,10 +308,7 @@ namespace УправлениеСкладом
 					pd.PrintPage += (s, args) =>
 					{
 						var bounds = args.PageBounds;
-						float scale = Math.Min(
-							(float)bounds.Width / image.Width,
-							(float)bounds.Height / image.Height
-						);
+						float scale = Math.Min((float)bounds.Width / image.Width, (float)bounds.Height / image.Height);
 						int w = (int)(image.Width * scale);
 						int h = (int)(image.Height * scale);
 						args.Graphics.DrawImage(image, 0, 0, w, h);
@@ -332,7 +330,8 @@ namespace УправлениеСкладом
 	}
 
 	/// <summary>
-	/// Класс для преобразования Bitmap в массив оттенков серого (luminance) с использованием взвешенного среднего.
+	/// Класс для преобразования Bitmap в массив оттенков серого (luminance)
+	/// с использованием взвешенного среднего (0.299*R + 0.587*G + 0.114*B).
 	/// Требуется для декодирования QR-кода с помощью ZXing.
 	/// </summary>
 	public class BitmapLuminanceSource : LuminanceSource
@@ -361,7 +360,7 @@ namespace УправлениеСкладом
 					byte b = pixelData[index];
 					byte g = pixelData[index + 1];
 					byte r = pixelData[index + 2];
-					// Взвешенное среднее: 0.299 * R + 0.587 * G + 0.114 * B
+					// Взвешенное среднее: 0.299*R + 0.587*G + 0.114*B
 					luminances[y * width + x] = (byte)((r * 299 + g * 587 + b * 114) / 1000);
 				}
 			}
