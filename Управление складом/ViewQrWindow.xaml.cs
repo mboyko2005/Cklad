@@ -88,11 +88,8 @@ namespace УправлениеСкладом
 						}
 					}
 
-					// Формируем строку для QR-кода в одну строку (без переводов строк)
-					// Это улучшает совместимость с iPhone-сканерами
 					string freshQrText = $"ID:{positionId};Наименование:{productName};Местоположение:{warehouseName}";
 
-					// Если QR-кода нет – генерируем новый
 					if (existingQr == null || existingQr.Length == 0)
 					{
 						byte[] newQr = GenerateQrCode(freshQrText);
@@ -102,11 +99,9 @@ namespace УправлениеСкладом
 					}
 					else
 					{
-						// Если QR-код уже есть – декодируем его и сравниваем с актуальными данными
 						string decodedText = DecodeQrBytes(existingQr);
 						if (decodedText == null || !decodedText.Equals(freshQrText, StringComparison.Ordinal))
 						{
-							// Если данные не совпадают или декодирование не удалось, удаляем старый QR и генерируем новый
 							RemoveQrFromDatabase(conn, positionId);
 							byte[] newQr = GenerateQrCode(freshQrText);
 							SaveQrToDatabase(conn, positionId, newQr);
