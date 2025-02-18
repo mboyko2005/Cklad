@@ -260,19 +260,26 @@ namespace УправлениеСкладом.Class
 
 		/// <summary>
 		/// Возвращает список товаров в виде форматированного текста (plain text).
+		/// Для каждого товара суммируется количество по всем складам.
 		/// </summary>
 		private static string GetProductsList()
 		{
 			StringBuilder sb = new StringBuilder();
 			sb.AppendLine("Список товаров:");
-			sb.AppendLine("ID   | Название             | Категория      | Цена");
-			sb.AppendLine(new string('-', 55));
+			sb.AppendLine("ID   | Название             | Категория      | Цена    | Кол-во");
+			sb.AppendLine(new string('-', 70));
 			try
 			{
 				using (var conn = new SqlConnection(_connectionString))
 				{
 					conn.Open();
-					const string query = "SELECT ТоварID, Наименование, Категория, Цена FROM Товары";
+					// Объединяем товары и их суммарное количество со всех складов
+					const string query = @"
+                        SELECT t.ТоварID, t.Наименование, t.Категория, t.Цена, 
+                               ISNULL(SUM(sp.Количество), 0) AS TotalQuantity
+                        FROM Товары t
+                        LEFT JOIN СкладскиеПозиции sp ON t.ТоварID = sp.ТоварID
+                        GROUP BY t.ТоварID, t.Наименование, t.Категория, t.Цена";
 					using (var cmd = new SqlCommand(query, conn))
 					{
 						using (var reader = cmd.ExecuteReader())
@@ -283,7 +290,9 @@ namespace УправлениеСкладом.Class
 								string name = reader.GetString(1);
 								string category = reader.IsDBNull(2) ? "Без категории" : reader.GetString(2);
 								decimal price = reader.GetDecimal(3);
-								sb.AppendLine(string.Format("{0,-4} | {1,-20} | {2,-14} | {3,6:F2}", id, name, category, price));
+								int totalQuantity = reader.GetInt32(reader.GetOrdinal("TotalQuantity"));
+								sb.AppendLine(string.Format("{0,-4} | {1,-20} | {2,-14} | {3,7:F2} | {4,7}",
+									id, name, category, price, totalQuantity));
 							}
 						}
 					}
@@ -456,20 +465,33 @@ namespace УправлениеСкладом.Class
 
 		/// <summary>
 		/// Возвращает список товаров для конкретного склада (по warehouseId) в виде текстового списка.
+		/// В заголовке указывается имя склада, полученное из базы, а также выводится количество товара для каждого товара.
 		/// </summary>
 		private static string GetProductsByWarehouse(int warehouseId)
 		{
 			StringBuilder sb = new StringBuilder();
-			sb.AppendLine($"Товары для склада ID {warehouseId}:");
-			sb.AppendLine("ID   | Название             | Категория      | Цена");
-			sb.AppendLine(new string('-', 55));
+			string warehouseName = "";
 			try
 			{
 				using (var conn = new SqlConnection(_connectionString))
 				{
 					conn.Open();
+					// Получаем имя склада
+					using (var cmdWarehouse = new SqlCommand("SELECT Наименование FROM Склады WHERE СкладID = @WarehouseId", conn))
+					{
+						cmdWarehouse.Parameters.AddWithValue("@WarehouseId", warehouseId);
+						object result = cmdWarehouse.ExecuteScalar();
+						if (result != null)
+							warehouseName = result.ToString();
+						else
+							warehouseName = $"ID {warehouseId}";
+					}
+
+					sb.AppendLine($"Товары для склада \"{warehouseName}\":");
+					sb.AppendLine("ID   | Название             | Категория      | Цена    | Кол-во");
+					sb.AppendLine(new string('-', 70));
 					const string query = @"
-                        SELECT t.ТоварID, t.Наименование, t.Категория, t.Цена
+                        SELECT t.ТоварID, t.Наименование, t.Категория, t.Цена, sp.Количество
                         FROM Товары t
                         INNER JOIN СкладскиеПозиции sp ON t.ТоварID = sp.ТоварID
                         WHERE sp.СкладID = @WarehouseId";
@@ -484,7 +506,9 @@ namespace УправлениеСкладом.Class
 								string name = reader.GetString(1);
 								string category = reader.IsDBNull(2) ? "Без категории" : reader.GetString(2);
 								decimal price = reader.GetDecimal(3);
-								sb.AppendLine(string.Format("{0,-4} | {1,-20} | {2,-14} | {3,6:F2}", id, name, category, price));
+								int quantity = reader.GetInt32(reader.GetOrdinal("Количество"));
+								sb.AppendLine(string.Format("{0,-4} | {1,-20} | {2,-14} | {3,7:F2} | {4,7}",
+									id, name, category, price, quantity));
 							}
 						}
 					}
