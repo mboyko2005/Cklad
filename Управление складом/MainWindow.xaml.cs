@@ -1,12 +1,13 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
-using MahApps.Metro.IconPacks;
 using System.Windows.Threading;
+using MahApps.Metro.IconPacks;
 using Управление_складом.Themes;
+using УправлениеСкладом.Class; 
 
 namespace УправлениеСкладом
 {
@@ -59,6 +60,8 @@ namespace УправлениеСкладом
 			UsernameTextBox.Focus();
 			DataContext = this;
 
+			TelegramNotifier.StartBot();
+
 			_passwordVisibilityTimer = new DispatcherTimer();
 			_passwordVisibilityTimer.Interval = TimeSpan.FromSeconds(20);
 			_passwordVisibilityTimer.Tick += (s, e) =>
@@ -67,7 +70,7 @@ namespace УправлениеСкладом
 				_passwordVisibilityTimer.Stop();
 			};
 
-			IsPasswordVisible = false; // Изначально пароль скрыт
+			IsPasswordVisible = false;
 			UpdateEyeIcon();
 			UpdateThemeIcon();
 		}

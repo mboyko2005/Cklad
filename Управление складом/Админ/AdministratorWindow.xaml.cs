@@ -17,8 +17,10 @@ namespace УправлениеСкладом
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            Application.Current.Shutdown();
-        }
+			MainWindow mainWindow = new MainWindow();
+			mainWindow.Show();
+			this.Close();
+		}
 
 		private void ManageUsers_Click(object sender, RoutedEventArgs e)
 		{

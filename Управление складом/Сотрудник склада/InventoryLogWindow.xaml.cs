@@ -20,7 +20,7 @@ namespace УправлениеСкладом.Сотрудник_склада
 			public int ТоварID { get; set; }
 			public int СкладID { get; set; }
 			public DateTime Date { get; set; }
-			public string Type { get; set; } // "Приход" или "Расход"
+			public string Type { get; set; }
 			public string ItemName { get; set; }
 			public int Quantity { get; set; }
 		}
@@ -49,13 +49,11 @@ namespace УправлениеСкладом.Сотрудник_склада
 			RefreshAllData();
 		}
 
-		// При загрузке окна выполняется проверка отсутствующих товаров
 		private async void Window_Loaded(object sender, RoutedEventArgs e)
 		{
 			await CheckAndNotifyOutOfStockItemsAsync();
 		}
 
-		// Метод проверяет наличие товаров с нулевым количеством и уведомляет менеджера
 		private async Task CheckAndNotifyOutOfStockItemsAsync()
 		{
 			try
@@ -275,7 +273,7 @@ namespace УправлениеСкладом.Сотрудник_склада
 					DeleteMovementFromDatabase(selectedEntry.MovementID, selectedEntry.ТоварID, selectedEntry.СкладID);
 					int stock = GetStockQuantity(selectedEntry.ТоварID, selectedEntry.СкладID);
 					await TelegramNotifier.SendNotificationAsync(
-						$"Запись удалена. Новый остаток товара '{selectedEntry.ItemName}': {stock} единиц.");
+						$"Запись удалена. Новый остаток товара {selectedEntry.ItemName}: {stock} единиц.");
 					RefreshAllData();
 				}
 			}
@@ -349,7 +347,7 @@ namespace УправлениеСкладом.Сотрудник_склада
 				{
 					string itemName = GetItemName(товарID);
 					TelegramNotifier.SendNotificationAsync(
-						$"Внимание! Товар '{itemName}' закончился на складе. Остаток: 0 единиц.", true)
+						$"Внимание! Товар {itemName} закончился на складе. Остаток: 0 единиц.", true)
 						.GetAwaiter().GetResult();
 				}
 			}
@@ -384,79 +382,75 @@ namespace УправлениеСкладом.Сотрудник_склада
 			}
 		}
 
+		// Исправленный метод UpdateStockPosition, который корректно обрабатывает ситуацию отсутствия движений,
+		// но наличия записи в таблице СкладскиеПозиции – в этом случае запись удаляется.
 		private void UpdateStockPosition(SqlConnection conn, int товарID, int складID)
 		{
-			const string combinedQuery = @"
+			int totalQty = 0;
+			int posCount = 0;
+			// Используем два подзапроса для получения суммы движений и проверки наличия записи в СкладскиеПозиции
+			const string query = @"
                 SELECT 
-                    ISNULL(SUM(dt.Количество),0) AS TotalQty,
-                    CASE WHEN sp.ТоварID IS NOT NULL THEN 1 ELSE 0 END AS PosExists
-                FROM ДвиженияТоваров dt
-                LEFT JOIN СкладскиеПозиции sp ON dt.ТоварID=sp.ТоварID AND dt.СкладID=sp.СкладID
-                WHERE dt.ТоварID=@ТоварID AND dt.СкладID=@СкладID
-                GROUP BY sp.ТоварID";
-
-			int newQuantity = 0;
-			int posExists = 0;
-
-			using (var cmdCombined = new SqlCommand(combinedQuery, conn))
+                    (SELECT ISNULL(SUM(Количество), 0) FROM ДвиженияТоваров WHERE ТоварID=@ТоварID AND СкладID=@СкладID) AS TotalQty,
+                    (SELECT COUNT(*) FROM СкладскиеПозиции WHERE ТоварID=@ТоварID AND СкладID=@СкладID) AS PosCount";
+			using (var cmd = new SqlCommand(query, conn))
 			{
-				cmdCombined.Parameters.Add("@ТоварID", SqlDbType.Int).Value = товарID;
-				cmdCombined.Parameters.Add("@СкладID", SqlDbType.Int).Value = складID;
-
-				using var reader = cmdCombined.ExecuteReader();
-				if (reader.Read())
+				cmd.Parameters.Add("@ТоварID", SqlDbType.Int).Value = товарID;
+				cmd.Parameters.Add("@СкладID", SqlDbType.Int).Value = складID;
+				using (var reader = cmd.ExecuteReader())
 				{
-					newQuantity = reader.GetInt32(reader.GetOrdinal("TotalQty"));
-					posExists = reader.GetInt32(reader.GetOrdinal("PosExists"));
-				}
-				else
-				{
-					newQuantity = 0;
-					posExists = 0;
+					if (reader.Read())
+					{
+						totalQty = reader.GetInt32(reader.GetOrdinal("TotalQty"));
+						posCount = reader.GetInt32(reader.GetOrdinal("PosCount"));
+					}
 				}
 			}
 
-			if (newQuantity != 0)
+			if (totalQty != 0)
 			{
-				if (posExists == 1)
+				if (posCount > 0)
 				{
 					const string updateQuery = @"
                         UPDATE СкладскиеПозиции
                         SET Количество=@NewQuantity,
                             ДатаОбновления=GETDATE()
                         WHERE ТоварID=@ТоварID AND СкладID=@СкладID";
-
-					using var cmdUpdate = new SqlCommand(updateQuery, conn);
-					cmdUpdate.Parameters.Add("@ТоварID", SqlDbType.Int).Value = товарID;
-					cmdUpdate.Parameters.Add("@СкладID", SqlDbType.Int).Value = складID;
-					cmdUpdate.Parameters.Add("@NewQuantity", SqlDbType.Int).Value = newQuantity;
-					cmdUpdate.ExecuteNonQuery();
+					using (var cmdUpdate = new SqlCommand(updateQuery, conn))
+					{
+						cmdUpdate.Parameters.Add("@ТоварID", SqlDbType.Int).Value = товарID;
+						cmdUpdate.Parameters.Add("@СкладID", SqlDbType.Int).Value = складID;
+						cmdUpdate.Parameters.Add("@NewQuantity", SqlDbType.Int).Value = totalQty;
+						cmdUpdate.ExecuteNonQuery();
+					}
 				}
 				else
 				{
 					const string insertPositionQuery = @"
                         INSERT INTO СкладскиеПозиции (ТоварID, СкладID, Количество, ДатаОбновления)
                         VALUES (@ТоварID, @СкладID, @NewQuantity, GETDATE())";
-
-					using var cmdInsertPos = new SqlCommand(insertPositionQuery, conn);
-					cmdInsertPos.Parameters.Add("@ТоварID", SqlDbType.Int).Value = товарID;
-					cmdInsertPos.Parameters.Add("@СкладID", SqlDbType.Int).Value = складID;
-					cmdInsertPos.Parameters.Add("@NewQuantity", SqlDbType.Int).Value = newQuantity;
-					cmdInsertPos.ExecuteNonQuery();
+					using (var cmdInsertPos = new SqlCommand(insertPositionQuery, conn))
+					{
+						cmdInsertPos.Parameters.Add("@ТоварID", SqlDbType.Int).Value = товарID;
+						cmdInsertPos.Parameters.Add("@СкладID", SqlDbType.Int).Value = складID;
+						cmdInsertPos.Parameters.Add("@NewQuantity", SqlDbType.Int).Value = totalQty;
+						cmdInsertPos.ExecuteNonQuery();
+					}
 				}
 			}
 			else
 			{
-				if (posExists == 1)
+				if (posCount > 0)
 				{
 					const string deletePosQuery = @"
                         DELETE FROM СкладскиеПозиции
                         WHERE ТоварID=@ТоварID AND СкладID=@СкладID";
-
-					using var cmdDelPos = new SqlCommand(deletePosQuery, conn);
-					cmdDelPos.Parameters.Add("@ТоварID", SqlDbType.Int).Value = товарID;
-					cmdDelPos.Parameters.Add("@СкладID", SqlDbType.Int).Value = складID;
-					cmdDelPos.ExecuteNonQuery();
+					using (var cmdDelPos = new SqlCommand(deletePosQuery, conn))
+					{
+						cmdDelPos.Parameters.Add("@ТоварID", SqlDbType.Int).Value = товарID;
+						cmdDelPos.Parameters.Add("@СкладID", SqlDbType.Int).Value = складID;
+						cmdDelPos.ExecuteNonQuery();
+					}
 				}
 			}
 		}

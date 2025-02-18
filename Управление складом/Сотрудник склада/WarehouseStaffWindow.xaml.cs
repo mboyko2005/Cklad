@@ -1,5 +1,4 @@
-﻿
-using MahApps.Metro.IconPacks;
+﻿using MahApps.Metro.IconPacks;
 using System.Windows;
 using System.Windows.Input;
 using Управление_складом.Themes;
@@ -25,8 +24,11 @@ namespace УправлениеСкладом.Сотрудник_склада
 				this.DragMove();
 		}
 
+		// При закрытии окна открывается MainWindow
 		private void CloseButton_Click(object sender, RoutedEventArgs e)
 		{
+			MainWindow mainWindow = new MainWindow();
+			mainWindow.Show();
 			this.Close();
 		}
 
@@ -54,14 +56,14 @@ namespace УправлениеСкладом.Сотрудник_склада
 		private void ManageStock_Click(object sender, RoutedEventArgs e)
 		{
 			ManageStockWindow manageStockWindow = new ManageStockWindow();
-			manageStockWindow.Owner = this; // Устанавливаем владельца
-			manageStockWindow.ShowDialog(); // Открываем окно модально
+			manageStockWindow.Owner = this;
+			manageStockWindow.ShowDialog();
 		}
 
 		private void MoveItems_Click(object sender, RoutedEventArgs e)
 		{
 			MoveItemsWindow moveItemsWindow = new MoveItemsWindow();
-			moveItemsWindow.Owner = this; 
+			moveItemsWindow.Owner = this;
 			moveItemsWindow.ShowDialog();
 		}
 
@@ -71,6 +73,5 @@ namespace УправлениеСкладом.Сотрудник_склада
 			inventoryLogWindow.Owner = this;
 			inventoryLogWindow.ShowDialog();
 		}
-
 	}
 }
