@@ -1,60 +1,59 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using QRCoder;
+using System;
 using System.Data.SqlClient;
-using System.Drawing;              
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Drawing.Printing;
-using System.Drawing.Imaging;      
 using System.IO;
 using System.Windows;
-using System.Windows.Input;
-using Microsoft.Win32;
-using System.Windows.Media.Imaging;
 using System.Windows.Controls;
-using QRCoder;                     
-using ZXing;                     
-using ZXing.Common;           
+using System.Windows.Input;
+using System.Windows.Media.Imaging;
+using Microsoft.Win32;
+using ZXing;
+using ZXing.Common;
 
 namespace УправлениеСкладом
 {
 	public partial class ViewQrWindow : Window
 	{
-		private int _positionId;
+		private int _productId;
 		private byte[] _qrBytes;
 
-		// Строка подключения к БД
+		// Строка подключения к БД.
 		private readonly string _connectionString =
 			@"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
 
-		public ViewQrWindow(int positionId)
+		public ViewQrWindow(int productId)
 		{
 			InitializeComponent();
-			_positionId = positionId;
+			_productId = productId;
 		}
 
 		protected override void OnContentRendered(EventArgs e)
 		{
 			base.OnContentRendered(e);
-			LoadQrFromDatabase(_positionId);
+			LoadQrFromDatabase(_productId);
 		}
 
 		/// <summary>
-		/// Загружает QR-код для указанной позиции из БД.
-		/// Если QR-кода нет – генерирует новый, сохраняет и отображает.
-		/// Если QR-код есть, декодирует его и сравнивает с актуальными данными.
-		/// Если данные не совпадают или декодирование не удалось – удаляет старый QR и генерирует новый.
+		/// Загружает QR‑код для указанного товара из БД.
+		/// Теперь запрос ищет запись по ТоварID и выбирает самую свежую (по дате обновления).
+		/// Если запись не найдена, выводится сообщение, что товар не найден в складских позициях.
 		/// </summary>
-		private void LoadQrFromDatabase(int positionId)
+		private void LoadQrFromDatabase(int productId)
 		{
-			// Выполняем JOIN, чтобы получить: sp.QRCode, t.Наименование (как Товар) и s.Наименование (как Склад)
+			// Изменён запрос: вместо ПозицияID ищем по ТоварID и сортируем по дате обновления (самая свежая запись)
 			const string selectQuery = @"
-                SELECT
-                    sp.QRCode,
+                SELECT TOP 1
+                    sp.QRText,
                     t.Наименование AS [Товар],
                     s.Наименование AS [Склад]
                 FROM СкладскиеПозиции sp
                 INNER JOIN Товары t ON sp.ТоварID = t.ТоварID
                 INNER JOIN Склады s ON sp.СкладID = s.СкладID
-                WHERE sp.ПозицияID = @PosId";
+                WHERE sp.ТоварID = @ProductId
+                ORDER BY sp.ДатаОбновления DESC";
 
 			try
 			{
@@ -62,58 +61,48 @@ namespace УправлениеСкладом
 				{
 					conn.Open();
 
-					byte[] existingQr = null;
+					string existingQrText = "";
 					string productName = "";
 					string warehouseName = "";
 
 					using (var selectCmd = new SqlCommand(selectQuery, conn))
 					{
-						selectCmd.Parameters.AddWithValue("@PosId", positionId);
+						selectCmd.Parameters.AddWithValue("@ProductId", productId);
 						using (var reader = selectCmd.ExecuteReader())
 						{
 							if (reader.Read())
 							{
-								if (reader["QRCode"] != DBNull.Value)
-									existingQr = (byte[])reader["QRCode"];
+								if (reader["QRText"] != DBNull.Value)
+									existingQrText = reader["QRText"].ToString();
 								productName = reader["Товар"]?.ToString() ?? "";
 								warehouseName = reader["Склад"]?.ToString() ?? "";
 							}
 							else
 							{
-								MessageBox.Show("Позиция не найдена в базе данных.",
-									"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+								MessageBox.Show("Запись о данном товаре в складских позициях не найдена.",
+									"Информация", MessageBoxButton.OK, MessageBoxImage.Information);
 								this.Close();
 								return;
 							}
 						}
 					}
 
-					string freshQrText = $"ID={positionId};Наименование={productName};Местоположение={warehouseName}";
+					// Формируем актуальный текст QR‑кода
+					string freshQrText = $"ID={productId};Наименование={productName};Местоположение={warehouseName}";
 
-					if (existingQr == null || existingQr.Length == 0)
+					if (string.IsNullOrEmpty(existingQrText) || !existingQrText.Equals(freshQrText, StringComparison.Ordinal))
 					{
-						byte[] newQr = GenerateQrCode(freshQrText);
-						SaveQrToDatabase(conn, positionId, newQr);
-						_qrBytes = newQr;
-						QrImage.Source = BytesToBitmapImage(_qrBytes);
+						// Если запись отсутствует или не соответствует актуальным данным, сохраняем новый QR‑текст
+						SaveQrTextToDatabase(conn, productId, freshQrText);
+						_qrBytes = GenerateQrCode(freshQrText);
 					}
 					else
 					{
-						string decodedText = DecodeQrBytes(existingQr);
-						if (decodedText == null || !decodedText.Equals(freshQrText, StringComparison.Ordinal))
-						{
-							RemoveQrFromDatabase(conn, positionId);
-							byte[] newQr = GenerateQrCode(freshQrText);
-							SaveQrToDatabase(conn, positionId, newQr);
-							_qrBytes = newQr;
-							QrImage.Source = BytesToBitmapImage(_qrBytes);
-						}
-						else
-						{
-							_qrBytes = existingQr;
-							QrImage.Source = BytesToBitmapImage(_qrBytes);
-						}
+						_qrBytes = GenerateQrCode(existingQrText);
 					}
+
+					// Отображаем QR‑код в Image-контроле (например, с именем QrImage)
+					QrImage.Source = BytesToBitmapImage(_qrBytes);
 				}
 			}
 			catch (SqlException ex)
@@ -125,9 +114,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Генерирует PNG (массив байтов) с QR-кодом, используя QRCoder.
-		/// Принудительно использует кодировку UTF-8 для поддержки кириллицы.
-		/// Для повышения совместимости с iPhone-сканерами QR-код формируется в одну строку.
+		/// Генерирует PNG-массив байтов с QR‑кодом на основе входной строки, используя QRCoder.
 		/// </summary>
 		private byte[] GenerateQrCode(string content)
 		{
@@ -155,73 +142,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Декодирует массив байтов (PNG) с помощью ZXing и нашего BitmapLuminanceSource.
-		/// Если декодирование не удалось, возвращает null.
-		/// </summary>
-		private string DecodeQrBytes(byte[] qrBytes)
-		{
-			try
-			{
-				using (var ms = new MemoryStream(qrBytes))
-				using (var image = System.Drawing.Image.FromStream(ms))
-				using (var bmp = new Bitmap(image))
-				{
-					var luminanceSource = new BitmapLuminanceSource(bmp);
-					var binarizer = new HybridBinarizer(luminanceSource);
-					var binaryBitmap = new BinaryBitmap(binarizer);
-
-					var reader = new MultiFormatReader();
-					var hints = new Dictionary<DecodeHintType, object>
-					{
-						{ DecodeHintType.POSSIBLE_FORMATS, new List<BarcodeFormat> { BarcodeFormat.QR_CODE } },
-						{ DecodeHintType.TRY_HARDER, true }
-					};
-
-					var result = reader.decode(binaryBitmap, hints);
-					return result?.Text;
-				}
-			}
-			catch
-			{
-				return null;
-			}
-		}
-
-		/// <summary>
-		/// "Удаляет" старый QR-код (устанавливает поле QRCode в NULL) для заданной позиции.
-		/// </summary>
-		private void RemoveQrFromDatabase(SqlConnection conn, int positionId)
-		{
-			const string removeQuery = @"
-                UPDATE СкладскиеПозиции
-                SET QRCode = NULL
-                WHERE ПозицияID = @PosId";
-			using (var cmd = new SqlCommand(removeQuery, conn))
-			{
-				cmd.Parameters.AddWithValue("@PosId", positionId);
-				cmd.ExecuteNonQuery();
-			}
-		}
-
-		/// <summary>
-		/// Сохраняет новый QR-код (массив байтов) в поле QRCode для заданной позиции.
-		/// </summary>
-		private void SaveQrToDatabase(SqlConnection conn, int positionId, byte[] newQr)
-		{
-			const string updateQuery = @"
-                UPDATE СкладскиеПозиции
-                SET QRCode = @QrCode
-                WHERE ПозицияID = @PosId";
-			using (var cmd = new SqlCommand(updateQuery, conn))
-			{
-				cmd.Parameters.AddWithValue("@QrCode", newQr);
-				cmd.Parameters.AddWithValue("@PosId", positionId);
-				cmd.ExecuteNonQuery();
-			}
-		}
-
-		/// <summary>
-		/// Преобразует массив байтов (PNG) в BitmapImage для отображения в WPF.
+		/// Преобразует массив байт (PNG) в BitmapImage для отображения в WPF.
 		/// </summary>
 		private BitmapImage BytesToBitmapImage(byte[] bytes)
 		{
@@ -237,6 +158,55 @@ namespace УправлениеСкладом
 			}
 			return image;
 		}
+
+		/// <summary>
+		/// Декодирует QR‑код из массива байт (PNG) с помощью ZXing и класса BitmapLuminanceSource.
+		/// </summary>
+		private string DecodeQrBytes(byte[] qrBytes)
+		{
+			try
+			{
+				using (var ms = new MemoryStream(qrBytes))
+				using (var image = System.Drawing.Image.FromStream(ms))
+				using (var bmp = new Bitmap(image))
+				{
+					var luminanceSource = new BitmapLuminanceSource(bmp);
+					var binarizer = new HybridBinarizer(luminanceSource);
+					var binaryBitmap = new BinaryBitmap(binarizer);
+					var reader = new MultiFormatReader();
+					var hints = new Dictionary<DecodeHintType, object>
+					{
+						{ DecodeHintType.POSSIBLE_FORMATS, new List<BarcodeFormat> { BarcodeFormat.QR_CODE } },
+						{ DecodeHintType.TRY_HARDER, true }
+					};
+					var result = reader.decode(binaryBitmap, hints);
+					return result?.Text;
+				}
+			}
+			catch
+			{
+				return null;
+			}
+		}
+
+		/// <summary>
+		/// Обновляет (сохраняет) поле QRText для заданного товара в таблице СкладскиеПозиции.
+		/// </summary>
+		private void SaveQrTextToDatabase(SqlConnection conn, int productId, string qrText)
+		{
+			const string updateQuery = @"
+                UPDATE СкладскиеПозиции
+                SET QRText = @QrText,
+                    ДатаОбновления = GETDATE()
+                WHERE ТоварID = @ProductId";
+			using (var cmd = new SqlCommand(updateQuery, conn))
+			{
+				cmd.Parameters.AddWithValue("@QrText", qrText);
+				cmd.Parameters.AddWithValue("@ProductId", productId);
+				cmd.ExecuteNonQuery();
+			}
+		}
+
 		private void CloseButton_Click(object sender, RoutedEventArgs e)
 		{
 			this.Close();
@@ -249,44 +219,42 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Кнопка "Сохранить" — сохраняет текущий QR-код (_qrBytes) в PNG-файл.
+		/// Кнопка "Сохранить" – сохраняет текущий QR‑код (_qrBytes) в PNG-файл.
 		/// </summary>
 		private void SaveQrButton_Click(object sender, RoutedEventArgs e)
 		{
 			if (_qrBytes == null || _qrBytes.Length == 0)
 			{
-				MessageBox.Show("Нет QR-кода для сохранения.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				MessageBox.Show("Нет QR‑кода для сохранения.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
 			var sfd = new SaveFileDialog
 			{
 				Filter = "PNG Image|*.png",
-				FileName = $"QrPosition_{_positionId}.png"
+				FileName = $"QrProduct_{_productId}.png"
 			};
 			if (sfd.ShowDialog() == true)
 			{
 				try
 				{
 					File.WriteAllBytes(sfd.FileName, _qrBytes);
-					MessageBox.Show("QR-код успешно сохранён!",
-						"Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+					MessageBox.Show("QR‑код успешно сохранён!", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
 				}
 				catch (Exception ex)
 				{
-					MessageBox.Show($"Ошибка сохранения: {ex.Message}",
-						"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+					MessageBox.Show($"Ошибка сохранения: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 				}
 			}
 		}
 
 		/// <summary>
-		/// Кнопка "Печать" — печатает текущий QR-код (_qrBytes) через PrintDocument.
+		/// Кнопка "Печать" – печатает текущий QR‑код (_qrBytes) через PrintDocument.
 		/// </summary>
 		private void PrintQrButton_Click(object sender, RoutedEventArgs e)
 		{
 			if (_qrBytes == null || _qrBytes.Length == 0)
 			{
-				MessageBox.Show("Нет QR-кода для печати.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				MessageBox.Show("Нет QR‑кода для печати.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
 			try
@@ -313,16 +281,13 @@ namespace УправлениеСкладом
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show($"Ошибка при печати: {ex.Message}",
-					"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+				MessageBox.Show($"Ошибка при печати: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 		}
 	}
 
 	/// <summary>
-	/// Класс для преобразования Bitmap в массив оттенков серого (luminance)
-	/// с использованием взвешенного среднего (0.299*R + 0.587*G + 0.114*B).
-	/// Требуется для декодирования QR-кода с помощью ZXing.
+	/// Класс для преобразования Bitmap в массив оттенков серого (luminance) для ZXing.
 	/// </summary>
 	public class BitmapLuminanceSource : LuminanceSource
 	{
@@ -333,7 +298,7 @@ namespace УправлениеСкладом
 			int width = bitmap.Width;
 			int height = bitmap.Height;
 			var rect = new Rectangle(0, 0, width, height);
-			var bmpData = bitmap.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+			var bmpData = bitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
 			int stride = bmpData.Stride;
 			int bytes = Math.Abs(stride) * height;
 			byte[] pixelData = new byte[bytes];
