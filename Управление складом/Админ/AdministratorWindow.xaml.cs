@@ -2,6 +2,7 @@
 using System.Windows.Input;
 using MahApps.Metro.IconPacks;
 using Управление_складом.Themes;
+using Управление_складом.Админ; // для доступа к окну управления ботом
 
 namespace УправлениеСкладом
 {
@@ -15,8 +16,8 @@ namespace УправлениеСкладом
 
 		public void ShowWindow() => Show();
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
+		private void CloseButton_Click(object sender, RoutedEventArgs e)
+		{
 			MainWindow mainWindow = new MainWindow();
 			mainWindow.Show();
 			this.Close();
@@ -46,11 +47,19 @@ namespace УправлениеСкладом
 			settingsWindow.ShowDialog();
 		}
 
-        private void ToggleTheme_Click(object sender, RoutedEventArgs e)
-        {
-            ThemeManager.ToggleTheme();
-            UpdateThemeIcon();
-        }
+		// При открытии окна управления ботом, текущее окно закрывается
+		private void ManageBot_Click(object sender, RoutedEventArgs e)
+		{
+			var manageBotWindow = new ManageBotWindow();
+			manageBotWindow.Show();
+			this.Close();
+		}
+
+		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
+		{
+			ThemeManager.ToggleTheme();
+			UpdateThemeIcon();
+		}
 
 		public void UpdateThemeIcon()
 		{
@@ -65,9 +74,7 @@ namespace УправлениеСкладом
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
 		{
 			if (e.ChangedButton == MouseButton.Left)
-			{
 				DragMove();
-			}
 		}
 	}
 }

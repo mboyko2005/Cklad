@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <ApplicationIcon>Resource\Логтип.ico</ApplicationIcon>
+    <ApplicationIcon>Resource\Логотип.ico</ApplicationIcon>
     <SupportedOSPlatformVersion>8.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Resource\Логтип.ico" />
+    <Content Include="Resource\Логотип.ico" />
   </ItemGroup>
 
   <ItemGroup>
