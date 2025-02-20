@@ -9,7 +9,7 @@
         Loaded="Window_Loaded">
     <Grid>
         <Border Background="{DynamicResource WindowBackgroundBrush}" 
-            CornerRadius="20" Padding="20">
+                CornerRadius="20" Padding="20">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
             </Border.Effect>
@@ -143,7 +143,7 @@
                            Foreground="{DynamicResource PrimaryBrush}" Margin="0,20,0,10" HorizontalAlignment="Center"/>
 
                 <StackPanel>
-                    <!-- DataGrid для отсутствующих товаров -->
+                    <!-- DataGrid для отсутствующих товаров с выделением выбранной строки -->
                     <DataGrid x:Name="OutOfStockDataGrid"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"
@@ -156,7 +156,20 @@
                               BorderBrush="{DynamicResource ButtonBorderBrush}"
                               BorderThickness="1"
                               GridLinesVisibility="None"
-                              MaxHeight="150">
+                              MaxHeight="150"
+                              SelectionMode="Single">
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="Blue"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="ТоварID" Binding="{Binding ТоварID}" Width="Auto" Visibility="Hidden"/>
                             <DataGridTextColumn Header="Наименование" Binding="{Binding Наименование}" Width="2*"/>

@@ -8,7 +8,7 @@ using System.Windows.Input;
 using System.Threading.Tasks;
 using Управление_складом.Themes;
 using УправлениеСкладом.Class;
-using Microsoft.VisualBasic; // Для использования InputBox
+using Microsoft.VisualBasic; 
 
 namespace УправлениеСкладом.Сотрудник_склада
 {
@@ -194,7 +194,7 @@ namespace УправлениеСкладом.Сотрудник_склада
 				string input = Interaction.InputBox("Введите количество для прихода:", "Добавить приход", "10");
 				if (int.TryParse(input, out int qtyToAdd) && qtyToAdd > 0)
 				{
-					AddMovementToDatabase(selectedEntry.ТоварID, selectedEntry.СкладID, qtyToAdd, "Приход", _currentUserId);
+					await AddMovementToDatabaseAsync(selectedEntry.ТоварID, selectedEntry.СкладID, qtyToAdd, "Приход", _currentUserId);
 					int stock = GetStockQuantity(selectedEntry.ТоварID, selectedEntry.СкладID);
 					await TelegramNotifier.SendNotificationAsync(
 						$"Поступил товар: {selectedEntry.ItemName} в количестве {qtyToAdd} единиц. Новый остаток: {stock} единиц.");
@@ -220,7 +220,7 @@ namespace УправлениеСкладом.Сотрудник_склада
 				string input = Interaction.InputBox("Введите количество для расхода:", "Добавить расход", "5");
 				if (int.TryParse(input, out int qtyToSubtract) && qtyToSubtract > 0)
 				{
-					AddMovementToDatabase(selectedEntry.ТоварID, selectedEntry.СкладID, -qtyToSubtract, "Расход", _currentUserId);
+					await AddMovementToDatabaseAsync(selectedEntry.ТоварID, selectedEntry.СкладID, -qtyToSubtract, "Расход", _currentUserId);
 					int stock = GetStockQuantity(selectedEntry.ТоварID, selectedEntry.СкладID);
 					await TelegramNotifier.SendNotificationAsync(
 						$"Списан товар: {selectedEntry.ItemName} в количестве {qtyToSubtract} единиц. Новый остаток: {stock} единиц.");
@@ -237,7 +237,6 @@ namespace УправлениеСкладом.Сотрудник_склада
 			}
 		}
 
-		// Добавление прихода для отсутствующего товара (склад по умолчанию = 1)
 		private async void AddStockToSelectedItem_Click(object sender, RoutedEventArgs e)
 		{
 			if (OutOfStockDataGrid.SelectedItem is OutOfStockItem selectedItem)
@@ -245,7 +244,7 @@ namespace УправлениеСкладом.Сотрудник_склада
 				if (int.TryParse(AddQuantityTextBox.Text, out int qty) && qty > 0)
 				{
 					int defaultWarehouseId = 1;
-					AddMovementToDatabase(selectedItem.ТоварID, defaultWarehouseId, qty, "Приход", _currentUserId);
+					await AddMovementToDatabaseAsync(selectedItem.ТоварID, defaultWarehouseId, qty, "Приход", _currentUserId);
 					int stock = GetStockQuantity(selectedItem.ТоварID, defaultWarehouseId);
 					await TelegramNotifier.SendNotificationAsync(
 						$"Поступил товар: {selectedItem.Наименование} в количестве {qty} единиц на склад (ID: {defaultWarehouseId}). Новый остаток: {stock} единиц.");
@@ -303,7 +302,6 @@ namespace УправлениеСкладом.Сотрудник_склада
 			return 0;
 		}
 
-		// Получает наименование товара по его ID
 		private string GetItemName(int товарID)
 		{
 			using var conn = new SqlConnection(connectionString);
@@ -314,16 +312,14 @@ namespace УправлениеСкладом.Сотрудник_склада
 			object result = cmd.ExecuteScalar();
 			return result?.ToString() ?? "Неизвестный товар";
 		}
-
-		// Добавляет движение (приход или расход) в базу
-		private void AddMovementToDatabase(int товарID, int складID, int количество, string типДвижения, int пользовательID)
+		private async Task AddMovementToDatabaseAsync(int товарID, int складID, int количество, string типДвижения, int пользовательID)
 		{
 			if (пользовательID == -1) return;
 
 			try
 			{
 				using var conn = new SqlConnection(connectionString);
-				conn.Open();
+				await conn.OpenAsync();
 
 				const string insertQuery = @"
                     INSERT INTO ДвиженияТоваров (ТоварID, СкладID, Количество, ТипДвижения, ПользовательID, Дата)
@@ -336,19 +332,15 @@ namespace УправлениеСкладом.Сотрудник_склада
 					cmd.Parameters.Add("@Количество", SqlDbType.Int).Value = количество;
 					cmd.Parameters.Add("@ТипДвижения", SqlDbType.NVarChar, 50).Value = типДвижения;
 					cmd.Parameters.Add("@ПользовательID", SqlDbType.Int).Value = пользовательID;
-					cmd.ExecuteNonQuery();
+					await cmd.ExecuteNonQueryAsync();
 				}
-
 				UpdateStockPosition(conn, товарID, складID);
-
-				// Если после обновления остаток равен 0, уведомляем менеджера
 				int newStock = GetStockQuantity(товарID, складID);
 				if (newStock == 0)
 				{
 					string itemName = GetItemName(товарID);
-					TelegramNotifier.SendNotificationAsync(
-						$"Внимание! Товар {itemName} закончился на складе. Остаток: 0 единиц.", true)
-						.GetAwaiter().GetResult();
+					await TelegramNotifier.SendNotificationAsync(
+						$"Внимание! Товар {itemName} закончился на складе. Остаток: 0 единиц.", true);
 				}
 			}
 			catch (SqlException ex)
@@ -356,7 +348,6 @@ namespace УправлениеСкладом.Сотрудник_склада
 				MessageBox.Show("Ошибка при добавлении записи: " + ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 		}
-
 		private void DeleteMovementFromDatabase(int движениеID, int товарID, int складID)
 		{
 			try
@@ -382,13 +373,11 @@ namespace УправлениеСкладом.Сотрудник_склада
 			}
 		}
 
-		// Исправленный метод UpdateStockPosition, который корректно обрабатывает ситуацию отсутствия движений,
-		// но наличия записи в таблице СкладскиеПозиции – в этом случае запись удаляется.
+		// Обновление записи о товаре в таблице СкладскиеПозиции
 		private void UpdateStockPosition(SqlConnection conn, int товарID, int складID)
 		{
 			int totalQty = 0;
 			int posCount = 0;
-			// Используем два подзапроса для получения суммы движений и проверки наличия записи в СкладскиеПозиции
 			const string query = @"
                 SELECT 
                     (SELECT ISNULL(SUM(Количество), 0) FROM ДвиженияТоваров WHERE ТоварID=@ТоварID AND СкладID=@СкладID) AS TotalQty,
