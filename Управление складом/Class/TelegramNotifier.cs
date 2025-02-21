@@ -23,63 +23,14 @@ namespace УправлениеСкладом.Class
 			@"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True;TrustServerCertificate=True";
 
 		private static string BotToken;
-		// Для примера: храним ChatID администратора и менеджера.
-		private static long EmployeeChatId; // Админ
-		private static long ManagerChatId;  // Менеджер
-
 		private static TelegramBotClient _botClient;
+		private static bool _botStarted = false; // Флаг для предотвращения повторного запуска бота
 
-		/// <summary>
-		/// Формирует главное меню в зависимости от роли пользователя.
-		/// Общая кнопка «QR сканер» добавляется в конце, чтобы не было дублирования.
-		/// </summary>
-		private static InlineKeyboardMarkup GetMainMenuForRole(string role)
-		{
-			string roleLower = role.ToLower().Trim();
-			var rows = new List<InlineKeyboardButton[]>();
+		// Словарь для хранения идентификаторов отправленных уведомлений по ChatID.
+		// В каждом чате хранится список сообщений, отправленных ботом (их inline-кнопки уже обновляются).
+		private static Dictionary<long, List<int>> _notificationMessageIds = new Dictionary<long, List<int>>();
 
-			if (roleLower == "администратор")
-			{
-				rows.Add(new[]
-				{
-					InlineKeyboardButton.WithCallbackData("Все товары", "view_products"),
-					InlineKeyboardButton.WithCallbackData("Все сотрудники", "view_employees")
-				});
-				rows.Add(new[]
-				{
-					InlineKeyboardButton.WithCallbackData("Количество товаров", "view_total_products")
-				});
-			}
-			else if (roleLower == "менеджер")
-			{
-				rows.Add(new[]
-				{
-					InlineKeyboardButton.WithCallbackData("Все товары", "view_products")
-				});
-			}
-			else if (roleLower == "сотрудник склада")
-			{
-				// Для сотрудников склада никаких дополнительных кнопок не требуется
-			}
-			else
-			{
-				rows.Add(new[]
-				{
-					InlineKeyboardButton.WithCallbackData("Нет доступных команд", "none_cmd")
-				});
-				return new InlineKeyboardMarkup(rows);
-			}
-			// Добавляем общую кнопку «QR сканер» (которая есть у всех)
-			rows.Add(new[]
-			{
-				InlineKeyboardButton.WithCallbackData("QR сканер", "qr_scan")
-			});
-			return new InlineKeyboardMarkup(rows);
-		}
-
-		/// <summary>
-		/// Статический конструктор: инициализация бота и загрузка настроек из БД.
-		/// </summary>
+		// Статический конструктор инициализирует токен и клиента бота
 		static TelegramNotifier()
 		{
 			try
@@ -87,7 +38,6 @@ namespace УправлениеСкладом.Class
 				using (var conn = new SqlConnection(_connectionString))
 				{
 					conn.Open();
-
 					// Получаем API токен бота
 					using (var cmdToken = new SqlCommand("SELECT TOP 1 APIToken FROM TelegramBotSettings", conn))
 					{
@@ -97,25 +47,7 @@ namespace УправлениеСкладом.Class
 						else
 							throw new Exception("API токен не найден в таблице TelegramBotSettings.");
 					}
-
-					// Получаем ChatID для администратора и менеджера (пример)
-					using (var cmdUsers = new SqlCommand("SELECT TelegramUserID, Роль FROM TelegramUsers", conn))
-					{
-						using (var reader = cmdUsers.ExecuteReader())
-						{
-							while (reader.Read())
-							{
-								long telegramUserId = reader.GetInt64(0);
-								string role = reader.GetString(1);
-								if (string.Equals(role, "Администратор", StringComparison.OrdinalIgnoreCase))
-									EmployeeChatId = telegramUserId;
-								else if (string.Equals(role, "Менеджер", StringComparison.OrdinalIgnoreCase))
-									ManagerChatId = telegramUserId;
-							}
-						}
-					}
 				}
-
 				_botClient = new TelegramBotClient(BotToken);
 			}
 			catch (Exception ex)
@@ -126,32 +58,102 @@ namespace УправлениеСкладом.Class
 		}
 
 		/// <summary>
-		/// Отправляет текстовое уведомление (например, о событиях на складе).
-		/// Если toManager=true, отправляем менеджеру, иначе администратору.
+		/// Возвращает список актуальных ChatID для указанной роли.
 		/// </summary>
-		public static async Task SendNotificationAsync(string message, bool toManager = false)
+		private static List<long> GetChatIdsForRole(string role)
 		{
-			long chatId = toManager ? ManagerChatId : EmployeeChatId;
+			List<long> chatIds = new List<long>();
 			try
 			{
-				await _botClient.SendTextMessageAsync(chatId, message);
+				using (var conn = new SqlConnection(_connectionString))
+				{
+					conn.Open();
+					// Получаем всех пользователей с указанной ролью
+					var cmd = new SqlCommand("SELECT TelegramUserID FROM TelegramUsers WHERE Роль=@role", conn);
+					cmd.Parameters.AddWithValue("@role", role);
+					using (var reader = cmd.ExecuteReader())
+					{
+						while (reader.Read())
+						{
+							if (long.TryParse(reader["TelegramUserID"].ToString(), out long id))
+							{
+								chatIds.Add(id);
+							}
+						}
+					}
+				}
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine("Ошибка отправки уведомления: " + ex.Message);
+				Console.WriteLine("Ошибка получения ChatID для роли " + role + ": " + ex.Message);
+			}
+			return chatIds;
+		}
+
+		/// <summary>
+		/// Отправляет текстовое уведомление.
+		/// Если toManager=true – уведомления отправляются всем менеджерам, иначе всем администраторам.
+		/// При отправке нового уведомления бот сначала обновляет все предыдущие уведомления (удаляя их inline-кнопки),
+		/// а новое уведомление приходит уже с кнопкой "Удалить все уведомления".
+		/// </summary>
+		public static async Task SendNotificationAsync(string message, bool toManager = false)
+		{
+			string targetRole = toManager ? "Менеджер" : "Администратор";
+			var chatIds = GetChatIdsForRole(targetRole);
+			if (chatIds.Count == 0)
+			{
+				Console.WriteLine("ChatID для роли " + targetRole + " не найден.");
+				return;
+			}
+			foreach (var chatId in chatIds)
+			{
+				// Если ранее были отправлены уведомления для этого чата,
+				// обновляем их inline-клавиатуру (удаляем кнопки).
+				if (_notificationMessageIds.TryGetValue(chatId, out List<int> msgIdList))
+				{
+					foreach (var msgId in msgIdList)
+					{
+						try
+						{
+							await _botClient.EditMessageReplyMarkupAsync(chatId, msgId, replyMarkup: null);
+						}
+						catch (Exception ex)
+						{
+							Console.WriteLine("Ошибка обновления уведомления (ID " + msgId + "): " + ex.Message);
+						}
+					}
+				}
+				// Отправляем новое уведомление с inline-кнопкой "Удалить все уведомления"
+				var inlineKeyboard = new InlineKeyboardMarkup(new[]
+				{
+					new [] { InlineKeyboardButton.WithCallbackData("Удалить все уведомления", "delete_all") }
+				});
+				var sentMessage = await _botClient.SendTextMessageAsync(chatId, message, replyMarkup: inlineKeyboard);
+
+				// Обновляем список уведомлений для этого чата: добавляем новое сообщение
+				if (_notificationMessageIds.ContainsKey(chatId))
+				{
+					_notificationMessageIds[chatId].Add(sentMessage.MessageId);
+				}
+				else
+				{
+					_notificationMessageIds[chatId] = new List<int> { sentMessage.MessageId };
+				}
 			}
 		}
 
 		/// <summary>
-		/// Запускает бота на приём обновлений.
+		/// Запускает приём обновлений бота (StartReceiving) только один раз.
 		/// </summary>
 		public static void StartBot()
 		{
+			if (_botStarted)
+				return;
+			_botStarted = true;
 			_botClient.StartReceiving(
 				updateHandler: HandleUpdateAsync,
 				errorHandler: HandleErrorAsync,
 				cancellationToken: CancellationToken.None);
-
 			Console.WriteLine("Бот запущен и получает обновления...");
 		}
 
@@ -161,9 +163,6 @@ namespace УправлениеСкладом.Class
 			return Task.CompletedTask;
 		}
 
-		/// <summary>
-		/// Главный обработчик входящих обновлений.
-		/// </summary>
 		private static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken token)
 		{
 			try
@@ -172,7 +171,6 @@ namespace УправлениеСкладом.Class
 				if (userId == 0)
 					return;
 
-				// Определяем роль пользователя
 				string role = GetUserRole(userId);
 				if (role == "неизвестно")
 				{
@@ -186,17 +184,21 @@ namespace УправлениеСкладом.Class
 				if (update.Type == UpdateType.Message && update.Message != null)
 				{
 					if (!string.IsNullOrEmpty(update.Message.Text))
-					{
 						await HandleTextMessage(botClient, update.Message, token, role);
-					}
 					else if (update.Message.Photo != null)
-					{
 						await HandlePhotoMessage(botClient, update.Message, token, role);
-					}
 				}
 				else if (update.Type == UpdateType.CallbackQuery && update.CallbackQuery != null)
 				{
-					await HandleCallbackQuery(botClient, update.CallbackQuery, token, role);
+					// Если пришёл callback с данными "delete_all" – удаляем все уведомления для данного чата.
+					if (update.CallbackQuery.Data == "delete_all")
+					{
+						await DeleteAllNotificationsAsync(update.CallbackQuery);
+					}
+					else
+					{
+						await HandleCallbackQuery(botClient, update.CallbackQuery, token, role);
+					}
 				}
 			}
 			catch (Exception ex)
@@ -205,9 +207,6 @@ namespace УправлениеСкладом.Class
 			}
 		}
 
-		/// <summary>
-		/// Возвращает роль пользователя по его TelegramUserID.
-		/// </summary>
 		private static string GetUserRole(long telegramUserId)
 		{
 			try
@@ -236,48 +235,31 @@ namespace УправлениеСкладом.Class
 			if (text.Equals("/start", StringComparison.OrdinalIgnoreCase) ||
 				text.Equals("/menu", StringComparison.OrdinalIgnoreCase))
 			{
-				// Отправляем главное меню без упоминания роли
 				var menu = GetMainMenuForRole(role);
-				await botClient.SendTextMessageAsync(
-					message.Chat.Id,
-					"Главное меню:",
-					replyMarkup: menu,
-					cancellationToken: token);
-
-				// Удаляем команду /start или /menu
-				try
-				{
-					await botClient.DeleteMessageAsync(message.Chat.Id, message.MessageId, token);
-				}
-				catch { }
+				await botClient.SendTextMessageAsync(message.Chat.Id, "Главное меню:", replyMarkup: menu, cancellationToken: token);
+				try { await botClient.DeleteMessageAsync(message.Chat.Id, message.MessageId, token); } catch { }
 			}
 		}
 		#endregion
 
-		#region Обработка фото (для сканирования QR)
+		#region Обработка фото (QR)
 		private static async Task HandlePhotoMessage(ITelegramBotClient botClient, Message message, CancellationToken token, string role)
 		{
-			var photo = message.Photo[^1]; // Берём фото с максимальным разрешением
-										   // Используем асинхронные методы для получения файла и его загрузки
+			var photo = message.Photo[^1];
 			var file = await _botClient.GetFile(photo.FileId, token);
-
 			using (var ms = new MemoryStream())
 			{
 				await _botClient.DownloadFile(file.FilePath, ms, token);
 				byte[] imageBytes = ms.ToArray();
-
-				// Распознаём QR-код
 				string qrData = DecodeQrCode(imageBytes);
 				if (!string.IsNullOrEmpty(qrData))
 				{
 					string productInfo = GetProductInfoByQr(qrData);
-					// Формируем callback data – запоминаем идентификатор исходного сообщения с фото
 					var backButtonData = "back_qr:" + message.MessageId;
 					var replyKeyboard = new InlineKeyboardMarkup(new[]
 					{
 						new [] { InlineKeyboardButton.WithCallbackData("Назад", backButtonData) }
 					});
-
 					if (!string.IsNullOrEmpty(productInfo))
 						await botClient.SendTextMessageAsync(message.Chat.Id, productInfo, replyMarkup: replyKeyboard, cancellationToken: token);
 					else
@@ -294,7 +276,6 @@ namespace УправлениеСкладом.Class
 		#region Обработка inline-кнопок (callback)
 		private static async Task HandleCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery, CancellationToken token, string role)
 		{
-			// Если нажата кнопка "Назад" после QR-сканирования, удаляем как сообщение с информацией, так и исходное фото
 			if (callbackQuery.Data.StartsWith("back_qr:"))
 			{
 				string idPart = callbackQuery.Data.Substring("back_qr:".Length);
@@ -309,7 +290,6 @@ namespace УправлениеСкладом.Class
 
 			string responseText = "";
 			InlineKeyboardMarkup replyKeyboard = null;
-
 			switch (callbackQuery.Data)
 			{
 				case "view_products":
@@ -320,69 +300,45 @@ namespace УправлениеСкладом.Class
 							responseText = GetProductsList();
 							replyKeyboard = new InlineKeyboardMarkup(new[]
 							{
-								new []
-								{
-									InlineKeyboardButton.WithCallbackData("Фильтр по складам", "filter_by_warehouse")
-								},
-								new []
-								{
-									InlineKeyboardButton.WithCallbackData("Назад", "back_main")
-								}
+								new [] { InlineKeyboardButton.WithCallbackData("Фильтр по складам", "filter_by_warehouse") },
+								new [] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") }
 							});
 						}
 						else
 						{
 							responseText = "У вас нет доступа к просмотру всех товаров.";
-							replyKeyboard = new InlineKeyboardMarkup(new[]
-							{
-								new [] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") }
-							});
+							replyKeyboard = new InlineKeyboardMarkup(new[] { new[] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") } });
 						}
 						break;
 					}
-
 				case "view_employees":
 					{
 						if (role.Equals("администратор", StringComparison.OrdinalIgnoreCase))
 						{
 							responseText = GetEmployeesList();
-							replyKeyboard = new InlineKeyboardMarkup(new[]
-							{
-								new [] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") }
-							});
+							replyKeyboard = new InlineKeyboardMarkup(new[] { new[] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") } });
 						}
 						else
 						{
 							responseText = "У вас нет доступа к списку сотрудников.";
-							replyKeyboard = new InlineKeyboardMarkup(new[]
-							{
-								new [] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") }
-							});
+							replyKeyboard = new InlineKeyboardMarkup(new[] { new[] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") } });
 						}
 						break;
 					}
-
 				case "view_total_products":
 					{
 						if (role.Equals("администратор", StringComparison.OrdinalIgnoreCase))
 						{
 							responseText = GetTotalProducts();
-							replyKeyboard = new InlineKeyboardMarkup(new[]
-							{
-								new [] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") }
-							});
+							replyKeyboard = new InlineKeyboardMarkup(new[] { new[] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") } });
 						}
 						else
 						{
 							responseText = "У вас нет доступа к этой информации.";
-							replyKeyboard = new InlineKeyboardMarkup(new[]
-							{
-								new [] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") }
-							});
+							replyKeyboard = new InlineKeyboardMarkup(new[] { new[] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") } });
 						}
 						break;
 					}
-
 				case "filter_by_warehouse":
 					{
 						if (role.Equals("администратор", StringComparison.OrdinalIgnoreCase))
@@ -393,41 +349,28 @@ namespace УправлениеСкладом.Class
 						else
 						{
 							responseText = "У вас нет доступа к фильтрации товаров по складам.";
-							replyKeyboard = new InlineKeyboardMarkup(new[]
-							{
-								new [] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") }
-							});
+							replyKeyboard = new InlineKeyboardMarkup(new[] { new[] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") } });
 						}
 						break;
 					}
-
 				case "qr_scan":
 					{
 						responseText = "Отправьте фото QR кода товара.";
-						replyKeyboard = new InlineKeyboardMarkup(new[]
-						{
-							new [] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") }
-						});
+						replyKeyboard = new InlineKeyboardMarkup(new[] { new[] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") } });
 						break;
 					}
-
 				case "back_main":
 					{
 						replyKeyboard = GetMainMenuForRole(role);
 						responseText = "Главное меню:";
 						break;
 					}
-
 				case "none_cmd":
 					{
 						responseText = "Нет доступных команд (неизвестная роль).";
-						replyKeyboard = new InlineKeyboardMarkup(new[]
-						{
-							new [] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") }
-						});
+						replyKeyboard = new InlineKeyboardMarkup(new[] { new[] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") } });
 						break;
 					}
-
 				default:
 					{
 						if (callbackQuery.Data.StartsWith("warehouse_"))
@@ -438,27 +381,18 @@ namespace УправлениеСкладом.Class
 								if (int.TryParse(idStr, out int warehouseId))
 								{
 									responseText = GetProductsByWarehouse(warehouseId);
-									replyKeyboard = new InlineKeyboardMarkup(new[]
-									{
-										new [] { InlineKeyboardButton.WithCallbackData("Назад", "filter_by_warehouse") }
-									});
+									replyKeyboard = new InlineKeyboardMarkup(new[] { new[] { InlineKeyboardButton.WithCallbackData("Назад", "filter_by_warehouse") } });
 								}
 								else
 								{
 									responseText = "Невалидный идентификатор склада.";
-									replyKeyboard = new InlineKeyboardMarkup(new[]
-									{
-										new [] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") }
-									});
+									replyKeyboard = new InlineKeyboardMarkup(new[] { new[] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") } });
 								}
 							}
 							else
 							{
 								responseText = "У вас нет доступа к фильтру по складам.";
-								replyKeyboard = new InlineKeyboardMarkup(new[]
-								{
-									new [] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") }
-								});
+								replyKeyboard = new InlineKeyboardMarkup(new[] { new[] { InlineKeyboardButton.WithCallbackData("Назад", "back_main") } });
 							}
 						}
 						break;
@@ -467,27 +401,38 @@ namespace УправлениеСкладом.Class
 
 			if (!string.IsNullOrEmpty(responseText))
 			{
-				await botClient.SendTextMessageAsync(
-					callbackQuery.Message.Chat.Id,
-					responseText,
-					replyMarkup: replyKeyboard,
-					cancellationToken: token);
-
-				try
-				{
-					await botClient.DeleteMessageAsync(callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId, token);
-				}
-				catch { }
+				await botClient.SendTextMessageAsync(callbackQuery.Message.Chat.Id, responseText, replyMarkup: replyKeyboard, cancellationToken: token);
+				try { await botClient.DeleteMessageAsync(callbackQuery.Message.Chat.Id, callbackQuery.Message.MessageId, token); } catch { }
 			}
-
 			await botClient.AnswerCallbackQueryAsync(callbackQuery.Id, cancellationToken: token);
 		}
 		#endregion
 
-		#region Вспомогательные методы (SQL-запросы, обработка QR и т.д.)
 		/// <summary>
-		/// Сканирует изображение и распознаёт QR-код с помощью ZXing.
+		/// Обрабатывает callback с данными "delete_all" – удаляет все уведомления для данного чата.
 		/// </summary>
+		private static async Task DeleteAllNotificationsAsync(CallbackQuery callbackQuery)
+		{
+			long chatId = callbackQuery.Message.Chat.Id;
+			if (_notificationMessageIds.TryGetValue(chatId, out List<int> messageIds))
+			{
+				foreach (var msgId in messageIds)
+				{
+					try
+					{
+						await _botClient.DeleteMessageAsync(chatId, msgId);
+					}
+					catch (Exception ex)
+					{
+						Console.WriteLine("Ошибка при удалении уведомления (ID " + msgId + "): " + ex.Message);
+					}
+				}
+				_notificationMessageIds.Remove(chatId);
+			}
+			await _botClient.AnswerCallbackQueryAsync(callbackQuery.Id, "Все уведомления удалены");
+		}
+
+		#region Вспомогательные методы (SQL, QR и т.д.)
 		private static string DecodeQrCode(byte[] imageBytes)
 		{
 			try
@@ -510,9 +455,6 @@ namespace УправлениеСкладом.Class
 			}
 		}
 
-		/// <summary>
-		/// Ищет товар в БД по значению QR (поле QRText).
-		/// </summary>
 		private static string GetProductInfoByQr(string qrData)
 		{
 			try
@@ -551,9 +493,6 @@ namespace УправлениеСкладом.Class
 			return null;
 		}
 
-		/// <summary>
-		/// Формирует список всех товаров с суммарным количеством по всем складам.
-		/// </summary>
 		private static string GetProductsList()
 		{
 			StringBuilder sb = new StringBuilder();
@@ -594,9 +533,6 @@ namespace УправлениеСкладом.Class
 			return sb.ToString();
 		}
 
-		/// <summary>
-		/// Формирует список сотрудников.
-		/// </summary>
 		private static string GetEmployeesList()
 		{
 			StringBuilder sb = new StringBuilder();
@@ -633,9 +569,6 @@ namespace УправлениеСкладом.Class
 			return sb.ToString();
 		}
 
-		/// <summary>
-		/// Общая стоимость товаров и их количество по всем складам.
-		/// </summary>
 		private static string GetTotalProducts()
 		{
 			try
@@ -667,9 +600,6 @@ namespace УправлениеСкладом.Class
 			return "Данные не найдены.";
 		}
 
-		/// <summary>
-		/// Формирует клавиатуру для выбора склада (с опциональной кнопкой "Назад").
-		/// </summary>
 		private static InlineKeyboardMarkup GetWarehouseKeyboard(bool withBackButton = false)
 		{
 			var buttons = new List<InlineKeyboardButton[]>();
@@ -703,14 +633,10 @@ namespace УправлениеСкладом.Class
 			return new InlineKeyboardMarkup(buttons);
 		}
 
-		/// <summary>
-		/// Получает список товаров для конкретного склада.
-		/// </summary>
 		private static string GetProductsByWarehouse(int warehouseId)
 		{
 			StringBuilder sb = new StringBuilder();
 			string warehouseName = "";
-
 			try
 			{
 				using (var conn = new SqlConnection(_connectionString))
@@ -722,11 +648,9 @@ namespace УправлениеСкладом.Class
 						object result = cmdWarehouse.ExecuteScalar();
 						warehouseName = result != null ? result.ToString() : $"ID {warehouseId}";
 					}
-
 					sb.AppendLine($"Товары для склада \"{warehouseName}\":");
 					sb.AppendLine("ID   | Название             | Категория      | Цена    | Кол-во");
 					sb.AppendLine(new string('-', 70));
-
 					const string query = @"
                         SELECT t.ТоварID, t.Наименование, t.Категория, t.Цена, sp.Количество
                         FROM Товары t
@@ -744,8 +668,7 @@ namespace УправлениеСкладом.Class
 								string category = reader.IsDBNull(2) ? "Без категории" : reader.GetString(2);
 								decimal price = reader.GetDecimal(3);
 								int quantity = reader.GetInt32(reader.GetOrdinal("Количество"));
-								sb.AppendLine(string.Format("{0,-4} | {1,-20} | {2,-14} | {3,7:F2} | {4,7}",
-									id, name, category, price, quantity));
+								sb.AppendLine(string.Format("{0,-4} | {1,-20} | {2,-14} | {3,7:F2} | {4,7}", id, name, category, price, quantity));
 							}
 						}
 					}
@@ -755,19 +678,41 @@ namespace УправлениеСкладом.Class
 			{
 				return "Ошибка получения товаров по складу: " + ex.Message;
 			}
-
 			return sb.ToString();
+		}
+
+		private static InlineKeyboardMarkup GetMainMenuForRole(string role)
+		{
+			string roleLower = role.ToLower().Trim();
+			var rows = new List<InlineKeyboardButton[]>();
+			if (roleLower == "администратор")
+			{
+				rows.Add(new[] { InlineKeyboardButton.WithCallbackData("Все товары", "view_products"), InlineKeyboardButton.WithCallbackData("Все сотрудники", "view_employees") });
+				rows.Add(new[] { InlineKeyboardButton.WithCallbackData("Количество товаров", "view_total_products") });
+			}
+			else if (roleLower == "менеджер")
+			{
+				rows.Add(new[] { InlineKeyboardButton.WithCallbackData("Все товары", "view_products") });
+			}
+			else if (roleLower == "сотрудник склада")
+			{
+				// Дополнительных кнопок нет
+			}
+			else
+			{
+				rows.Add(new[] { InlineKeyboardButton.WithCallbackData("Нет доступных команд", "none_cmd") });
+				return new InlineKeyboardMarkup(rows);
+			}
+			rows.Add(new[] { InlineKeyboardButton.WithCallbackData("QR сканер", "qr_scan") });
+			return new InlineKeyboardMarkup(rows);
 		}
 		#endregion
 	}
 
-	/// <summary>
-	/// Класс для преобразования Bitmap в массив оттенков серого (luminance) для ZXing.
-	/// </summary>
+	// Класс для преобразования Bitmap в массив оттенков серого для ZXing
 	public class BitmapLuminanceSource : LuminanceSource
 	{
 		private readonly byte[] luminances;
-
 		public BitmapLuminanceSource(Bitmap bitmap) : base(bitmap.Width, bitmap.Height)
 		{
 			int width = bitmap.Width;
@@ -779,7 +724,6 @@ namespace УправлениеСкладом.Class
 			byte[] pixelData = new byte[bytes];
 			System.Runtime.InteropServices.Marshal.Copy(bmpData.Scan0, pixelData, 0, bytes);
 			bitmap.UnlockBits(bmpData);
-
 			luminances = new byte[width * height];
 			for (int y = 0; y < height; y++)
 			{
@@ -794,9 +738,7 @@ namespace УправлениеСкладом.Class
 				}
 			}
 		}
-
 		public override byte[] Matrix => luminances;
-
 		public override byte[] getRow(int y, byte[] row)
 		{
 			int width = Width;
