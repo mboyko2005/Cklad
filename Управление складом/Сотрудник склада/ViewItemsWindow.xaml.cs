@@ -10,13 +10,12 @@ using System.Windows.Media;
 using MahApps.Metro.IconPacks;
 using Управление_складом.Themes;
 using Vosk;
-using NAudio.Wave;
+using Управление_складом.Class;
 
 namespace УправлениеСкладом.Сотрудник_склада
 {
 	public partial class ViewItemsWindow : Window, IThemeable
 	{
-		// Модель товара
 		public class Item
 		{
 			public int ТоварID { get; set; }
@@ -30,46 +29,45 @@ namespace УправлениеСкладом.Сотрудник_склада
 		private List<Item> displayedItems;
 		private string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
 
-		// Модель Vosk (только русская)
 		private Model modelRu;
-
-		// Захват аудио через NAudio
-		private WaveInEvent waveIn;
-
-		// Распознаватели Vosk (только русский)
-		private VoskRecognizer recognizerRu;
-
-		// Флаги для управления распознаванием
-		private bool stopRequested;
-		private bool isRecognizing = false;
+		private VoiceInputService voiceService;
 
 		public ViewItemsWindow()
 		{
 			InitializeComponent();
 			UpdateThemeIcon();
-			// Подписываемся на событие Loaded, чтобы выполнять тяжелые операции асинхронно после показа окна
-			this.Loaded += ViewItemsWindow_Loaded;
+			Loaded += ViewItemsWindow_Loaded;
 		}
 
 		private async void ViewItemsWindow_Loaded(object sender, RoutedEventArgs e)
 		{
-			// Асинхронно загружаем товары и модель Vosk
 			await LoadItemsAsync();
 			await InitializeVoskAsync();
+
+			if (modelRu != null)
+			{
+				voiceService = new VoiceInputService(modelRu);
+				voiceService.TextRecognized += text =>
+				{
+					Dispatcher.Invoke(() =>
+					{
+						SearchTextBox.Text = text;
+						ApplyFilters();
+					});
+				};
+			}
 		}
 
 		protected override void OnClosed(EventArgs e)
 		{
-			// При закрытии окна обязательно останавливаем распознавание
-			StopRecognition();
+			voiceService?.Stop();
 			base.OnClosed(e);
 		}
 
-		#region Загрузка и отображение товаров (асинхронно)
+		#region Загрузка товаров (асинхронно)
 		private async Task LoadItemsAsync()
 		{
 			var loadedItems = new List<Item>();
-
 			try
 			{
 				using (SqlConnection connection = new SqlConnection(connectionString))
@@ -101,15 +99,12 @@ namespace УправлениеСкладом.Сотрудник_склада
 			}
 			catch (SqlException ex)
 			{
-				// Отображаем сообщение об ошибке на UI-потоке
 				await Dispatcher.InvokeAsync(() =>
 					MessageBox.Show($"Ошибка загрузки товаров: {ex.Message}",
 						"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error));
 			}
-
 			items = loadedItems;
 			displayedItems = new List<Item>(items);
-			// Обновляем UI
 			ItemsDataGrid.ItemsSource = displayedItems;
 			ItemsDataGrid.SelectedIndex = -1;
 			ItemsDataGrid.UnselectAll();
@@ -129,7 +124,6 @@ namespace УправлениеСкладом.Сотрудник_склада
 			int quantityMax = int.MaxValue;
 			decimal priceMin = 0m;
 			decimal priceMax = decimal.MaxValue;
-
 			if (!string.IsNullOrEmpty(QuantityMinTextBox.Text))
 			{
 				if (!int.TryParse(QuantityMinTextBox.Text, out quantityMin))
@@ -166,7 +160,6 @@ namespace УправлениеСкладом.Сотрудник_склада
 					return;
 				}
 			}
-
 			displayedItems = items.Where(item =>
 				(string.IsNullOrEmpty(searchText) ||
 				 item.Наименование.ToLower().Contains(searchText) ||
@@ -174,14 +167,13 @@ namespace УправлениеСкладом.Сотрудник_склада
 				(item.Количество >= quantityMin && item.Количество <= quantityMax) &&
 				(item.Цена >= priceMin && item.Цена <= priceMax)
 			).ToList();
-
 			ItemsDataGrid.ItemsSource = displayedItems;
 			ItemsDataGrid.SelectedIndex = -1;
 			ItemsDataGrid.UnselectAll();
 		}
 		#endregion
 
-		#region Закрытие окна, переключение темы, QR-код
+		#region Управление UI (закрытие, тема, QR)
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
 		{
 			if (e.LeftButton == MouseButtonState.Pressed)
@@ -225,22 +217,18 @@ namespace УправлениеСкладом.Сотрудник_склада
 		}
 		#endregion
 
-		#region Инициализация Vosk (асинхронно)
+		#region Инициализация Vosk
 		private async Task InitializeVoskAsync()
 		{
 			try
 			{
 				Vosk.Vosk.SetLogLevel(0);
-
 				string baseDir = AppDomain.CurrentDomain.BaseDirectory;
 				string ruPath = System.IO.Path.Combine(baseDir, "Models", "ru");
-
 				if (System.IO.Directory.Exists(ruPath))
 				{
-					// Загружаем модель в отдельном потоке, чтобы не блокировать UI
 					modelRu = await Task.Run(() => new Model(ruPath));
 				}
-
 				if (modelRu == null)
 				{
 					await Dispatcher.InvokeAsync(() =>
@@ -252,152 +240,37 @@ namespace УправлениеСкладом.Сотрудник_склада
 			{
 				await Dispatcher.InvokeAsync(() =>
 					MessageBox.Show("Ошибка инициализации Vosk: " + ex.Message,
-					"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error));
+						"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error));
 			}
 		}
 		#endregion
 
-		#region Голосовой поиск (кнопка микрофона)
+		#region Голосовой ввод через VoiceInputService
 		private void VoiceSearchButton_Click(object sender, RoutedEventArgs e)
 		{
-			// Если распознавание уже идёт, то остановить его
-			if (isRecognizing)
+			if (voiceService == null)
 			{
-				StopRecognition();
+				MessageBox.Show("Модель не загружена.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
-
-			if (modelRu == null)
+			// Если голосовой ввод уже ведётся, то остановить его
+			if (voiceService.IsRunning)
 			{
-				MessageBox.Show("Нет доступной модели Vosk (ru). Скопируйте её в папку Models.",
-					"Распознавание речи недоступно", MessageBoxButton.OK, MessageBoxImage.Warning);
+				voiceService.Stop();
+				Dispatcher.Invoke(() =>
+				{
+					VoiceIcon.Kind = PackIconMaterialKind.Microphone;
+					VoiceIcon.Foreground = (Brush)FindResource("PrimaryBrush");
+				});
 				return;
 			}
-
-			// Меняем иконку на красную точку
+			// Меняем иконку на красную точку и запускаем ввод
 			Dispatcher.Invoke(() =>
 			{
 				VoiceIcon.Kind = PackIconMaterialKind.RecordCircle;
 				VoiceIcon.Foreground = Brushes.Red;
 			});
-
-			waveIn = new WaveInEvent { WaveFormat = new WaveFormat(16000, 1) };
-			recognizerRu = new VoskRecognizer(modelRu, 16000.0f);
-
-			stopRequested = false;
-			isRecognizing = true;
-
-			waveIn.DataAvailable += WaveIn_DataAvailable;
-			waveIn.StartRecording();
-		}
-
-		private void WaveIn_DataAvailable(object sender, WaveInEventArgs e)
-		{
-			if (stopRequested || recognizerRu == null)
-				return;
-
-			bool resultRu = false;
-			try
-			{
-				resultRu = recognizerRu.AcceptWaveform(e.Buffer, e.BytesRecorded);
-			}
-			catch (Exception)
-			{
-				StopRecognition();
-				return;
-			}
-
-			if (resultRu)
-			{
-				string json = string.Empty;
-				try
-				{
-					json = recognizerRu.Result();
-				}
-				catch (Exception)
-				{
-					StopRecognition();
-					return;
-				}
-				ProcessVoskResult(json, "ru");
-			}
-		}
-
-		private void ProcessVoskResult(string json, string lang)
-		{
-			string recognizedText = ExtractTextFromVoskJson(json);
-
-			if (!string.IsNullOrWhiteSpace(recognizedText))
-			{
-				Dispatcher.Invoke(() =>
-				{
-					SearchTextBox.Text = recognizedText;
-					ApplyFilters();
-				});
-			}
-			StopRecognition();
-		}
-
-		private string ExtractTextFromVoskJson(string json)
-		{
-			const string pattern = "\"text\" : \"";
-			int idx = json.IndexOf(pattern, StringComparison.OrdinalIgnoreCase);
-			if (idx < 0) return "";
-			idx += pattern.Length;
-			int end = json.IndexOf("\"", idx);
-			if (end < 0) return "";
-			return json.Substring(idx, end - idx).Trim();
-		}
-
-		private void StopRecognition()
-		{
-			if (stopRequested)
-				return;
-
-			stopRequested = true;
-
-			if (waveIn != null)
-			{
-				try
-				{
-					waveIn.DataAvailable -= WaveIn_DataAvailable;
-					waveIn.StopRecording();
-				}
-				catch (Exception)
-				{
-					// Игнорируем исключения при остановке записи
-				}
-				finally
-				{
-					waveIn.Dispose();
-					waveIn = null;
-				}
-			}
-
-			if (recognizerRu != null)
-			{
-				try
-				{
-					recognizerRu.Dispose();
-				}
-				catch (Exception)
-				{
-					// Игнорируем исключения при освобождении распознавателя
-				}
-				finally
-				{
-					recognizerRu = null;
-				}
-			}
-
-			isRecognizing = false;
-
-			// Возвращаем иконку микрофона к исходному виду
-			Dispatcher.Invoke(() =>
-			{
-				VoiceIcon.Kind = PackIconMaterialKind.Microphone;
-				VoiceIcon.Foreground = (Brush)FindResource("PrimaryBrush");
-			});
+			voiceService.Start();
 		}
 		#endregion
 	}
