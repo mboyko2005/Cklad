@@ -4,9 +4,10 @@
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         Title="Управление запасами" Height="600" Width="800"
         WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
-        MouseDown="Window_MouseDown">
+        MouseDown="Window_MouseDown"
+        Loaded="Window_Loaded">
     <Window.Resources>
-        <!-- Общие стили для кнопок -->
+        <!-- Стиль для кнопок -->
         <Style x:Key="ControlButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
@@ -75,6 +76,14 @@
             </Setter>
         </Style>
 
+        <!-- Стиль для SmallIconButton -->
+        <Style x:Key="SmallIconButtonStyle" TargetType="Button" BasedOn="{StaticResource ControlButtonStyle}">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+        </Style>
+
         <!-- Стиль для TextBox с иконкой и водяным знаком -->
         <Style x:Key="IconWatermarkTextBoxStyle" TargetType="TextBox">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
@@ -86,33 +95,22 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
                         <Grid>
-                            <!-- Корневой Border -->
                             <Border Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
                                     CornerRadius="10"/>
-
-                            <!-- Содержимое TextBox -->
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-
-                                <!-- Иконка -->
                                 <iconPacks:PackIconMaterial x:Name="Icon"
                                                             Width="20" Height="20"
                                                             Foreground="{TemplateBinding Foreground}"
                                                             VerticalAlignment="Center"
                                                             HorizontalAlignment="Left"
                                                             Margin="5,0,5,0"/>
-
-                                <!-- Содержимое TextBox -->
-                                <ScrollViewer Grid.Column="1"
-                                              Margin="0"
-                                              x:Name="PART_ContentHost"/>
-
-                                <!-- Водяной знак -->
+                                <ScrollViewer Grid.Column="1" x:Name="PART_ContentHost"/>
                                 <TextBlock x:Name="Watermark"
                                            Text="{TemplateBinding Tag}"
                                            Foreground="Gray"
@@ -123,16 +121,12 @@
                             </Grid>
                         </Grid>
                         <ControlTemplate.Triggers>
-                            <!-- Показать водяной знак, если текст пуст -->
                             <Trigger Property="Text" Value="">
                                 <Setter TargetName="Watermark" Property="Visibility" Value="Visible"/>
                             </Trigger>
-                            <!-- Скрыть водяной знак при фокусе -->
                             <Trigger Property="IsFocused" Value="True">
                                 <Setter TargetName="Watermark" Property="Visibility" Value="Collapsed"/>
                             </Trigger>
-
-                            <!-- Установка иконки и цвета для поиска по наименованию или категории -->
                             <Trigger Property="Tag" Value="Поиск по наименованию или категории">
                                 <Setter TargetName="Icon" Property="Kind" Value="Magnify"/>
                                 <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
@@ -221,36 +215,55 @@
             <StackPanel>
                 <!-- Заголовок с кнопкой закрытия -->
                 <Grid Margin="0,0,0,10">
-                    <TextBlock Text="Управление запасами" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Управление запасами" FontSize="18" FontWeight="Bold" 
+                               Foreground="{DynamicResource PrimaryBrush}" 
+                               HorizontalAlignment="Center"/>
                     <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseButton_Click">
-                        <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
+                        <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" 
+                                                    Foreground="{DynamicResource PrimaryBrush}"/>
                     </Button>
                 </Grid>
 
                 <!-- Панель фильтров -->
                 <StackPanel Orientation="Vertical" Margin="0,0,0,10">
-                    <!-- Поиск -->
-                    <TextBox x:Name="SearchTextBox" Width="300" Margin="0,0,0,10"
-                             Style="{StaticResource IconWatermarkTextBoxStyle}" Tag="Поиск по наименованию или категории"
-                             TextChanged="Filter_TextChanged" />
-
-                    <!-- Фильтр по количеству -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                        <TextBox x:Name="QuantityMinTextBox" Width="140" Margin="0,0,10,0"
-                                 Style="{StaticResource IconWatermarkTextBoxStyle}" Tag="Мин. Количество"
-                                 TextChanged="Filter_TextChanged" />
-                        <TextBox x:Name="QuantityMaxTextBox" Width="140"
-                                 Style="{StaticResource IconWatermarkTextBoxStyle}" Tag="Макс. Количество"
-                                 TextChanged="Filter_TextChanged" />
+                    <!-- Поиск с голосовым вводом (центрировано) -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                        <TextBox x:Name="SearchTextBox" Width="300" 
+                                 Style="{StaticResource IconWatermarkTextBoxStyle}" 
+                                 Tag="Поиск по наименованию или категории"
+                                 TextChanged="Filter_TextChanged"/>
+                        <Button x:Name="VoiceSearchButton" 
+                                Style="{StaticResource SmallIconButtonStyle}"
+                                ToolTip="Голосовой поиск" 
+                                Click="VoiceSearchButton_Click" 
+                                Margin="5,0,0,0">
+                            <iconPacks:PackIconMaterial x:Name="VoiceIcon" Kind="Microphone" 
+                                                        Width="16" Height="16" 
+                                                        Foreground="{DynamicResource PrimaryBrush}"/>
+                        </Button>
                     </StackPanel>
 
-                    <!-- Иконка для отображения всех товаров -->
+                    <!-- Фильтр по количеству (центрировано) -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
+                        <TextBox x:Name="QuantityMinTextBox" Width="140" Margin="0,0,10,0"
+                                 Style="{StaticResource IconWatermarkTextBoxStyle}" 
+                                 Tag="Мин. Количество" 
+                                 TextChanged="Filter_TextChanged"/>
+                        <TextBox x:Name="QuantityMaxTextBox" Width="140" 
+                                 Style="{StaticResource IconWatermarkTextBoxStyle}" 
+                                 Tag="Макс. Количество" 
+                                 TextChanged="Filter_TextChanged"/>
+                    </StackPanel>
+
+                    <!-- Кнопка отображения всех товаров (центрировано) -->
                     <ToggleButton x:Name="ShowAllToggleButton" Width="30" Height="30" Margin="0,0,0,10"
                                   Click="ShowAllToggleButton_Click"
                                   ToolTip="Показывать все товары"
-                                  Style="{StaticResource ControlToggleButtonStyle}">
-                        <iconPacks:PackIconMaterial x:Name="ShowAllIcon" Kind="FilterVariant" Width="24" Height="24" 
+                                  Style="{StaticResource ControlToggleButtonStyle}"
+                                  HorizontalAlignment="Center">
+                        <iconPacks:PackIconMaterial x:Name="ShowAllIcon" Kind="FilterVariant" 
+                                                    Width="24" Height="24" 
                                                     Foreground="{DynamicResource PrimaryBrush}"/>
                     </ToggleButton>
                 </StackPanel>
@@ -270,7 +283,9 @@
                 <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
                         HorizontalAlignment="Center" Margin="0,20,0,0"
                         Click="ToggleTheme_Click">
-                    <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
+                    <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" 
+                                                Width="24" Height="24" 
+                                                Foreground="{DynamicResource PrimaryBrush}"/>
                 </Button>
             </StackPanel>
         </Border>
