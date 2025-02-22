@@ -8,294 +8,293 @@ using System.ComponentModel;
 
 namespace УправлениеСкладом
 {
-    public partial class SettingsWindow : Window, INotifyPropertyChanged
-    {
-        // Свойства для биндинга
-        private string _newPassword;
-        public string NewPassword
-        {
-            get => _newPassword;
-            set
-            {
-                _newPassword = value;
-                OnPropertyChanged(nameof(NewPassword));
-            }
-        }
+	public partial class SettingsWindow : Window, INotifyPropertyChanged
+	{
+		// Свойства для биндинга
+		private string _newPassword;
+		public string NewPassword
+		{
+			get => _newPassword;
+			set
+			{
+				_newPassword = value;
+				OnPropertyChanged(nameof(NewPassword));
+			}
+		}
 
-        private string _confirmPassword;
-        public string ConfirmPassword
-        {
-            get => _confirmPassword;
-            set
-            {
-                _confirmPassword = value;
-                OnPropertyChanged(nameof(ConfirmPassword));
-            }
-        }
+		private string _confirmPassword;
+		public string ConfirmPassword
+		{
+			get => _confirmPassword;
+			set
+			{
+				_confirmPassword = value;
+				OnPropertyChanged(nameof(ConfirmPassword));
+			}
+		}
 
-        public event PropertyChangedEventHandler PropertyChanged;
+		public event PropertyChangedEventHandler PropertyChanged;
 
-        // Строка подключения к базе данных
-        private readonly string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
+		// Строка подключения к базе данных
+		private readonly string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
 
-        public SettingsWindow()
-        {
-            InitializeComponent();
-            DataContext = this;
-            InitializeSettings();
+		public SettingsWindow()
+		{
+			InitializeComponent();
+			DataContext = this;
+			InitializeSettings();
 
-            // Автоматическое определение текущего пользователя
-            UserManager.LoadCurrentUser(connectionString);
-        }
+			// Получаем имя текущего пользователя из глобальных свойств приложения
+			string currentUsername = GetLoggedInUsername();
+			if (!string.IsNullOrWhiteSpace(currentUsername))
+			{
+				UserManager.LoadCurrentUser(connectionString, currentUsername);
+			}
+			else
+			{
+				MessageBox.Show("Не удалось определить текущего пользователя.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+		}
 
-        private void InitializeSettings()
-        {
-            // Установка текущей темы в ComboBox
-            ThemeComboBox.SelectedIndex = ThemeManager.IsDarkTheme ? 1 : 0;
-            UpdateThemeIcon();
-        }
+		// Метод для получения имени пользователя, сохранённого при авторизации
+		private string GetLoggedInUsername()
+		{
+			return Application.Current.Properties["CurrentUsername"]?.ToString() ?? string.Empty;
+		}
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.Close();
-        }
+		private void InitializeSettings()
+		{
+			ThemeComboBox.SelectedIndex = ThemeManager.IsDarkTheme ? 1 : 0;
+			UpdateThemeIcon();
+		}
 
-        private void SaveSettings_Click(object sender, RoutedEventArgs e)
-        {
-            // Здесь можно добавить другие настройки, если необходимо
-            MessageBox.Show("Настройки успешно сохранены.", "Настройки", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
+		private void CloseButton_Click(object sender, RoutedEventArgs e)
+		{
+			this.Close();
+		}
 
-        private void ToggleTheme_Click(object sender, RoutedEventArgs e)
-        {
-            ThemeManager.ToggleTheme();
-            UpdateThemeIcon();
-            // Обновление ComboBox при ручном переключении темы
-            ThemeComboBox.SelectedIndex = ThemeManager.IsDarkTheme ? 1 : 0;
-        }
+		private void SaveSettings_Click(object sender, RoutedEventArgs e)
+		{
+			MessageBox.Show("Настройки успешно сохранены.", "Настройки", MessageBoxButton.OK, MessageBoxImage.Information);
+		}
 
-        // Реализация интерфейса IThemeable
-        public void UpdateThemeIcon()
-        {
-            if (ThemeIcon != null)
-            {
-                ThemeIcon.Kind = ThemeManager.IsDarkTheme ? PackIconMaterialKind.WeatherNight : PackIconMaterialKind.WeatherSunny;
-            }
-        }
+		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
+		{
+			ThemeManager.ToggleTheme();
+			UpdateThemeIcon();
+			ThemeComboBox.SelectedIndex = ThemeManager.IsDarkTheme ? 1 : 0;
+		}
 
-        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ChangedButton == MouseButton.Left)
-                this.DragMove();
-        }
+		public void UpdateThemeIcon()
+		{
+			if (ThemeIcon != null)
+			{
+				ThemeIcon.Kind = ThemeManager.IsDarkTheme ? PackIconMaterialKind.WeatherNight : PackIconMaterialKind.WeatherSunny;
+			}
+		}
 
-        // Обработчики изменений пароля
-        private void NewPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
-        {
-            NewPassword = NewPasswordBox.Password;
-            ValidatePasswords();
-        }
+		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+		{
+			if (e.ChangedButton == MouseButton.Left)
+				this.DragMove();
+		}
 
-        private void ConfirmPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
-        {
-            ConfirmPassword = ConfirmPasswordBox.Password;
-            ValidatePasswords();
-        }
+		// Обработчики изменения пароля
+		private void NewPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+		{
+			NewPassword = NewPasswordBox.Password;
+			ValidatePasswords();
+		}
 
-        // Метод валидации паролей и обновления иконок
-        private void ValidatePasswords()
-        {
-            bool isNewPasswordValid = !string.IsNullOrWhiteSpace(NewPassword);
-            bool isConfirmPasswordValid = !string.IsNullOrWhiteSpace(ConfirmPassword);
-            bool doPasswordsMatch = NewPassword == ConfirmPassword;
+		private void ConfirmPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+		{
+			ConfirmPassword = ConfirmPasswordBox.Password;
+			ValidatePasswords();
+		}
 
-            // Обновление иконки для нового пароля
-            if (isNewPasswordValid)
-            {
-                NewPasswordStatusIcon.Kind = PackIconMaterialKind.CheckCircleOutline;
-                NewPasswordStatusIcon.Foreground = System.Windows.Media.Brushes.Green;
-                NewPasswordStatusIcon.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                NewPasswordStatusIcon.Kind = PackIconMaterialKind.CloseCircleOutline;
-                NewPasswordStatusIcon.Foreground = System.Windows.Media.Brushes.Red;
-                NewPasswordStatusIcon.Visibility = Visibility.Visible;
-            }
+		// Метод валидации паролей и обновления иконок
+		private void ValidatePasswords()
+		{
+			bool isNewPasswordValid = !string.IsNullOrWhiteSpace(NewPassword);
+			bool isConfirmPasswordValid = !string.IsNullOrWhiteSpace(ConfirmPassword);
+			bool doPasswordsMatch = NewPassword == ConfirmPassword;
 
-            // Обновление иконки для подтверждения пароля
-            if (isConfirmPasswordValid && doPasswordsMatch)
-            {
-                ConfirmPasswordStatusIcon.Kind = PackIconMaterialKind.CheckCircleOutline;
-                ConfirmPasswordStatusIcon.Foreground = System.Windows.Media.Brushes.Green;
-                ConfirmPasswordStatusIcon.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                ConfirmPasswordStatusIcon.Kind = PackIconMaterialKind.CloseCircleOutline;
-                ConfirmPasswordStatusIcon.Foreground = System.Windows.Media.Brushes.Red;
-                ConfirmPasswordStatusIcon.Visibility = Visibility.Visible;
-            }
-        }
+			var newPasswordStatusIcon = (PackIconMaterial)NewPasswordBox.Template.FindName("NewPasswordStatusIcon", NewPasswordBox);
+			var confirmPasswordStatusIcon = (PackIconMaterial)ConfirmPasswordBox.Template.FindName("ConfirmPasswordStatusIcon", ConfirmPasswordBox);
 
-        private void SavePassword_Click(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(NewPassword) || string.IsNullOrWhiteSpace(ConfirmPassword))
-            {
-                MessageBox.Show("Пароль не может быть пустым.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+			if (newPasswordStatusIcon != null)
+			{
+				if (isNewPasswordValid)
+				{
+					newPasswordStatusIcon.Kind = PackIconMaterialKind.CheckCircleOutline;
+					newPasswordStatusIcon.Foreground = System.Windows.Media.Brushes.Green;
+					newPasswordStatusIcon.Visibility = Visibility.Visible;
+				}
+				else
+				{
+					newPasswordStatusIcon.Kind = PackIconMaterialKind.CloseCircleOutline;
+					newPasswordStatusIcon.Foreground = System.Windows.Media.Brushes.Red;
+					newPasswordStatusIcon.Visibility = Visibility.Visible;
+				}
+			}
 
-            if (NewPassword != ConfirmPassword)
-            {
-                MessageBox.Show("Пароли не совпадают.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+			if (confirmPasswordStatusIcon != null)
+			{
+				if (isConfirmPasswordValid && doPasswordsMatch)
+				{
+					confirmPasswordStatusIcon.Kind = PackIconMaterialKind.CheckCircleOutline;
+					confirmPasswordStatusIcon.Foreground = System.Windows.Media.Brushes.Green;
+					confirmPasswordStatusIcon.Visibility = Visibility.Visible;
+				}
+				else
+				{
+					confirmPasswordStatusIcon.Kind = PackIconMaterialKind.CloseCircleOutline;
+					confirmPasswordStatusIcon.Foreground = System.Windows.Media.Brushes.Red;
+					confirmPasswordStatusIcon.Visibility = Visibility.Visible;
+				}
+			}
+		}
 
-            // Получение текущего пользователя
-            var currentUser = UserManager.CurrentUser;
-            if (currentUser == null)
-            {
-                MessageBox.Show("Не удалось определить текущего пользователя.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+		private void SavePassword_Click(object sender, RoutedEventArgs e)
+		{
+			if (string.IsNullOrWhiteSpace(NewPassword) || string.IsNullOrWhiteSpace(ConfirmPassword))
+			{
+				MessageBox.Show("Пароль не может быть пустым.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				return;
+			}
 
-            // Логика смены пароля для текущего пользователя
-            bool isChanged = UserManager.ChangePassword(connectionString, NewPassword);
-            if (isChanged)
-            {
-                MessageBox.Show("Пароль успешно изменен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                // Очистка полей
-                NewPasswordBox.Password = string.Empty;
-                ConfirmPasswordBox.Password = string.Empty;
-                NewPasswordStatusIcon.Visibility = Visibility.Collapsed;
-                ConfirmPasswordStatusIcon.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                MessageBox.Show("Не удалось изменить пароль. Пожалуйста, попробуйте снова.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
+			if (NewPassword != ConfirmPassword)
+			{
+				MessageBox.Show("Пароли не совпадают.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				return;
+			}
 
-        // Обработчик изменения темы через ComboBox
-        private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (ThemeComboBox.SelectedItem is ComboBoxItem selectedItem)
-            {
-                string selectedTheme = selectedItem.Content.ToString();
-                if (selectedTheme == "Светлая" && ThemeManager.IsDarkTheme)
-                {
-                    ThemeManager.ToggleTheme();
-                    UpdateThemeIcon();
-                }
-                else if (selectedTheme == "Тёмная" && !ThemeManager.IsDarkTheme)
-                {
-                    ThemeManager.ToggleTheme();
-                    UpdateThemeIcon();
-                }
-            }
-        }
+			if (UserManager.CurrentUser == null)
+			{
+				MessageBox.Show("Не удалось определить текущего пользователя.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
+			}
 
-        // Реализация INotifyPropertyChanged
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+			bool isChanged = UserManager.ChangePassword(connectionString, NewPassword);
+			if (isChanged)
+			{
+				MessageBox.Show("Пароль успешно изменен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+				NewPasswordBox.Password = string.Empty;
+				ConfirmPasswordBox.Password = string.Empty;
 
-        /// <summary>
-        /// Класс для управления пользователями.
-        /// Весь функционал реализован здесь без добавления новых классов.
-        /// </summary>
-        public static class UserManager
-        {
-            // Текущее состояние пользователя
-            public static User CurrentUser { get; set; }
+				var newPasswordStatusIcon = (PackIconMaterial)NewPasswordBox.Template.FindName("NewPasswordStatusIcon", NewPasswordBox);
+				var confirmPasswordStatusIcon = (PackIconMaterial)ConfirmPasswordBox.Template.FindName("ConfirmPasswordStatusIcon", ConfirmPasswordBox);
 
-            /// <summary>
-            /// Класс пользователя.
-            /// </summary>
-            public class User
-            {
-                public string Username { get; set; }
-                public int RoleID { get; set; }
-            }
+				if (newPasswordStatusIcon != null)
+					newPasswordStatusIcon.Visibility = Visibility.Collapsed;
+				if (confirmPasswordStatusIcon != null)
+					confirmPasswordStatusIcon.Visibility = Visibility.Collapsed;
+			}
+			else
+			{
+				MessageBox.Show("Не удалось изменить пароль. Пожалуйста, попробуйте снова.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+		}
 
-            /// <summary>
-            /// Метод для автоматического определения текущего пользователя.
-            /// В данном примере выбирается первый пользователь из базы данных.
-            /// </summary>
-            /// <param name="connectionString">Строка подключения к базе данных.</param>
-            public static void LoadCurrentUser(string connectionString)
-            {
-                try
-                {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        conn.Open();
-                        // Здесь можно реализовать логику определения текущего пользователя
-                        // Например, выбор пользователя по сессии, токену и т.д.
-                        // В этом примере выбирается первый пользователь из таблицы
-                        string query = "SELECT TOP 1 ИмяПользователя, РольID FROM Пользователи";
+		private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (ThemeComboBox.SelectedItem is ComboBoxItem selectedItem)
+			{
+				string selectedTheme = selectedItem.Content.ToString();
+				if (selectedTheme == "Светлая" && ThemeManager.IsDarkTheme)
+				{
+					ThemeManager.ToggleTheme();
+					UpdateThemeIcon();
+				}
+				else if (selectedTheme == "Тёмная" && !ThemeManager.IsDarkTheme)
+				{
+					ThemeManager.ToggleTheme();
+					UpdateThemeIcon();
+				}
+			}
+		}
 
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            using (SqlDataReader reader = cmd.ExecuteReader())
-                            {
-                                if (reader.Read())
-                                {
-                                    CurrentUser = new User
-                                    {
-                                        Username = reader["ИмяПользователя"].ToString(),
-                                        RoleID = Convert.ToInt32(reader["РольID"])
-                                    };
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Ошибка при загрузке текущего пользователя: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
+		protected void OnPropertyChanged(string propertyName)
+		{
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
 
-            /// <summary>
-            /// Метод для смены пароля текущего пользователя.
-            /// </summary>
-            /// <param name="connectionString">Строка подключения к базе данных.</param>
-            /// <param name="newPassword">Новый пароль.</param>
-            /// <returns>Возвращает true, если пароль успешно изменен; иначе false.</returns>
-            public static bool ChangePassword(string connectionString, string newPassword)
-            {
-                if (CurrentUser == null)
-                    return false;
+		/// <summary>
+		/// Класс для управления пользователями.
+		/// </summary>
+		public static class UserManager
+		{
+			public static User CurrentUser { get; set; }
 
-                try
-                {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        conn.Open();
+			public class User
+			{
+				public string Username { get; set; }
+				public int RoleID { get; set; }
+			}
 
-                        string query = "UPDATE Пользователи SET Пароль = @Пароль WHERE ИмяПользователя = @ИмяПользователя";
+			/// <summary>
+			/// Загружает данные пользователя по заданному имени.
+			/// </summary>
+			public static void LoadCurrentUser(string connectionString, string username)
+			{
+				try
+				{
+					using (SqlConnection conn = new SqlConnection(connectionString))
+					{
+						conn.Open();
+						string query = "SELECT ИмяПользователя, РольID FROM Пользователи WHERE ИмяПользователя = @ИмяПользователя";
+						using (SqlCommand cmd = new SqlCommand(query, conn))
+						{
+							cmd.Parameters.AddWithValue("@ИмяПользователя", username);
+							using (SqlDataReader reader = cmd.ExecuteReader())
+							{
+								if (reader.Read())
+								{
+									CurrentUser = new User
+									{
+										Username = reader["ИмяПользователя"].ToString(),
+										RoleID = Convert.ToInt32(reader["РольID"])
+									};
+								}
+							}
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Ошибка при загрузке текущего пользователя: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+				}
+			}
 
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@Пароль", newPassword);
-                            cmd.Parameters.AddWithValue("@ИмяПользователя", CurrentUser.Username);
+			/// <summary>
+			/// Меняет пароль текущего пользователя в базе.
+			/// </summary>
+			public static bool ChangePassword(string connectionString, string newPassword)
+			{
+				if (CurrentUser == null)
+					return false;
 
-                            int rowsAffected = cmd.ExecuteNonQuery();
-
-                            return rowsAffected > 0;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Логирование ошибки или вывод сообщения
-                    MessageBox.Show($"Ошибка при смене пароля: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return false;
-                }
-            }
-        }
-    }
+				try
+				{
+					using (SqlConnection conn = new SqlConnection(connectionString))
+					{
+						conn.Open();
+						string query = "UPDATE Пользователи SET Пароль = @Пароль WHERE ИмяПользователя = @ИмяПользователя";
+						using (SqlCommand cmd = new SqlCommand(query, conn))
+						{
+							cmd.Parameters.AddWithValue("@Пароль", newPassword);
+							cmd.Parameters.AddWithValue("@ИмяПользователя", CurrentUser.Username);
+							int rowsAffected = cmd.ExecuteNonQuery();
+							return rowsAffected > 0;
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Ошибка при смене пароля: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+					return false;
+				}
+			}
+		}
+	}
 }

@@ -3,17 +3,20 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls; // <-- Нужно для SelectionChangedEventArgs
+using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using MahApps.Metro.IconPacks;
 using Управление_складом.Themes;
+using Vosk;
+using Управление_складом.Class;
 
 namespace УправлениеСкладом
 {
 	public partial class ManageOrdersWindow : Window, IThemeable
 	{
-		// Модель товара (добавили свойство Location для местоположения)
+		// Модель товара (обновлено – добавлено свойство Quantity, которое теперь не редактируется с панели)
 		public class Product
 		{
 			public int Id { get; set; }
@@ -22,7 +25,8 @@ namespace УправлениеСкладом
 			public string Name { get; set; }
 			public string Category { get; set; }
 			public decimal Price { get; set; }
-			public string Location { get; set; }  // <-- Добавлено
+			public int Quantity { get; set; } // Значение по умолчанию будет 0
+			public string Location { get; set; }
 		}
 
 		// Модель поставщика
@@ -35,12 +39,16 @@ namespace УправлениеСкладом
 		private List<Product> Products;
 		private List<Supplier> Suppliers;
 
-		// Режим редактирования (true = редактирование, false = добавление)
+		// Режим редактирования (true – редактирование, false – добавление)
 		private bool IsEditMode = false;
 		private Product SelectedProduct;
 
 		// Строка подключения к базе
 		private string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
+
+		// Поля для голосового поиска
+		private Model modelRu;
+		private VoiceInputService voiceService;
 
 		public ManageOrdersWindow()
 		{
@@ -48,6 +56,33 @@ namespace УправлениеСкладом
 			LoadSuppliers();
 			LoadProducts();
 			UpdateThemeIcon();
+			// Подписываемся на событие Loaded для инициализации Vosk
+			this.Loaded += ManageOrdersWindow_Loaded;
+		}
+
+		private async void ManageOrdersWindow_Loaded(object sender, RoutedEventArgs e)
+		{
+			await InitializeVoskAsync();
+			if (modelRu != null)
+			{
+				voiceService = new VoiceInputService(modelRu);
+				voiceService.TextRecognized += text =>
+				{
+					Dispatcher.Invoke(() =>
+					{
+						SearchTextBox.Text = text;
+						ApplyFilters();
+					});
+				};
+			}
+		}
+
+		/// <summary>
+		/// Обработчик изменения выделения в DataGrid.
+		/// </summary>
+		private void OrdersDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			// Можно добавить логику обработки выделения или оставить пустым.
 		}
 
 		/// <summary>
@@ -79,7 +114,6 @@ namespace УправлениеСкладом
 						}
 					}
 
-					// Привязываем список поставщиков к ComboBox
 					ClientComboBox.ItemsSource = Suppliers;
 				}
 				catch (SqlException ex)
@@ -92,8 +126,7 @@ namespace УправлениеСкладом
 
 		/// <summary>
 		/// Загрузка списка товаров из базы данных.
-		/// Для получения местоположения делаем LEFT JOIN на СкладскиеПозиции и Склады,
-		/// используя MIN(...) — если у товара несколько складских позиций, берём первое.
+		/// Запрос модифицирован для получения суммы количества товара.
 		/// </summary>
 		private void LoadProducts()
 		{
@@ -111,6 +144,7 @@ namespace УправлениеСкладом
                                t.Наименование,
                                t.Категория,
                                t.Цена,
+                               ISNULL(SUM(sp.Количество), 0) AS Количество,
                                MIN(s.Наименование) AS Местоположение
                         FROM Товары t
                         INNER JOIN Поставщики p ON t.ПоставщикID = p.ПоставщикID
@@ -138,6 +172,9 @@ namespace УправлениеСкладом
 									Price = reader.IsDBNull(reader.GetOrdinal("Цена"))
 										? 0m
 										: reader.GetDecimal(reader.GetOrdinal("Цена")),
+									Quantity = reader.IsDBNull(reader.GetOrdinal("Количество"))
+										? 0
+										: reader.GetInt32(reader.GetOrdinal("Количество")),
 									Location = reader.IsDBNull(reader.GetOrdinal("Местоположение"))
 										? string.Empty
 										: reader.GetString(reader.GetOrdinal("Местоположение"))
@@ -147,7 +184,6 @@ namespace УправлениеСкладом
 						}
 					}
 
-					// Привязываем список товаров к DataGrid
 					OrdersDataGrid.ItemsSource = Products;
 				}
 				catch (SqlException ex)
@@ -159,15 +195,54 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Обработчик изменения выделения в DataGrid (пустой, чтобы не было ошибки).
+		/// Фильтрация товаров по поисковому запросу.
 		/// </summary>
-		private void OrdersDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		private void ApplyFilters()
 		{
-			// Оставляем пустым или реализуйте свою логику, если нужно
+			string searchText = SearchTextBox.Text.Trim().ToLower();
+			var filtered = Products.Where(p =>
+				string.IsNullOrEmpty(searchText) ||
+				p.Name.ToLower().Contains(searchText) ||
+				p.Category.ToLower().Contains(searchText)
+			).ToList();
+			OrdersDataGrid.ItemsSource = filtered;
+		}
+
+		private void Filter_TextChanged(object sender, TextChangedEventArgs e)
+		{
+			ApplyFilters();
 		}
 
 		/// <summary>
-		/// Закрытие окна
+		/// Голосовой поиск – запуск/остановка голосового ввода.
+		/// </summary>
+		private void VoiceSearchButton_Click(object sender, RoutedEventArgs e)
+		{
+			if (voiceService == null)
+			{
+				MessageBox.Show("Модель не загружена.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+				return;
+			}
+			if (voiceService.IsRunning)
+			{
+				voiceService.Stop();
+				Dispatcher.Invoke(() =>
+				{
+					VoiceIcon.Kind = PackIconMaterialKind.Microphone;
+					VoiceIcon.Foreground = (Brush)FindResource("PrimaryBrush");
+				});
+				return;
+			}
+			Dispatcher.Invoke(() =>
+			{
+				VoiceIcon.Kind = PackIconMaterialKind.RecordCircle;
+				VoiceIcon.Foreground = Brushes.Red;
+			});
+			voiceService.Start();
+		}
+
+		/// <summary>
+		/// Закрытие окна.
 		/// </summary>
 		private void CloseButton_Click(object sender, RoutedEventArgs e)
 		{
@@ -175,7 +250,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Кнопка "Добавить" – показ панели для добавления нового товара
+		/// Кнопка "Добавить" – открытие панели для добавления нового товара.
 		/// </summary>
 		private void AddOrder_Click(object sender, RoutedEventArgs e)
 		{
@@ -186,7 +261,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Кнопка "Редактировать" – показ панели для редактирования выбранного товара
+		/// Кнопка "Редактировать" – открытие панели для редактирования выбранного товара.
 		/// </summary>
 		private void EditOrder_Click(object sender, RoutedEventArgs e)
 		{
@@ -206,7 +281,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Кнопка "Удалить" – удаление выбранного товара
+		/// Кнопка "Удалить" – удаление выбранного товара.
 		/// </summary>
 		private void DeleteOrder_Click(object sender, RoutedEventArgs e)
 		{
@@ -223,7 +298,6 @@ namespace УправлениеСкладом
 						try
 						{
 							connection.Open();
-							// Удаление товара
 							string deleteQuery = "DELETE FROM Товары WHERE ТоварID = @ProductId";
 							using (SqlCommand deleteCommand = new SqlCommand(deleteQuery, connection))
 							{
@@ -231,7 +305,6 @@ namespace УправлениеСкладом
 								deleteCommand.ExecuteNonQuery();
 							}
 
-							// Удаляем из списка и обновляем DataGrid
 							Products.Remove(selectedProduct);
 							OrdersDataGrid.ItemsSource = null;
 							OrdersDataGrid.ItemsSource = Products;
@@ -255,7 +328,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Кнопка "Сохранить" в правой панели
+		/// Кнопка "Сохранить" – обработка добавления или редактирования товара.
 		/// </summary>
 		private void SaveOrder_Click(object sender, RoutedEventArgs e)
 		{
@@ -266,7 +339,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Кнопка "Отмена" в правой панели
+		/// Кнопка "Отмена" – скрытие панели редактирования.
 		/// </summary>
 		private void CancelOrder_Click(object sender, RoutedEventArgs e)
 		{
@@ -274,7 +347,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Отображение правой панели
+		/// Отображение правой панели.
 		/// </summary>
 		private void ShowPanel()
 		{
@@ -284,7 +357,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Сокрытие правой панели
+		/// Сокрытие правой панели.
 		/// </summary>
 		private void HidePanel()
 		{
@@ -297,7 +370,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Очистка полей для добавления/редактирования
+		/// Очистка полей для добавления/редактирования.
 		/// </summary>
 		private void ClearInputFields()
 		{
@@ -305,10 +378,11 @@ namespace УправлениеСкладом
 			NameTextBox.Text = string.Empty;
 			CategoryTextBox.Text = string.Empty;
 			PriceTextBox.Text = string.Empty;
+			// Поле количества убрано, поэтому удалена очистка QuantityTextBox
 		}
 
 		/// <summary>
-		/// Заполнение полей для редактирования выбранного товара
+		/// Заполнение полей для редактирования выбранного товара.
 		/// </summary>
 		private void PopulateInputFields(Product product)
 		{
@@ -316,10 +390,11 @@ namespace УправлениеСкладом
 			NameTextBox.Text = product.Name;
 			CategoryTextBox.Text = product.Category;
 			PriceTextBox.Text = product.Price.ToString("F2");
+			// Поле количества не заполняется, так как редактирование количества не предусмотрено
 		}
 
 		/// <summary>
-		/// Сохранение нового товара (INSERT)
+		/// Сохранение нового товара (INSERT).
 		/// </summary>
 		private void SaveAddProduct()
 		{
@@ -343,14 +418,17 @@ namespace УправлениеСкладом
 				return;
 			}
 
+			// Количество теперь не вводится – сохраняем значение по умолчанию 0.
+			int quantity = 0;
+
 			using (SqlConnection connection = new SqlConnection(connectionString))
 			{
 				try
 				{
 					connection.Open();
 					string insertProductQuery = @"
-                        INSERT INTO Товары (Наименование, Категория, Цена, ПоставщикID)
-                        VALUES (@Name, @Category, @Price, @SupplierId);
+                        INSERT INTO Товары (Наименование, Категория, Цена, ПоставщикID, Количество)
+                        VALUES (@Name, @Category, @Price, @SupplierId, @Quantity);
                         SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
 					int newProductId;
@@ -360,6 +438,7 @@ namespace УправлениеСкладом
 						command.Parameters.AddWithValue("@Category", category);
 						command.Parameters.AddWithValue("@Price", price);
 						command.Parameters.AddWithValue("@SupplierId", selectedSupplier.Id);
+						command.Parameters.AddWithValue("@Quantity", quantity);
 
 						object result = command.ExecuteScalar();
 						newProductId = (result != null) ? (int)result : 0;
@@ -375,6 +454,7 @@ namespace УправлениеСкладом
 							Name = productName,
 							Category = category,
 							Price = price,
+							Quantity = quantity,
 							Location = "" // Новому товару пока не присвоено местоположение
 						};
 						Products.Add(newProduct);
@@ -403,7 +483,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Сохранение изменений в существующем товаре (UPDATE)
+		/// Сохранение изменений в существующем товаре (UPDATE).
 		/// </summary>
 		private void SaveEditProduct()
 		{
@@ -430,6 +510,7 @@ namespace УправлениеСкладом
 				return;
 			}
 
+			// Количество не редактируется – оставляем прежнее значение (или 0)
 			using (SqlConnection connection = new SqlConnection(connectionString))
 			{
 				try
@@ -486,7 +567,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Перетаскивание окна (для стилизованного окна без стандартного заголовка)
+		/// Перетаскивание окна (для стилизованного окна без стандартного заголовка).
 		/// </summary>
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
 		{
@@ -495,7 +576,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Закрытие панели редактирования
+		/// Закрытие панели редактирования.
 		/// </summary>
 		private void ClosePanel_Click(object sender, RoutedEventArgs e)
 		{
@@ -503,7 +584,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Переключение темы приложения
+		/// Переключение темы приложения.
 		/// </summary>
 		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
 		{
@@ -512,7 +593,7 @@ namespace УправлениеСкладом
 		}
 
 		/// <summary>
-		/// Обновление иконки темы (день/ночь)
+		/// Обновление иконки темы (день/ночь).
 		/// </summary>
 		public void UpdateThemeIcon()
 		{
@@ -521,6 +602,35 @@ namespace УправлениеСкладом
 				ThemeIcon.Kind = ThemeManager.IsDarkTheme
 					? PackIconMaterialKind.WeatherNight
 					: PackIconMaterialKind.WeatherSunny;
+			}
+		}
+
+		/// <summary>
+		/// Инициализация Vosk для голосового ввода.
+		/// </summary>
+		private async System.Threading.Tasks.Task InitializeVoskAsync()
+		{
+			try
+			{
+				Vosk.Vosk.SetLogLevel(0);
+				string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+				string ruPath = System.IO.Path.Combine(baseDir, "Models", "ru");
+				if (System.IO.Directory.Exists(ruPath))
+				{
+					modelRu = await System.Threading.Tasks.Task.Run(() => new Model(ruPath));
+				}
+				if (modelRu == null)
+				{
+					await Dispatcher.InvokeAsync(() =>
+						MessageBox.Show("Отсутствует офлайн-модель Vosk для ru в папке Models.",
+						"Ошибка инициализации Vosk", MessageBoxButton.OK, MessageBoxImage.Warning));
+				}
+			}
+			catch (Exception ex)
+			{
+				await Dispatcher.InvokeAsync(() =>
+					MessageBox.Show("Ошибка инициализации Vosk: " + ex.Message,
+						"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error));
 			}
 		}
 	}

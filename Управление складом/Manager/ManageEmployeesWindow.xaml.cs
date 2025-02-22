@@ -10,8 +10,8 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using MahApps.Metro.IconPacks;
 using Управление_складом.Themes;
-using Vosk; // Подключение Vosk для офлайн-распознавания
-using Управление_складом.Class; // Здесь предполагается наличие класса VoiceInputService
+using Vosk;
+using Управление_складом.Class;
 
 namespace УправлениеСкладом.Менеджер
 {
@@ -26,12 +26,13 @@ namespace УправлениеСкладом.Менеджер
 		}
 
 		private List<Employee> employees;
-		private bool isEditMode = false;
-		private Employee selectedEmployee;
+		private bool isEditMode = false;    // Объявлено один раз
+		private Employee selectedEmployee;  // Объявлено один раз
+
 		private int warehouseRoleId;
 		private string connectionString = @"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
 
-		// Параметры для голосового ввода
+		// Параметры для голосового ввода (Vosk)
 		private Model modelRu;
 		private VoiceInputService voiceService;
 
@@ -61,6 +62,7 @@ namespace УправлениеСкладом.Менеджер
 			}
 		}
 
+		#region Инициализация Vosk
 		private async Task InitializeVoskAsync()
 		{
 			try
@@ -84,8 +86,9 @@ namespace УправлениеСкладом.Менеджер
 					"Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 		}
+		#endregion
 
-		// Фильтрация сотрудников по имени, ID или роли
+		#region Поиск и фильтрация
 		private void Filter_TextChanged(object sender, TextChangedEventArgs e)
 		{
 			ApplyEmployeeFilter();
@@ -95,15 +98,14 @@ namespace УправлениеСкладом.Менеджер
 		{
 			string searchText = SearchTextBox.Text.Trim().ToLower();
 			var filtered = employees.Where(emp =>
-				string.IsNullOrEmpty(searchText) ||
-				emp.ИмяПользователя.ToLower().Contains(searchText) ||
-				emp.ПользовательID.ToString().Contains(searchText) ||
-				emp.Роль.ToLower().Contains(searchText)
+				string.IsNullOrEmpty(searchText)
+				|| emp.ИмяПользователя.ToLower().Contains(searchText)
+				|| emp.ПользовательID.ToString().Contains(searchText)
+				|| emp.Роль.ToLower().Contains(searchText)
 			).ToList();
 			EmployeesDataGrid.ItemsSource = filtered;
 		}
 
-		// Обработчик кнопки голосового поиска
 		private void VoiceSearchButton_Click(object sender, RoutedEventArgs e)
 		{
 			if (voiceService == null)
@@ -122,8 +124,9 @@ namespace УправлениеСкладом.Менеджер
 			VoiceIcon.Foreground = Brushes.Red;
 			voiceService.Start();
 		}
+		#endregion
 
-		// Загрузка идентификатора роли "Сотрудник склада"
+		#region Загрузка роли и сотрудников
 		private void LoadWarehouseRoleId()
 		{
 			using (SqlConnection connection = new SqlConnection(connectionString))
@@ -145,7 +148,6 @@ namespace УправлениеСкладом.Менеджер
 			}
 		}
 
-		// Загрузка сотрудников из базы данных
 		private void LoadEmployees()
 		{
 			employees = new List<Employee>();
@@ -188,26 +190,86 @@ namespace УправлениеСкладом.Менеджер
 				}
 			}
 		}
+		#endregion
 
-		// Обработчик кнопки закрытия окна
+		#region Управление UI (закрыть окно, перетащить)
 		private void CloseButton_Click(object sender, RoutedEventArgs e)
 		{
 			this.Close();
 		}
 
-		// Обработчик кнопки закрытия панели
+		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+		{
+			if (e.LeftButton == MouseButtonState.Pressed)
+				this.DragMove();
+		}
+		#endregion
+
+		#region Темы
+		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
+		{
+			ThemeManager.ToggleTheme();
+			UpdateThemeIcon();
+		}
+
+		public void UpdateThemeIcon()
+		{
+			if (ThemeIcon != null)
+			{
+				ThemeIcon.Kind = ThemeManager.IsDarkTheme
+					? PackIconMaterialKind.WeatherNight
+					: PackIconMaterialKind.WeatherSunny;
+			}
+		}
+		#endregion
+
+		#region Открытие/закрытие панели
+		private void ShowPanel()
+		{
+			RootGrid.ColumnDefinitions[1].Width = new GridLength(300);
+			Storyboard showStoryboard = (Storyboard)FindResource("ShowPanelStoryboard");
+			showStoryboard.Begin();
+		}
+
+		private void HidePanel()
+		{
+			Storyboard hideStoryboard = (Storyboard)FindResource("HidePanelStoryboard");
+			hideStoryboard.Completed += (s, e) =>
+			{
+				RootGrid.ColumnDefinitions[1].Width = new GridLength(0);
+			};
+			hideStoryboard.Begin();
+		}
+
 		private void ClosePanel_Click(object sender, RoutedEventArgs e)
 		{
 			HidePanel();
 		}
+		#endregion
 
-		// Обработчик кнопки отмены
-		private void CancelEmployee_Click(object sender, RoutedEventArgs e)
+		#region Добавление, редактирование, удаление
+		// Очистка полей
+		private void ClearInputFields()
 		{
-			HidePanel();
+			UsernameTextBox.Text = "";
+			PasswordBox.Password = "";
+			ConfirmPasswordBox.Password = "";
+			// Скрываем индикатор подтверждения
+			var icon = (PackIconMaterial)ConfirmPasswordBox.Template.FindName("ConfirmStatusIcon", ConfirmPasswordBox);
+			if (icon != null) icon.Visibility = Visibility.Collapsed;
 		}
 
-		// Показ панели добавления сотрудника
+		// Заполнение полей при редактировании
+		private void PopulateInputFields(Employee employee)
+		{
+			UsernameTextBox.Text = employee.ИмяПользователя;
+			PasswordBox.Password = "";
+			ConfirmPasswordBox.Password = "";
+			var icon = (PackIconMaterial)ConfirmPasswordBox.Template.FindName("ConfirmStatusIcon", ConfirmPasswordBox);
+			if (icon != null) icon.Visibility = Visibility.Collapsed;
+		}
+
+		// Добавить сотрудника (открытие панели)
 		private void AddEmployee_Click(object sender, RoutedEventArgs e)
 		{
 			isEditMode = false;
@@ -216,7 +278,7 @@ namespace УправлениеСкладом.Менеджер
 			ShowPanel();
 		}
 
-		// Показ панели редактирования сотрудника
+		// Редактировать сотрудника
 		private void EditEmployee_Click(object sender, RoutedEventArgs e)
 		{
 			if (EmployeesDataGrid.SelectedItem is Employee employee)
@@ -234,13 +296,17 @@ namespace УправлениеСкладом.Менеджер
 			}
 		}
 
-		// Удаление сотрудника
+		// Удалить сотрудника
 		private void DeleteEmployee_Click(object sender, RoutedEventArgs e)
 		{
 			if (EmployeesDataGrid.SelectedItem is Employee employee)
 			{
-				MessageBoxResult result = MessageBox.Show($"Удалить сотрудника '{employee.ИмяПользователя}'?",
-					"Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
+				MessageBoxResult result = MessageBox.Show(
+					$"Удалить сотрудника '{employee.ИмяПользователя}'?",
+					"Подтверждение",
+					MessageBoxButton.YesNo,
+					MessageBoxImage.Question);
+
 				if (result == MessageBoxResult.Yes)
 				{
 					using (SqlConnection connection = new SqlConnection(connectionString))
@@ -259,6 +325,7 @@ namespace УправлениеСкладом.Менеджер
 							EmployeesDataGrid.ItemsSource = employees;
 							EmployeesDataGrid.SelectedIndex = -1;
 							EmployeesDataGrid.UnselectAll();
+
 							MessageBox.Show("Сотрудник удален.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 						}
 						catch (SqlException ex)
@@ -275,24 +342,29 @@ namespace УправлениеСкладом.Менеджер
 					"Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
 			}
 		}
+		#endregion
 
-		// Сохранение сотрудника (добавление или редактирование)
+		#region Сохранение (Добавление / Редактирование)
 		private void SaveEmployee_Click(object sender, RoutedEventArgs e)
 		{
 			string username = UsernameTextBox.Text.Trim();
 			string password = PasswordBox.Password;
 			string confirmPassword = ConfirmPasswordBox.Password;
 
-			if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(confirmPassword))
+			if (string.IsNullOrEmpty(username)
+				|| string.IsNullOrEmpty(password)
+				|| string.IsNullOrEmpty(confirmPassword))
 			{
 				MessageBox.Show("Заполните все поля.", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
+
 			if (password != confirmPassword)
 			{
 				MessageBox.Show("Пароли не совпадают.", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
+
 			if (isEditMode)
 			{
 				UpdateEmployee(username, password);
@@ -311,6 +383,7 @@ namespace УправлениеСкладом.Менеджер
 				try
 				{
 					connection.Open();
+					// Проверка на существующее имя пользователя
 					string checkQuery = "SELECT COUNT(*) FROM Пользователи WHERE ИмяПользователя = @Username";
 					using (SqlCommand checkCommand = new SqlCommand(checkQuery, connection))
 					{
@@ -323,12 +396,18 @@ namespace УправлениеСкладом.Менеджер
 							return;
 						}
 					}
-					string insertQuery = "INSERT INTO Пользователи (ИмяПользователя, Пароль, РольID) VALUES (@Username, @Password, @RoleId); SELECT SCOPE_IDENTITY();";
+
+					// Добавление
+					string insertQuery = @"
+                        INSERT INTO Пользователи (ИмяПользователя, Пароль, РольID)
+                        VALUES (@Username, @Password, @RoleId);
+                        SELECT SCOPE_IDENTITY();";
 					using (SqlCommand command = new SqlCommand(insertQuery, connection))
 					{
 						command.Parameters.AddWithValue("@Username", username);
 						command.Parameters.AddWithValue("@Password", password);
 						command.Parameters.AddWithValue("@RoleId", warehouseRoleId);
+
 						int newId = Convert.ToInt32(command.ExecuteScalar());
 						Employee newEmployee = new Employee
 						{
@@ -337,10 +416,12 @@ namespace УправлениеСкладом.Менеджер
 							Роль = "Сотрудник склада"
 						};
 						employees.Add(newEmployee);
+
 						EmployeesDataGrid.ItemsSource = null;
 						EmployeesDataGrid.ItemsSource = employees;
 						EmployeesDataGrid.SelectedIndex = -1;
 						EmployeesDataGrid.UnselectAll();
+
 						MessageBox.Show("Сотрудник добавлен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 						HidePanel();
 					}
@@ -353,7 +434,7 @@ namespace УправлениеСкладом.Менеджер
 			}
 		}
 
-		// Обновление сотрудника
+		// Обновление существующего сотрудника
 		private void UpdateEmployee(string username, string password)
 		{
 			using (SqlConnection connection = new SqlConnection(connectionString))
@@ -361,11 +442,16 @@ namespace УправлениеСкладом.Менеджер
 				try
 				{
 					connection.Open();
-					string checkQuery = "SELECT COUNT(*) FROM Пользователи WHERE ИмяПользователя = @Username AND ПользовательID != @UserId";
+					// Проверка на существующее имя пользователя (кроме текущего)
+					string checkQuery = @"
+                        SELECT COUNT(*) 
+                        FROM Пользователи 
+                        WHERE ИмяПользователя = @Username AND ПользовательID != @UserId";
 					using (SqlCommand checkCommand = new SqlCommand(checkQuery, connection))
 					{
 						checkCommand.Parameters.AddWithValue("@Username", username);
 						checkCommand.Parameters.AddWithValue("@UserId", selectedEmployee.ПользовательID);
+
 						int count = (int)checkCommand.ExecuteScalar();
 						if (count > 0)
 						{
@@ -374,19 +460,27 @@ namespace УправлениеСкладом.Менеджер
 							return;
 						}
 					}
-					string updateQuery = "UPDATE Пользователи SET ИмяПользователя = @Username, Пароль = @Password WHERE ПользовательID = @UserId";
+
+					// Обновление
+					string updateQuery = @"
+                        UPDATE Пользователи
+                        SET ИмяПользователя = @Username, Пароль = @Password
+                        WHERE ПользовательID = @UserId";
 					using (SqlCommand command = new SqlCommand(updateQuery, connection))
 					{
 						command.Parameters.AddWithValue("@Username", username);
 						command.Parameters.AddWithValue("@Password", password);
 						command.Parameters.AddWithValue("@UserId", selectedEmployee.ПользовательID);
 						command.ExecuteNonQuery();
+
 						selectedEmployee.ИмяПользователя = username;
+
 						EmployeesDataGrid.ItemsSource = null;
 						EmployeesDataGrid.ItemsSource = employees;
 						EmployeesDataGrid.SelectedIndex = -1;
 						EmployeesDataGrid.UnselectAll();
-						MessageBox.Show("Сотрудник обновлен.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+
+						MessageBox.Show("Сотрудник обновлён.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 						HidePanel();
 					}
 				}
@@ -397,63 +491,47 @@ namespace УправлениеСкладом.Менеджер
 				}
 			}
 		}
+		#endregion
 
-		// Показ панели добавления/редактирования
-		private void ShowPanel()
+		#region Проверка совпадения пароля (иконка справа)
+		// Обработчик события PasswordChanged для ConfirmPasswordBox
+		private void ConfirmPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
 		{
-			RootGrid.ColumnDefinitions[1].Width = new GridLength(300);
-			Storyboard showStoryboard = (Storyboard)FindResource("ShowPanelStoryboard");
-			showStoryboard.Begin();
-		}
+			var confirmBox = (PasswordBox)sender;
+			// Находим элемент ConfirmStatusIcon внутри шаблона
+			var icon = (PackIconMaterial)confirmBox.Template.FindName("ConfirmStatusIcon", confirmBox);
+			if (icon == null) return;
 
-		// Скрытие панели добавления/редактирования
-		private void HidePanel()
-		{
-			Storyboard hideStoryboard = (Storyboard)FindResource("HidePanelStoryboard");
-			hideStoryboard.Completed += (s, e) =>
+			// Если поле пустое, скрываем иконку
+			if (string.IsNullOrEmpty(confirmBox.Password))
 			{
-				RootGrid.ColumnDefinitions[1].Width = new GridLength(0);
-			};
-			hideStoryboard.Begin();
-		}
+				icon.Visibility = Visibility.Collapsed;
+				return;
+			}
 
-		// Очистка полей ввода
-		private void ClearInputFields()
-		{
-			UsernameTextBox.Text = "";
-			PasswordBox.Password = "";
-			ConfirmPasswordBox.Password = "";
-		}
-
-		// Заполнение полей для редактирования
-		private void PopulateInputFields(Employee employee)
-		{
-			UsernameTextBox.Text = employee.ИмяПользователя;
-			PasswordBox.Password = "";
-			ConfirmPasswordBox.Password = "";
-		}
-
-		// Перетаскивание окна
-		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
-		{
-			if (e.LeftButton == MouseButtonState.Pressed)
-				DragMove();
-		}
-
-		// Переключение темы
-		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
-		{
-			ThemeManager.ToggleTheme();
-			UpdateThemeIcon();
-		}
-
-		// Обновление иконки темы
-		public void UpdateThemeIcon()
-		{
-			if (ThemeIcon != null)
+			// Сравниваем пароль из PasswordBox и ConfirmPasswordBox
+			if (PasswordBox.Password == confirmBox.Password)
 			{
-				ThemeIcon.Kind = ThemeManager.IsDarkTheme ? PackIconMaterialKind.WeatherNight : PackIconMaterialKind.WeatherSunny;
+				// Пароли совпадают: показываем зелёную галочку
+				icon.Visibility = Visibility.Visible;
+				icon.Kind = PackIconMaterialKind.CheckCircleOutline;
+				icon.Foreground = Brushes.Green;
+			}
+			else
+			{
+				// Пароли не совпадают: показываем красный крестик
+				icon.Visibility = Visibility.Visible;
+				icon.Kind = PackIconMaterialKind.CloseCircleOutline;
+				icon.Foreground = Brushes.Red;
 			}
 		}
+		#endregion
+
+		#region Обработчик кнопки Отмена
+		private void CancelEmployee_Click(object sender, RoutedEventArgs e)
+		{
+			HidePanel();
+		}
+		#endregion
 	}
 }

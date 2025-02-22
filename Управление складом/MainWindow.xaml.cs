@@ -7,7 +7,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using MahApps.Metro.IconPacks;
 using Управление_складом.Themes;
-using УправлениеСкладом.Class; 
+using УправлениеСкладом.Class;
 
 namespace УправлениеСкладом
 {
@@ -91,10 +91,14 @@ namespace УправлениеСкладом
 			string username = UsernameTextBox.Text;
 			string password = Password;
 
+			// Предполагается, что DatabaseHelper.AuthenticateUser возвращает объект User или null
 			User user = DatabaseHelper.AuthenticateUser(username, password);
 
 			if (user != null)
 			{
+				// Сохраняем имя пользователя в глобальном свойстве приложения для дальнейшего использования
+				Application.Current.Properties["CurrentUsername"] = user.Username;
+
 				string roleName = GetRoleName(user.RoleID);
 				IRoleWindow roleWindow = RoleWindowFactory.CreateWindow(roleName);
 				if (roleWindow != null)

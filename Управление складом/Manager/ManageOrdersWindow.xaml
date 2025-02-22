@@ -4,17 +4,16 @@
         xmlns:local="clr-namespace:УправлениеСкладом"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         Title="Управление товарами" Height="600" Width="1000"
-        WindowStartupLocation="CenterOwner" 
+        WindowStartupLocation="CenterOwner"
         WindowStyle="None" 
         AllowsTransparency="True" 
         Background="Transparent"
         MouseDown="Window_MouseDown">
-
     <Window.Resources>
-        <!-- Преобразователь bool -> Visibility -->
+        <!-- Подключаем конвертер BoolToVisibilityConverter -->
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
 
-        <!-- Общие стили для кнопок -->
+        <!-- Общий стиль для кнопок -->
         <Style x:Key="ControlButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
@@ -47,13 +46,13 @@
             </Setter>
         </Style>
 
-        <!-- Стиль для кнопки удаления (красная рамка/текст) -->
+        <!-- Стиль для кнопки удаления (красный цвет) -->
         <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource ControlButtonStyle}">
             <Setter Property="Foreground" Value="{StaticResource ButtonBorderBrushDelete}"/>
             <Setter Property="BorderBrush" Value="{StaticResource ButtonBorderBrushDelete}"/>
         </Style>
 
-        <!-- Стиль для заголовков столбцов DataGrid -->
+        <!-- Стили для DataGrid -->
         <Style TargetType="DataGridColumnHeader">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -62,8 +61,6 @@
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
             <Setter Property="Padding" Value="5"/>
         </Style>
-
-        <!-- Стиль для строк DataGrid -->
         <Style TargetType="DataGridRow">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -76,8 +73,6 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
-        <!-- Стиль для ячеек DataGrid -->
         <Style TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -91,8 +86,6 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
-        <!-- Стиль для DataGrid -->
         <Style TargetType="DataGrid" x:Key="StyledDataGrid">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -108,8 +101,253 @@
             <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
             <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
             <Setter Property="ColumnWidth" Value="*"/>
-            <!-- Отключение заголовков строк -->
             <Setter Property="HeadersVisibility" Value="Column"/>
+        </Style>
+
+        <!-- Стиль для TextBox с иконкой (водяной знак, поиск и т.д.) -->
+        <Style x:Key="IconWatermarkTextBoxStyle" TargetType="TextBox">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Иконка Material -->
+                                <iconPacks:PackIconMaterial x:Name="Icon"
+                                                            Width="20" Height="20"
+                                                            Foreground="{TemplateBinding Foreground}"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Left"
+                                                            Margin="5,0,5,0"
+                                                            Visibility="Visible"/>
+                                <!-- Основной текст -->
+                                <ScrollViewer Grid.Column="1" x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                                <!-- Watermark -->
+                                <TextBlock x:Name="Watermark"
+                                           Text="{TemplateBinding Tag}"
+                                           Foreground="Gray"
+                                           Margin="30,0,0,0"
+                                           VerticalAlignment="Center"
+                                           IsHitTestVisible="False"
+                                           Visibility="Collapsed"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="Watermark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="Watermark" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <!-- Триггер для поля поиска -->
+                            <Trigger Property="Tag" Value="Поиск по наименованию или категории">
+                                <Setter TargetName="Icon" Property="Kind" Value="Magnify"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <!-- Для поля "Наименование товара" -->
+                            <Trigger Property="Tag" Value="Наименование товара">
+                                <Setter TargetName="Icon" Property="Kind" Value="ClipboardText"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="Watermark" Property="Text" Value="Наименование товара"/>
+                            </Trigger>
+                            <!-- Для поля "Категория" -->
+                            <Trigger Property="Tag" Value="Категория">
+                                <Setter TargetName="Icon" Property="Kind" Value="TagOutline"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="Watermark" Property="Text" Value="Категория"/>
+                            </Trigger>
+                            <!-- Для поля "Количество" -->
+                            <Trigger Property="Tag" Value="Количество">
+                                <Setter TargetName="Icon" Property="Kind" Value="Numeric0Box"/>
+                                <Setter TargetName="Watermark" Property="Text" Value="Количество"/>
+                            </Trigger>
+                            <!-- Для поля "Цена": скрываем Material-иконку -->
+                            <Trigger Property="Tag" Value="Цена">
+                                <Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="Watermark" Property="Text" Value="Цена"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Новый стиль для TextBox поля "Цена" с использованием ресурсного изображения -->
+        <Style x:Key="PriceWatermarkTextBoxStyle" TargetType="TextBox">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Изображение иконки рубля -->
+                                <Image x:Name="PriceIcon" 
+                                       Width="20" Height="20" 
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Left"
+                                       Margin="5,0,5,0"
+                                       Source="pack://application:,,,/Resource/ruble.png"/>
+                                <ScrollViewer Grid.Column="1" x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="Watermark"
+                                           Text="{TemplateBinding Tag}"
+                                           Foreground="Gray"
+                                           Margin="30,0,0,0"
+                                           VerticalAlignment="Center"
+                                           IsHitTestVisible="False"
+                                           Visibility="Collapsed"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="Watermark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="Watermark" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для PasswordBox с иконками: слева замочек, справа статусная иконка -->
+        <Style x:Key="IconPasswordBoxStyle" TargetType="PasswordBox">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Иконка замочка -->
+                                    <ColumnDefinition Width="*"/>
+                                    <!-- Поле ввода -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Статусная иконка -->
+                                </Grid.ColumnDefinitions>
+                                <!-- Иконка замочка -->
+                                <iconPacks:PackIconMaterial x:Name="Icon"
+                                                            Width="20" Height="20"
+                                                            Foreground="{TemplateBinding Foreground}"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Left"
+                                                            Margin="5,0,5,0"/>
+                                <!-- Поле ввода пароля -->
+                                <ScrollViewer Grid.Column="1" x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                                <!-- Статусная иконка для проверки пароля -->
+                                <iconPacks:PackIconMaterial x:Name="ConfirmStatusIcon"
+                                                            Grid.Column="2"
+                                                            Width="20" Height="20"
+                                                            Margin="5,0,5,0"
+                                                            Visibility="Collapsed"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Right"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Tag" Value="Пароль">
+                                <Setter TargetName="Icon" Property="Kind" Value="LockOutline"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Подтверждение пароля">
+                                <Setter TargetName="Icon" Property="Kind" Value="LockOutline"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Новый стиль для NewPasswordBox с отдельной статусной иконкой -->
+        <Style x:Key="NewPasswordBoxStyle" TargetType="PasswordBox" BasedOn="{StaticResource IconPasswordBoxStyle}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Иконка замочка -->
+                                <iconPacks:PackIconMaterial x:Name="Icon"
+                                                            Width="20" Height="20"
+                                                            Foreground="{TemplateBinding Foreground}"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Left"
+                                                            Margin="5,0,5,0"/>
+                                <!-- Поле ввода пароля -->
+                                <ScrollViewer Grid.Column="1" x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                                <!-- Статусная иконка для нового пароля -->
+                                <iconPacks:PackIconMaterial x:Name="NewPasswordStatusIcon"
+                                                            Grid.Column="2"
+                                                            Width="20" Height="20"
+                                                            Margin="5,0,5,0"
+                                                            Visibility="Collapsed"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Right"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Tag" Value="Пароль">
+                                <Setter TargetName="Icon" Property="Kind" Value="LockOutline"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для маленькой иконки-кнопки (например, голосовой поиск) -->
+        <Style x:Key="SmallIconButtonStyle" TargetType="Button" BasedOn="{StaticResource ControlButtonStyle}">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
         </Style>
 
         <!-- Анимации для панели добавления/редактирования -->
@@ -130,7 +368,6 @@
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
             </Border.Effect>
-
             <Grid x:Name="RootGrid">
                 <Grid.ColumnDefinitions>
                     <!-- Левая часть (основная) -->
@@ -138,12 +375,10 @@
                     <!-- Правая панель (добавление/редактирование) -->
                     <ColumnDefinition Width="0"/>
                 </Grid.ColumnDefinitions>
-
-                <!-- Левая часть с DataGrid и кнопками -->
                 <StackPanel Grid.Column="0">
                     <!-- Заголовок окна с кнопкой закрытия -->
                     <Grid Margin="0,0,0,10">
-                        <TextBlock Text="Управление товарами" 
+                        <TextBlock Text="Управление товаром" 
                                    FontSize="18" 
                                    FontWeight="Bold" 
                                    Foreground="{DynamicResource PrimaryBrush}" 
@@ -160,6 +395,24 @@
                         </Button>
                     </Grid>
 
+                    <!-- Панель поиска и голосового ввода -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                        <TextBox x:Name="SearchTextBox" Width="300" 
+                                 Style="{StaticResource IconWatermarkTextBoxStyle}" 
+                                 Tag="Поиск по наименованию или категории"
+                                 TextChanged="Filter_TextChanged"/>
+                        <Button x:Name="VoiceSearchButton" 
+                                Style="{StaticResource SmallIconButtonStyle}"
+                                ToolTip="Голосовой поиск" 
+                                Click="VoiceSearchButton_Click" 
+                                Margin="5,0,0,0">
+                            <iconPacks:PackIconMaterial x:Name="VoiceIcon" 
+                                                        Kind="Microphone" 
+                                                        Width="16" Height="16" 
+                                                        Foreground="{DynamicResource PrimaryBrush}"/>
+                        </Button>
+                    </StackPanel>
+
                     <!-- DataGrid для отображения товаров -->
                     <DataGrid x:Name="OrdersDataGrid" Margin="0,0,0,10" Style="{StaticResource StyledDataGrid}" 
                               SelectionChanged="OrdersDataGrid_SelectionChanged">
@@ -169,6 +422,7 @@
                             <DataGridTextColumn Header="Поставщик" Binding="{Binding SupplierName}" Width="*"/>
                             <DataGridTextColumn Header="Категория" Binding="{Binding Category}" Width="Auto"/>
                             <DataGridTextColumn Header="Цена" Binding="{Binding Price}" Width="Auto"/>
+                            <DataGridTextColumn Header="Количество" Binding="{Binding Quantity}" Width="Auto"/>
                             <DataGridTextColumn Header="Местоположение" Binding="{Binding Location}" Width="Auto"/>
                         </DataGrid.Columns>
                     </DataGrid>
@@ -251,7 +505,6 @@
                                           ShadowDepth="0" 
                                           Opacity="0.5"/>
                     </Border.Effect>
-
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -296,17 +549,23 @@
                             <Label Content="Наименование товара:" 
                                    Foreground="{DynamicResource ForegroundBrush}"/>
                             <TextBox x:Name="NameTextBox" 
-                                     Margin="0,0,0,10" />
+                                     Margin="0,0,0,10" 
+                                     Style="{StaticResource IconWatermarkTextBoxStyle}"
+                                     Tag="Наименование товара"/>
 
                             <Label Content="Категория:" 
                                    Foreground="{DynamicResource ForegroundBrush}"/>
                             <TextBox x:Name="CategoryTextBox" 
-                                     Margin="0,0,0,10" />
+                                     Margin="0,0,0,10" 
+                                     Style="{StaticResource IconWatermarkTextBoxStyle}"
+                                     Tag="Категория"/>
 
                             <Label Content="Цена:" 
                                    Foreground="{DynamicResource ForegroundBrush}"/>
                             <TextBox x:Name="PriceTextBox" 
-                                     Margin="0,0,0,10" />
+                                     Margin="0,0,0,10" 
+                                     Style="{StaticResource PriceWatermarkTextBoxStyle}"
+                                     Tag="Цена"/>
                         </StackPanel>
 
                         <!-- Кнопки действия -->

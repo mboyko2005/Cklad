@@ -4,12 +4,293 @@
         xmlns:local="clr-namespace:УправлениеСкладом"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         Title="Настройки" Height="500" Width="800"
-        WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        WindowStartupLocation="CenterOwner" 
+        WindowStyle="None" 
+        AllowsTransparency="True" 
+        Background="Transparent"
         MouseDown="Window_MouseDown">
     <Window.Resources>
-        <!-- Подключение конвертера, если необходимо -->
-        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <!-- Стиль для кнопок -->
+        <Style x:Key="ControlButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="MinWidth" Value="120"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource ControlButtonStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource ButtonBorderBrushDelete}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrushDelete}"/>
+        </Style>
+
+        <!-- Стили для DataGrid -->
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="5"/>
+        </Style>
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="DataGridCell">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="5"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="DataGrid" x:Key="StyledDataGrid">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="RowBackground" Value="Transparent"/>
+            <Setter Property="AlternatingRowBackground" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="SelectionMode" Value="Single"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ColumnWidth" Value="*"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+        </Style>
+
+        <!-- Стиль для TextBox с иконкой -->
+        <Style x:Key="IconWatermarkTextBoxStyle" TargetType="TextBox">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Левая иконка -->
+                                <iconPacks:PackIconMaterial x:Name="Icon"
+                                                            Width="20" Height="20"
+                                                            Foreground="{TemplateBinding Foreground}"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Left"
+                                                            Margin="5,0,5,0"
+                                                            Visibility="Visible"/>
+                                <!-- Основной текст -->
+                                <ScrollViewer Grid.Column="1" x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                                <!-- Watermark -->
+                                <TextBlock x:Name="Watermark"
+                                           Text="{TemplateBinding Tag}"
+                                           Foreground="Gray"
+                                           Margin="30,0,0,0"
+                                           VerticalAlignment="Center"
+                                           IsHitTestVisible="False"
+                                           Visibility="Collapsed"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="Watermark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="Watermark" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <!-- Триггер для поиска -->
+                            <Trigger Property="Tag" Value="Поиск по имени, ID или роли">
+                                <Setter TargetName="Icon" Property="Kind" Value="Magnify"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <!-- Для поля "Имя пользователя" -->
+                            <Trigger Property="Tag" Value="Имя пользователя">
+                                <Setter TargetName="Icon" Property="Kind" Value="AccountOutline"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter TargetName="Watermark" Property="Text" Value="Имя пользователя"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для PasswordBox с иконками: слева замочек, справа статусная иконка -->
+        <Style x:Key="IconPasswordBoxStyle" TargetType="PasswordBox">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Иконка замочка -->
+                                    <ColumnDefinition Width="*"/>
+                                    <!-- Поле ввода -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Статусная иконка -->
+                                </Grid.ColumnDefinitions>
+                                <!-- Иконка замочка -->
+                                <iconPacks:PackIconMaterial x:Name="Icon"
+                                                            Width="20" Height="20"
+                                                            Foreground="{TemplateBinding Foreground}"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Left"
+                                                            Margin="5,0,5,0"/>
+                                <!-- Поле ввода пароля -->
+                                <ScrollViewer Grid.Column="1" x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                                <!-- Статусная иконка для проверки пароля -->
+                                <iconPacks:PackIconMaterial x:Name="ConfirmPasswordStatusIcon"
+                                                            Grid.Column="2"
+                                                            Width="20" Height="20"
+                                                            Margin="5,0,5,0"
+                                                            Visibility="Collapsed"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Right"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Tag" Value="Пароль">
+                                <Setter TargetName="Icon" Property="Kind" Value="LockOutline"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Подтверждение пароля">
+                                <Setter TargetName="Icon" Property="Kind" Value="LockOutline"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Новый стиль для NewPasswordBox с отдельной статусной иконкой -->
+        <Style x:Key="NewPasswordBoxStyle" TargetType="PasswordBox" BasedOn="{StaticResource IconPasswordBoxStyle}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Иконка замочка -->
+                                <iconPacks:PackIconMaterial x:Name="Icon"
+                                                            Width="20" Height="20"
+                                                            Foreground="{TemplateBinding Foreground}"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Left"
+                                                            Margin="5,0,5,0"/>
+                                <!-- Поле ввода -->
+                                <ScrollViewer Grid.Column="1" x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                                <!-- Статусная иконка для нового пароля -->
+                                <iconPacks:PackIconMaterial x:Name="NewPasswordStatusIcon"
+                                                            Grid.Column="2"
+                                                            Width="20" Height="20"
+                                                            Margin="5,0,5,0"
+                                                            Visibility="Collapsed"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Right"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Tag" Value="Пароль">
+                                <Setter TargetName="Icon" Property="Kind" Value="LockOutline"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для маленькой иконки-кнопки (голосовой ввод) -->
+        <Style x:Key="SmallIconButtonStyle" TargetType="Button" BasedOn="{StaticResource ControlButtonStyle}">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+        </Style>
+
+        <!-- Анимации для панели добавления/редактирования -->
+        <Storyboard x:Key="ShowPanelStoryboard">
+            <DoubleAnimation Storyboard.TargetName="SlidePanel"
+                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                             To="0" Duration="0:0:0.3"/>
+        </Storyboard>
+        <Storyboard x:Key="HidePanelStoryboard">
+            <DoubleAnimation Storyboard.TargetName="SlidePanel"
+                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                             To="300" Duration="0:0:0.3"/>
+        </Storyboard>
     </Window.Resources>
+
     <Grid>
         <Border Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="20" Padding="20">
             <Border.Effect>
@@ -25,7 +306,7 @@
                     </Button>
                 </Grid>
 
-                <!-- Основной контент -->
+                <!-- Основной контент настроек -->
                 <StackPanel>
                     <TextBlock Text="Настройки приложения" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,20"/>
 
@@ -40,8 +321,11 @@
                                     <ColumnDefinition Width="30"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Новый пароль:" VerticalAlignment="Center" Foreground="{DynamicResource ForegroundBrush}"/>
-                                <PasswordBox Width="200" x:Name="NewPasswordBox" Grid.Column="1" PasswordChanged="NewPasswordBox_PasswordChanged" Foreground="{DynamicResource ForegroundBrush}"/>
-                                <iconPacks:PackIconMaterial x:Name="NewPasswordStatusIcon" Grid.Column="2" Width="24" Height="24" VerticalAlignment="Center" Visibility="Collapsed"/>
+                                <PasswordBox x:Name="NewPasswordBox" Grid.Column="1" 
+                                             Style="{StaticResource NewPasswordBoxStyle}" 
+                                             Tag="Пароль" 
+                                             PasswordChanged="NewPasswordBox_PasswordChanged"
+                                             Foreground="{DynamicResource ForegroundBrush}" Margin="23,0,0,0"/>
                             </Grid>
 
                             <!-- Подтверждение пароля -->
@@ -52,8 +336,11 @@
                                     <ColumnDefinition Width="30"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Подтвердите пароль:" VerticalAlignment="Center" Foreground="{DynamicResource ForegroundBrush}"/>
-                                <PasswordBox Width="200" x:Name="ConfirmPasswordBox" Grid.Column="1" PasswordChanged="ConfirmPasswordBox_PasswordChanged" Foreground="{DynamicResource ForegroundBrush}"/>
-                                <iconPacks:PackIconMaterial x:Name="ConfirmPasswordStatusIcon" Grid.Column="2" Width="24" Height="24" VerticalAlignment="Center" Visibility="Collapsed"/>
+                                <PasswordBox x:Name="ConfirmPasswordBox" Grid.Column="1" 
+                                             Style="{StaticResource IconPasswordBoxStyle}" 
+                                             Tag="Подтверждение пароля"
+                                             PasswordChanged="ConfirmPasswordBox_PasswordChanged"
+                                             Foreground="{DynamicResource ForegroundBrush}" Margin="23,0,0,0"/>
                             </Grid>
 
                             <Button Content="Сохранить пароль" Width="200" HorizontalAlignment="Right" Click="SavePassword_Click">
@@ -93,7 +380,7 @@
                         </Button.Template>
                     </Button>
 
-                    <!-- Кнопка для переключения темы -->
+                    <!-- Кнопка переключения темы -->
                     <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
                             HorizontalAlignment="Center" Margin="0,20,0,0"
                             Click="ToggleTheme_Click">

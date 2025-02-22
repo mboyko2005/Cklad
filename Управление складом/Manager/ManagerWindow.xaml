@@ -132,7 +132,7 @@
                                                         Width="24" Height="24" 
                                                         Margin="0,0,10,0"
                                                         Foreground="{DynamicResource ButtonForegroundBrush}"/>
-                            <TextBlock Text="Управление заказами" 
+                            <TextBlock Text="Управление Товаром" 
                                        FontSize="16" 
                                        Foreground="{DynamicResource ButtonForegroundBrush}"
                                        FontFamily="Segoe UI"/>
