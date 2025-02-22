@@ -7,8 +7,8 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using MahApps.Metro.IconPacks;
-using Управление_складом.Themes; // Для ThemeManager
-
+using Управление_складом.Themes; 
+using УправлениеСкладом.QR;
 namespace УправлениеСкладом
 {
 	public partial class ManageInventoryWindow : Window, IThemeable

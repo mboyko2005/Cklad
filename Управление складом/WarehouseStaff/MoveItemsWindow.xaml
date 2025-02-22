@@ -6,7 +6,6 @@
         WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         MouseDown="Window_MouseDown"
         Loaded="MoveItemsWindow_Loaded">
-
     <Window.Resources>
         <!-- Для ComboBox с иконкой -->
         <DataTemplate x:Key="ComboBoxItemWithIconTemplate">
@@ -136,6 +135,7 @@
             <Setter Property="Width" Value="250"/>
         </Style>
 
+        <!-- Стиль для кнопок (повторно определён для совместимости) -->
         <Style x:Key="ControlButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
@@ -176,7 +176,9 @@
             <Setter Property="MinWidth" Value="0"/>
         </Style>
 
+        <!-- Стиль для TextBox с иконкой и водяным знаком с выравниванием по центру -->
         <Style x:Key="IconWatermarkTextBoxStyle" TargetType="TextBox">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
@@ -202,8 +204,14 @@
                                                             HorizontalAlignment="Left"
                                                             Margin="5,0,10,0"
                                                             Visibility="Collapsed"/>
-                                <ScrollViewer Grid.Column="1"
-                                              x:Name="PART_ContentHost"/>
+                                <Image x:Name="RubleIcon"
+                                       Width="20" Height="20"
+                                       Source="/Resource/ruble.png"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Left"
+                                       Margin="5,0,10,0"
+                                       Visibility="Collapsed"/>
+                                <ScrollViewer Grid.Column="1" x:Name="PART_ContentHost" VerticalAlignment="Center"/>
                                 <TextBlock x:Name="Watermark"
                                            Text="{TemplateBinding Tag}"
                                            Foreground="Gray"
@@ -245,7 +253,6 @@
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
             <Setter Property="Padding" Value="5"/>
         </Style>
-
         <Style TargetType="DataGridRow">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -257,7 +264,6 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
         <Style TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -270,7 +276,6 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
         <Style x:Key="StyledDataGrid" TargetType="DataGrid">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -290,7 +295,6 @@
             <Setter Property="HeadersVisibility" Value="Column"/>
         </Style>
     </Window.Resources>
-
     <Grid>
         <Border Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="20" Padding="20">
             <Border.Effect>
@@ -312,7 +316,8 @@
                         </Button>
                         <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
                                 Click="CloseButton_Click">
-                            <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" 
+                            <iconPacks:PackIconMaterial Kind="Close" 
+                                                        Width="24" Height="24" 
                                                         Foreground="{DynamicResource PrimaryBrush}"/>
                         </Button>
                     </StackPanel>

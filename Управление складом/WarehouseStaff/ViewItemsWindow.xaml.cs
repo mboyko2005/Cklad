@@ -11,6 +11,7 @@ using MahApps.Metro.IconPacks;
 using Управление_складом.Themes;
 using Vosk;
 using Управление_складом.Class;
+using УправлениеСкладом.QR;
 
 namespace УправлениеСкладом.Сотрудник_склада
 {

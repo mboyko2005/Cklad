@@ -1,5 +1,4 @@
-﻿<!-- ManageEmployeesWindow.xaml -->
-<Window x:Class="УправлениеСкладом.Менеджер.ManageEmployeesWindow"
+﻿<Window x:Class="УправлениеСкладом.Менеджер.ManageEmployeesWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:УправлениеСкладом.Менеджер"
@@ -62,7 +61,6 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <!-- Удалён Setter для BorderBrush -->
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
@@ -76,7 +74,6 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <!-- Удалён Setter для BorderBrush -->
             <Setter Property="Padding" Value="5"/>
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
@@ -103,8 +100,73 @@
             <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
             <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
             <Setter Property="ColumnWidth" Value="*"/>
-            <!-- Отключение заголовков строк -->
             <Setter Property="HeadersVisibility" Value="Column"/>
+        </Style>
+
+        <!-- Стиль для текстового поля с иконкой (для поиска) -->
+        <Style x:Key="IconWatermarkTextBoxStyle" TargetType="TextBox">
+            <!-- Добавлено выравнивание по центру по вертикали -->
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <iconPacks:PackIconMaterial x:Name="Icon"
+                                                            Width="20" Height="20"
+                                                            Foreground="{TemplateBinding Foreground}"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Left"
+                                                            Margin="5,0,5,0"
+                                                            Visibility="Visible"/>
+                                <ScrollViewer Grid.Column="1" Margin="0" x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="Watermark"
+                                           Text="{TemplateBinding Tag}"
+                                           Foreground="Gray"
+                                           Margin="30,0,0,0"
+                                           VerticalAlignment="Center"
+                                           IsHitTestVisible="False"
+                                           Visibility="Collapsed"/>
+                            </Grid>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="Watermark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="Watermark" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <!-- Триггер для отображения иконки поиска -->
+                            <Trigger Property="Tag" Value="Поиск по имени, ID или роли">
+                                <Setter TargetName="Icon" Property="Kind" Value="Magnify"/>
+                                <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для кнопки с маленькой иконкой (как во ViewItemsWindow) -->
+        <Style x:Key="SmallIconButtonStyle" TargetType="Button" BasedOn="{StaticResource ControlButtonStyle}">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
         </Style>
 
         <!-- Анимации для панели добавления/редактирования -->
@@ -125,23 +187,42 @@
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
             </Border.Effect>
-
             <Grid x:Name="RootGrid">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="0"/>
                 </Grid.ColumnDefinitions>
-
                 <StackPanel Grid.Column="0">
                     <!-- Заголовок с кнопкой закрытия -->
                     <Grid Margin="0,0,0,10">
-                        <TextBlock Text="Управление сотрудниками склада" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Управление сотрудниками склада" FontSize="18" FontWeight="Bold" 
+                                   Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
                         <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
                                 HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseButton_Click">
-                            <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
+                            <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" 
+                                                       Foreground="{DynamicResource PrimaryBrush}"/>
                         </Button>
                     </Grid>
-
+                    <!-- Панель поиска с голосовым вводом -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10" HorizontalAlignment="Center">
+                        <TextBox x:Name="SearchTextBox"
+                                 Width="300"
+                                 Margin="0,0,5,0"
+                                 Style="{StaticResource IconWatermarkTextBoxStyle}"
+                                 Tag="Поиск по имени, ID или роли"
+                                 TextChanged="Filter_TextChanged" />
+                        <Button x:Name="VoiceSearchButton"
+                                Style="{StaticResource SmallIconButtonStyle}"
+                                ToolTip="Голосовой поиск"
+                                Click="VoiceSearchButton_Click"
+                                Margin="0">
+                            <iconPacks:PackIconMaterial x:Name="VoiceIcon"
+                                                        Kind="Microphone"
+                                                        Width="16"
+                                                        Height="16"
+                                                        Foreground="{DynamicResource PrimaryBrush}" />
+                        </Button>
+                    </StackPanel>
                     <!-- DataGrid для отображения сотрудников -->
                     <DataGrid x:Name="EmployeesDataGrid"
                               Margin="0,0,0,10"
@@ -155,7 +236,6 @@
                             <DataGridTextColumn Header="Роль" Binding="{Binding Роль}" Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
-
                     <!-- Кнопки управления сотрудниками -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Width="150" Margin="5" Click="AddEmployee_Click" Style="{StaticResource ControlButtonStyle}">
@@ -177,16 +257,15 @@
                             </StackPanel>
                         </Button>
                     </StackPanel>
-
-                    <!-- Кнопка для переключения темы -->
+                    <!-- Кнопка переключения темы -->
                     <StackPanel HorizontalAlignment="Center" Margin="0,10,0,0">
                         <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
                                 Click="ToggleTheme_Click">
-                            <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
+                            <iconPacks:PackIconMaterial x:Name="ThemeIcon" Kind="WeatherSunny" Width="24" Height="24" 
+                                                        Foreground="{DynamicResource PrimaryBrush}"/>
                         </Button>
                     </StackPanel>
                 </StackPanel>
-
                 <!-- Панель добавления/редактирования -->
                 <Border x:Name="SlidePanel" Grid.Column="1" Background="{DynamicResource WindowBackgroundBrush}"
                         CornerRadius="10" Padding="20"
@@ -203,27 +282,25 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-
                         <!-- Заголовок панели -->
                         <Grid Grid.Row="0" Margin="0,0,0,20">
-                            <TextBlock x:Name="PanelTitle" Text="Добавить сотрудника" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
-                            <Button Width="30" Height="30" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" Click="ClosePanel_Click">
-                                <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" Foreground="{DynamicResource PrimaryBrush}"/>
+                            <TextBlock x:Name="PanelTitle" Text="Добавить сотрудника" FontSize="16" FontWeight="Bold" 
+                                       Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
+                            <Button Width="30" Height="30" Background="Transparent" BorderThickness="0" 
+                                    HorizontalAlignment="Right" Click="ClosePanel_Click">
+                                <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" 
+                                                           Foreground="{DynamicResource PrimaryBrush}"/>
                             </Button>
                         </Grid>
-
-                        <!-- Поля для ввода данных -->
+                        <!-- Поля для ввода данных сотрудника -->
                         <StackPanel Grid.Row="1">
                             <Label Content="Имя пользователя:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <TextBox x:Name="UsernameTextBox" Margin="0,0,0,10" />
-
                             <Label Content="Пароль:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <PasswordBox x:Name="PasswordBox" Margin="0,0,0,10" />
-
                             <Label Content="Подтверждение пароля:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <PasswordBox x:Name="ConfirmPasswordBox" Margin="0,0,0,10" />
                         </StackPanel>
-
                         <!-- Кнопки действия -->
                         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Width="100" Margin="5" Click="SaveEmployee_Click"

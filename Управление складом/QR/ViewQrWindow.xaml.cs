@@ -13,7 +13,7 @@ using Microsoft.Win32;
 using ZXing;
 using ZXing.Common;
 
-namespace УправлениеСкладом
+namespace УправлениеСкладом.QR
 {
 	public partial class ViewQrWindow : Window
 	{
