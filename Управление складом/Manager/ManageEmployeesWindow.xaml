@@ -281,8 +281,6 @@
                                                         Foreground="{DynamicResource PrimaryBrush}"/>
                         </Button>
                     </Grid>
-
-                    <!-- Панель поиска + голосовой ввод -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10" HorizontalAlignment="Center">
                         <TextBox x:Name="SearchTextBox"
                                  Width="300"
