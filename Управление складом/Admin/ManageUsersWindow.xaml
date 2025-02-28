@@ -11,11 +11,11 @@
         Background="Transparent"
         MouseDown="Window_MouseDown">
 
+    <!-- Ресурсы приложения: конвертеры, стили и анимации -->
     <Window.Resources>
-        <!-- Если нужен ваш BoolToVisibilityConverter -->
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
 
-        <!-- 1) Стиль для кнопок (Добавить, Редактировать, Удалить и пр.) -->
+        <!-- Основной стиль для кнопок управления -->
         <Style x:Key="ControlButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
@@ -48,13 +48,13 @@
             </Setter>
         </Style>
 
-        <!-- 2) Стиль для кнопки "Удалить" (красный цвет) -->
+        <!-- Стиль для кнопки "Удалить" -->
         <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource ControlButtonStyle}">
             <Setter Property="Foreground" Value="{StaticResource ButtonBorderBrushDelete}"/>
             <Setter Property="BorderBrush" Value="{StaticResource ButtonBorderBrushDelete}"/>
         </Style>
 
-        <!-- 3) Стиль для заголовков DataGrid -->
+        <!-- Стили для заголовков, строк и ячеек DataGrid -->
         <Style TargetType="DataGridColumnHeader">
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -64,7 +64,6 @@
             <Setter Property="Padding" Value="5"/>
         </Style>
 
-        <!-- 4) Стиль для строк DataGrid -->
         <Style TargetType="DataGridRow">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -78,7 +77,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- 5) Стиль для ячеек DataGrid -->
         <Style TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -93,7 +91,7 @@
             </Style.Triggers>
         </Style>
 
-        <!-- 6) Стиль для DataGrid -->
+        <!-- Стиль для DataGrid с пользователями -->
         <Style x:Key="StyledDataGrid" TargetType="DataGrid">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}"/>
@@ -113,7 +111,7 @@
             <Setter Property="HeadersVisibility" Value="Column"/>
         </Style>
 
-        <!-- 7) Стиль для TextBox с иконкой (поиск / имя пользователя) -->
+        <!-- Стиль для TextBox с иконкой (поиск/имя пользователя) -->
         <Style x:Key="IconWatermarkTextBoxStyle" TargetType="TextBox">
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
@@ -134,7 +132,6 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <!-- Левая иконка (меняется в зависимости от Tag) -->
                                 <iconPacks:PackIconMaterial x:Name="Icon"
                                                             Width="20" Height="20"
                                                             Foreground="{TemplateBinding Foreground}"
@@ -142,9 +139,7 @@
                                                             HorizontalAlignment="Left"
                                                             Margin="5,0,5,0"
                                                             Visibility="Visible"/>
-                                <!-- Основной текст -->
                                 <ScrollViewer Grid.Column="1" x:Name="PART_ContentHost" VerticalAlignment="Center"/>
-                                <!-- Watermark (подсказка, если Text="") -->
                                 <TextBlock x:Name="Watermark"
                                            Text="{TemplateBinding Tag}"
                                            Foreground="Gray"
@@ -161,12 +156,10 @@
                             <Trigger Property="IsFocused" Value="True">
                                 <Setter TargetName="Watermark" Property="Visibility" Value="Collapsed"/>
                             </Trigger>
-                            <!-- Если Tag="Поиск по имени, ID или роли" - ставим лупу -->
                             <Trigger Property="Tag" Value="Поиск по имени, ID или роли">
                                 <Setter TargetName="Icon" Property="Kind" Value="Magnify"/>
                                 <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
                             </Trigger>
-                            <!-- Если Tag="Имя пользователя" - ставим AccountOutline -->
                             <Trigger Property="Tag" Value="Имя пользователя">
                                 <Setter TargetName="Icon" Property="Kind" Value="AccountOutline"/>
                                 <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
@@ -178,7 +171,7 @@
             </Setter>
         </Style>
 
-        <!-- 8) Стиль для PasswordBox с замочком и иконкой проверки -->
+        <!-- Стиль для PasswordBox с иконками замка и проверки -->
         <Style x:Key="IconPasswordBoxStyle" TargetType="PasswordBox">
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
@@ -196,24 +189,17 @@
                                     CornerRadius="10"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <!-- Иконка слева (замочек) -->
                                     <ColumnDefinition Width="Auto"/>
-                                    <!-- Сам ввод -->
                                     <ColumnDefinition Width="*"/>
-                                    <!-- Иконка проверки (справа) -->
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-
-                                <!-- Левая иконка (замочек) -->
                                 <iconPacks:PackIconMaterial x:Name="Icon"
                                                             Width="20" Height="20"
                                                             Foreground="{TemplateBinding Foreground}"
                                                             VerticalAlignment="Center"
                                                             HorizontalAlignment="Left"
                                                             Margin="5,0,5,0"/>
-                                <!-- Основной ввод пароля -->
                                 <ScrollViewer Grid.Column="1" x:Name="PART_ContentHost" VerticalAlignment="Center"/>
-                                <!-- Иконка проверки совпадения паролей -->
                                 <iconPacks:PackIconMaterial x:Name="ConfirmStatusIcon"
                                                             Grid.Column="2"
                                                             Width="20" Height="20"
@@ -224,12 +210,10 @@
                             </Grid>
                         </Grid>
                         <ControlTemplate.Triggers>
-                            <!-- Если Tag="Пароль" - ставим LockOutline -->
                             <Trigger Property="Tag" Value="Пароль">
                                 <Setter TargetName="Icon" Property="Kind" Value="LockOutline"/>
                                 <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
                             </Trigger>
-                            <!-- Если Tag="Подтверждение пароля" - тоже замочек -->
                             <Trigger Property="Tag" Value="Подтверждение пароля">
                                 <Setter TargetName="Icon" Property="Kind" Value="LockOutline"/>
                                 <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
@@ -240,7 +224,7 @@
             </Setter>
         </Style>
 
-        <!-- 9) Стиль для маленькой кнопки (иконка микрофона) -->
+        <!-- Стиль для маленькой кнопки (например, голосовой поиск) -->
         <Style x:Key="SmallIconButtonStyle" TargetType="Button" BasedOn="{StaticResource ControlButtonStyle}">
             <Setter Property="Width" Value="30"/>
             <Setter Property="Height" Value="30"/>
@@ -249,7 +233,7 @@
             <Setter Property="MinHeight" Value="0"/>
         </Style>
 
-        <!-- 10) Анимации для выдвижной панели -->
+        <!-- Анимации для выдвижной панели -->
         <Storyboard x:Key="ShowPanelStoryboard">
             <DoubleAnimation Storyboard.TargetName="SlidePanel"
                              Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
@@ -262,23 +246,21 @@
         </Storyboard>
     </Window.Resources>
 
+    <!-- Основной контейнер окна -->
     <Grid x:Name="MainGrid">
         <Border Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="20" Padding="20">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
             </Border.Effect>
-
             <Grid x:Name="RootGrid">
                 <Grid.ColumnDefinitions>
-                    <!-- Левая часть (основная) -->
+                    <!-- Левая часть: список пользователей и управление -->
                     <ColumnDefinition Width="*"/>
-                    <!-- Выдвижная панель (изначально 0) -->
+                    <!-- Правая часть: выдвижная панель для добавления/редактирования -->
                     <ColumnDefinition Width="0"/>
                 </Grid.ColumnDefinitions>
-
-                <!-- ==== Левая часть: заголовок, поиск, DataGrid, кнопки ==== -->
                 <StackPanel Grid.Column="0">
-                    <!-- Заголовок + кнопка закрытия -->
+                    <!-- Заголовок окна и кнопка закрытия -->
                     <Grid Margin="0,0,0,10">
                         <TextBlock Text="Управление пользователями" 
                                    FontSize="18" 
@@ -296,8 +278,7 @@
                                                         Foreground="{DynamicResource PrimaryBrush}"/>
                         </Button>
                     </Grid>
-
-                    <!-- Поиск + голосовой поиск -->
+                    <!-- Поле поиска и голосовой поиск -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
                         <TextBox x:Name="SearchTextBox"
                                  Width="300"
@@ -316,8 +297,7 @@
                                                         Foreground="{DynamicResource PrimaryBrush}"/>
                         </Button>
                     </StackPanel>
-
-                    <!-- DataGrid с пользователями -->
+                    <!-- Таблица пользователей -->
                     <DataGrid x:Name="UsersDataGrid"
                               Margin="0,0,0,10"
                               Style="{StaticResource StyledDataGrid}"
@@ -330,8 +310,7 @@
                             <DataGridTextColumn Header="Роль" Binding="{Binding RoleName}" Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
-
-                    <!-- Кнопки: Добавить, Редактировать, Удалить -->
+                    <!-- Кнопки управления пользователями -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Width="150" Margin="5" 
                                 Click="AddUser_Click" 
@@ -376,7 +355,6 @@
                             </StackPanel>
                         </Button>
                     </StackPanel>
-
                     <!-- Кнопка переключения темы -->
                     <StackPanel HorizontalAlignment="Center" Margin="0,10,0,0">
                         <Button Width="30" Height="30" 
@@ -390,8 +368,7 @@
                         </Button>
                     </StackPanel>
                 </StackPanel>
-
-                <!-- ==== Правая выдвижная панель (Border) ==== -->
+                <!-- Выдвижная панель для добавления/редактирования пользователя -->
                 <Border x:Name="SlidePanel"
                         Grid.Column="1"
                         Background="{DynamicResource WindowBackgroundBrush}"
@@ -399,22 +376,19 @@
                         Padding="20"
                         RenderTransformOrigin="1,0.5"
                         Width="300">
-                    <!-- Изначально сдвинута на X=300, потом анимацией едет -->
                     <Border.RenderTransform>
                         <TranslateTransform X="300"/>
                     </Border.RenderTransform>
                     <Border.Effect>
                         <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.5"/>
                     </Border.Effect>
-
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-
-                        <!-- Заголовок панели -->
+                        <!-- Заголовок панели и кнопка закрытия панели -->
                         <Grid Grid.Row="0" Margin="0,0,0,20">
                             <TextBlock x:Name="PanelTitle"
                                        Text="Добавить пользователя"
@@ -432,36 +406,31 @@
                                                             Foreground="{DynamicResource PrimaryBrush}"/>
                             </Button>
                         </Grid>
-
-                        <!-- Поля ввода (Иконки и т.д.) -->
+                        <!-- Поля ввода данных пользователя -->
                         <StackPanel Grid.Row="1">
                             <Label Content="Имя пользователя:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <TextBox x:Name="UsernameTextBox"
                                      Margin="0,0,0,10"
                                      Style="{StaticResource IconWatermarkTextBoxStyle}"
                                      Tag="Имя пользователя"/>
-
                             <Label Content="Пароль:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <PasswordBox x:Name="PasswordBox"
                                          Margin="0,0,0,10"
                                          Style="{StaticResource IconPasswordBoxStyle}"
                                          Tag="Пароль"/>
-
                             <Label Content="Подтверждение пароля:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <PasswordBox x:Name="ConfirmPasswordBox"
                                          Margin="0,0,0,10"
                                          Style="{StaticResource IconPasswordBoxStyle}"
                                          Tag="Подтверждение пароля"
                                          PasswordChanged="ConfirmPasswordBox_PasswordChanged"/>
-
                             <Label Content="Роль:" Foreground="{DynamicResource ForegroundBrush}"/>
                             <ComboBox x:Name="RoleComboBox"
                                       Margin="0,0,0,10"
                                       DisplayMemberPath="Name"
                                       SelectedValuePath="Id"/>
                         </StackPanel>
-
-                        <!-- Кнопки сохранения/отмены -->
+                        <!-- Кнопки сохранения и отмены -->
                         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Width="100" Margin="5"
                                     Click="SaveUser_Click"

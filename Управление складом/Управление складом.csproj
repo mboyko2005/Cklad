@@ -20,6 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.104.2" />
+    <PackageReference Include="DocX" Version="4.0.25103.5784" />
     <PackageReference Include="MahApps.Metro.IconPacks" Version="5.1.0" />
     <PackageReference Include="MahApps.Metro.IconPacks.FontAwesome" Version="5.1.0" />
     <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="5.1.0" />
@@ -32,7 +34,7 @@
     <PackageReference Include="PdfSharpCore" Version="1.3.65" />
     <PackageReference Include="QRCoder" Version="1.6.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
-    <PackageReference Include="Telegram.Bot" Version="22.4.3" />
+    <PackageReference Include="Telegram.Bot" Version="22.4.4" />
     <PackageReference Include="Vosk" Version="0.3.38" />
     <PackageReference Include="ZXing.Net" Version="0.16.10" />
   </ItemGroup>
