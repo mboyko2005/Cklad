@@ -17,9 +17,6 @@ using OxyPlot.Wpf;
 using Управление_складом.Themes;
 using Xceed.Document.NET;
 using Xceed.Words.NET;
-
-// Псевдоним для CategoryAxis из OxyPlot, 
-// чтобы не конфликтовать с Xceed.Document.NET.CategoryAxis
 using OxyCategoryAxis = OxyPlot.Axes.CategoryAxis;
 
 namespace УправлениеСкладом
