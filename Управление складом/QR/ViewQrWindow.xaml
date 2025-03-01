@@ -1,0 +1,80 @@
+﻿<Window x:Class="УправлениеСкладом.QR.ViewQrWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        Title="QR-код позиции" Height="400" Width="400"
+        WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        MouseDown="Window_MouseDown">
+    <Window.Resources>
+        <Style x:Key="LocalButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="MinWidth" Value="120"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Border Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="20" Padding="20">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
+            </Border.Effect>
+            <StackPanel>
+                <!-- Заголовок окна -->
+                <Grid Margin="0,0,0,10">
+                    <TextBlock Text="QR-код позиции" FontSize="18" FontWeight="Bold" 
+                               Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
+                    <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseButton_Click">
+                        <iconPacks:PackIconMaterial Kind="Close" Width="24" Height="24" 
+                                                    Foreground="{DynamicResource PrimaryBrush}"/>
+                    </Button>
+                </Grid>
+                <!-- Изображение QR-кода -->
+                <Image x:Name="QrImage" Width="200" Height="200" Stretch="Uniform" 
+                       HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                <!-- Панель кнопок -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Margin="5" Click="SaveQrButton_Click" Style="{StaticResource LocalButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Kind="Download" Width="24" Height="24" Margin="0,0,5,0"
+                                                        Foreground="{DynamicResource ButtonForegroundBrush}"/>
+                            <TextBlock Text="Сохранить" FontSize="14" Foreground="{DynamicResource ButtonForegroundBrush}"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Margin="5" Click="PrintQrButton_Click" Style="{StaticResource LocalButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Kind="Printer" Width="24" Height="24" Margin="0,0,5,0"
+                                                        Foreground="{DynamicResource ButtonForegroundBrush}"/>
+                            <TextBlock Text="Печать" FontSize="14" Foreground="{DynamicResource ButtonForegroundBrush}"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
