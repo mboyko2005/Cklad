@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Панель администратора</title>
+  <link rel="stylesheet" href="Admin.css">
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Заголовок окна -->
+    <h1 class="admin-title">Администратор</h1>
+    <p class="admin-subtitle">Добро пожаловать, Администратор!</p>
+    
+    <!-- Блок карточек, выстроенных горизонтально -->
+    <div class="admin-cards">
+      <div class="admin-card" id="manageUsersCard">
+        <div class="card-icon">&#128100;</div>
+        <div class="card-label">Управление пользователями</div>
+      </div>
+
+      <div class="admin-card" id="manageInventoryCard">
+        <div class="card-icon">&#128722;</div>
+        <div class="card-label">Управление складскими позициями</div>
+      </div>
+
+      <div class="admin-card" id="reportsCard">
+        <div class="card-icon">&#128200;</div>
+        <div class="card-label">Отчёты</div>
+      </div>
+
+      <div class="admin-card" id="settingsCard">
+        <div class="card-icon">&#9881;</div>
+        <div class="card-label">Настройки</div>
+      </div>
+
+      <div class="admin-card" id="checkApiCard">
+        <div class="card-icon">&#128640;</div>
+        <div class="card-label">Проверка API</div>
+      </div>
+
+      <div class="admin-card" id="botCard">
+        <div class="card-icon">&#9993;</div>
+        <div class="card-label">Управление ботом</div>
+      </div>
+
+      <!-- Карточка "Выход" -->
+      <div class="admin-card" id="exitCard">
+        <div class="card-icon">&#10060;</div>
+        <div class="card-label">Выход</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="Admin.js"></script>
+</body>
+</html>

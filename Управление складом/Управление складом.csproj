@@ -12,6 +12,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="WEB\**" />
+    <EmbeddedResource Remove="WEB\**" />
+    <None Remove="WEB\**" />
+    <Page Remove="WEB\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Resource\ruble.png" />
   </ItemGroup>
 
@@ -27,6 +34,7 @@
     <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="5.1.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
     <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="OxyPlot.SkiaSharp" Version="2.2.0" />
     <PackageReference Include="OxyPlot.SkiaSharp.Wpf" Version="2.2.0" />
     <PackageReference Include="OxyPlot.Wpf" Version="2.2.0" />
@@ -226,6 +234,10 @@
     <None Update="Models\RU\rnnlm\word_feats.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="API\" />
   </ItemGroup>
 
 </Project>

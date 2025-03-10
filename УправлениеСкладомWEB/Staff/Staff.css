@@ -1,0 +1,84 @@
+/* Используем шрифт Segoe UI для всей страницы */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Arial, sans-serif;
+  }
+  
+  /* Градиентный фон для всей страницы */
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #007BFF 0%, #00C6FF 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Основной контейнер */
+  .staff-container {
+    background: #fff;
+    width: 800px; /* Достаточно места для карточек */
+    max-width: 90%;
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    text-align: center;
+  }
+  
+  /* Заголовок и подзаголовок */
+  .staff-title {
+    font-size: 32px;
+    color: #007BFF;
+    margin-bottom: 0.5rem;
+  }
+  
+  .staff-subtitle {
+    font-size: 18px;
+    color: #555;
+    margin-bottom: 2rem;
+  }
+  
+  /* Блок карточек */
+  .staff-cards {
+    display: flex;
+    flex-wrap: wrap; /* Перенос при нехватке места */
+    justify-content: center;
+    gap: 1.5rem;
+  }
+  
+  /* Стиль каждой карточки */
+  .staff-card {
+    width: 220px; /* Фиксированная ширина карточек */
+    background: #f9f9f9;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  /* Иконка на карточке */
+  .card-icon {
+    font-size: 32px;
+    color: #007BFF;
+    margin-bottom: 1rem;
+  }
+  
+  /* Текст на карточке */
+  .card-label {
+    font-size: 16px;
+    color: #333;
+    text-align: center;
+    line-height: 1.4;
+  }
+  
+  /* Эффект при наведении */
+  .staff-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  }
+  

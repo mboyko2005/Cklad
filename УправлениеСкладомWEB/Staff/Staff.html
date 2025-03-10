@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Панель сотрудника склада</title>
+  <link rel="stylesheet" href="Staff.css">
+</head>
+<body>
+  <div class="staff-container">
+    <h1 class="staff-title">Сотрудник склада</h1>
+    <p class="staff-subtitle">Добро пожаловать, Сотрудник склада!</p>
+
+    <!-- Блок карточек (кнопок) -->
+    <div class="staff-cards">
+      <!-- 1. Просмотр товаров -->
+      <div class="staff-card" id="viewGoodsCard">
+        <div class="card-icon">&#128065;</div>
+        <div class="card-label">Просмотр товаров</div>
+      </div>
+
+      <!-- 2. Управление запасами (иконку поменяли на &#128230;) -->
+      <div class="staff-card" id="manageStocksCard">
+        <div class="card-icon">&#128230;</div>
+        <div class="card-label">Управление запасами</div>
+      </div>
+
+      <!-- 3. Перемещение товаров -->
+      <div class="staff-card" id="moveGoodsCard">
+        <div class="card-icon">&#128228;</div>
+        <div class="card-label">Перемещение товаров</div>
+      </div>
+
+      <!-- 4. Учёт приходов/расходов -->
+      <div class="staff-card" id="inoutAccountingCard">
+        <div class="card-icon">&#128179;</div>
+        <div class="card-label">Учёт приходов/расходов</div>
+      </div>
+
+      <!-- 5. Выход -->
+      <div class="staff-card" id="exitCard">
+        <div class="card-icon">&#10060;</div>
+        <div class="card-label">Выход</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="Staff.js"></script>
+</body>
+</html>

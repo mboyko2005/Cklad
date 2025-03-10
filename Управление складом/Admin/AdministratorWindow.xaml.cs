@@ -7,29 +7,20 @@ using Управление_складом.Админ;
 namespace УправлениеСкладом
 {
 	/// <summary>
-	/// Окно администратора с функционалом управления пользователями, инвентарем, отчетами, настройками и ботом.
+	/// Окно администратора с функционалом управления пользователями, инвентарем, отчетами, настройками, ботом и проверкой API.
 	/// </summary>
 	public partial class AdministratorWindow : Window, IRoleWindow, IThemeable
 	{
-		/// <summary>
-		/// Конструктор окна администратора.
-		/// Инициализирует компоненты и обновляет иконку текущей темы.
-		/// </summary>
 		public AdministratorWindow()
 		{
 			InitializeComponent();
 			UpdateThemeIcon();
 		}
 
-		/// <summary>
-		/// Отображает окно администратора.
-		/// </summary>
+		// Отображает окно администратора.
 		public void ShowWindow() => Show();
 
-		/// <summary>
-		/// Обработчик нажатия кнопки закрытия.
-		/// Открывает главное окно и закрывает текущее окно администратора.
-		/// </summary>
+		// Обработчик нажатия кнопки закрытия.
 		private void CloseButton_Click(object sender, RoutedEventArgs e)
 		{
 			MainWindow mainWindow = new MainWindow();
@@ -37,46 +28,39 @@ namespace УправлениеСкладом
 			this.Close();
 		}
 
-		/// <summary>
-		/// Обработчик нажатия кнопки управления пользователями.
-		/// Открывает окно управления пользователями в виде модального диалога.
-		/// </summary>
+		// Обработчик нажатия кнопки управления пользователями.
 		private void ManageUsers_Click(object sender, RoutedEventArgs e)
 		{
 			ShowDialogWindow(new ManageUsersWindow());
 		}
 
-		/// <summary>
-		/// Обработчик нажатия кнопки управления инвентарем.
-		/// Открывает окно управления инвентарем в виде модального диалога.
-		/// </summary>
+		// Обработчик нажатия кнопки управления инвентарем.
 		private void ManageInventory_Click(object sender, RoutedEventArgs e)
 		{
 			ShowDialogWindow(new ManageInventoryWindow());
 		}
 
-		/// <summary>
-		/// Обработчик нажатия кнопки отчетов.
-		/// Открывает окно отчетов в виде модального диалога.
-		/// </summary>
+		// Обработчик нажатия кнопки отчетов.
 		private void Reports_Click(object sender, RoutedEventArgs e)
 		{
 			ShowDialogWindow(new ReportsWindow());
 		}
 
-		/// <summary>
-		/// Обработчик нажатия кнопки настроек.
-		/// Открывает окно настроек в виде модального диалога.
-		/// </summary>
+		// Обработчик нажатия кнопки настроек.
 		private void Settings_Click(object sender, RoutedEventArgs e)
 		{
 			ShowDialogWindow(new SettingsWindow());
 		}
 
-		/// <summary>
-		/// Обработчик нажатия кнопки управления ботом.
-		/// Открывает окно управления ботом и закрывает текущее окно администратора.
-		/// </summary>
+		// Обработчик нажатия кнопки проверки API.
+		private void CheckApiButton_Click(object sender, RoutedEventArgs e)
+		{
+			ApiStatusWindow statusWindow = new ApiStatusWindow();
+			statusWindow.Owner = this;
+			statusWindow.ShowDialog();
+		}
+
+		// Обработчик нажатия кнопки управления ботом.
 		private void ManageBot_Click(object sender, RoutedEventArgs e)
 		{
 			var manageBotWindow = new ManageBotWindow();
@@ -84,20 +68,14 @@ namespace УправлениеСкладом
 			this.Close();
 		}
 
-		/// <summary>
-		/// Обработчик нажатия кнопки переключения темы.
-		/// Переключает тему приложения и обновляет соответствующую иконку.
-		/// </summary>
+		// Обработчик нажатия кнопки переключения темы.
 		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
 		{
 			ThemeManager.ToggleTheme();
 			UpdateThemeIcon();
 		}
 
-		/// <summary>
-		/// Обновляет иконку темы в зависимости от текущего режима.
-		/// Использует иконку "ночь" для темной темы и "солнце" для светлой.
-		/// </summary>
+		// Обновляет иконку темы.
 		public void UpdateThemeIcon()
 		{
 			if (ThemeIcon != null)
@@ -108,10 +86,7 @@ namespace УправлениеСкладом
 			}
 		}
 
-		/// <summary>
-		/// Обработчик события перемещения окна.
-		/// Позволяет перетаскивать окно, если нажата левая кнопка мыши.
-		/// </summary>
+		// Позволяет перетаскивать окно.
 		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
 		{
 			if (e.ChangedButton == MouseButton.Left)
@@ -120,11 +95,7 @@ namespace УправлениеСкладом
 
 		#region Вспомогательные методы
 
-		/// <summary>
-		/// Устанавливает владельца для переданного окна и открывает его как модальный диалог.
-		/// Позволяет избежать дублирования кода для открытия окон.
-		/// </summary>
-		/// <param name="window">Окно, которое необходимо открыть.</param>
+		// Устанавливает владельца для переданного окна и открывает его как модальный диалог.
 		private void ShowDialogWindow(Window window)
 		{
 			window.Owner = this;

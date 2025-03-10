@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Управление Складом</title>
+  <link rel="icon" href="Логотип.ico">
+  <link rel="stylesheet" href="Login.css">
+</head>
+<body>
+  <!-- Форма авторизации -->
+  <div class="login-container" id="loginContainer">
+    <h1>Управление Складом</h1>
+    <img src="Логотип.ico" alt="Логотип" class="logo">
+    <form id="loginForm">
+      <div class="input-group">
+        <label for="username">Логин</label>
+        <input type="text" id="username" placeholder="Введите логин" required>
+      </div>
+      <div class="input-group password-group">
+        <label for="password">Пароль</label>
+        <input type="password" id="password" placeholder="Введите пароль" required>
+      </div>
+      <button type="submit">Войти</button>
+    </form>
+    <div id="loginMessage" style="color: red; margin-top: 1rem;"></div>
+  </div>
+  <script src="Login.js"></script>
+</body>
+</html>

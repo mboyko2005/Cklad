@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Панель менеджера</title>
+  <link rel="stylesheet" href="Manager.css">
+</head>
+<body>
+  <div class="manager-container">
+    <h1 class="manager-title">Менеджер</h1>
+    <p class="manager-subtitle">Добро пожаловать, Менеджер!</p>
+
+    <!-- Блок карточек (кнопок) -->
+    <div class="manager-cards">
+      <!-- 1. Управление Товаром -->
+      <div class="manager-card" id="manageGoodsCard">
+        <!-- Иконка «Посылка» -->
+        <div class="card-icon">&#x1F4E6;</div>
+        <div class="card-label">Управление Товаром</div>
+      </div>
+
+      <!-- 2. Управление сотрудниками -->
+      <div class="manager-card" id="manageStaffCard">
+        <!-- Иконка «Люди» -->
+        <div class="card-icon">&#128101;</div>
+        <div class="card-label">Управление сотрудниками</div>
+      </div>
+
+      <!-- 3. Просмотр отчетов -->
+      <div class="manager-card" id="reportsCard">
+        <!-- Иконка «График» -->
+        <div class="card-icon">&#128200;</div>
+        <div class="card-label">Просмотр отчётов</div>
+      </div>
+
+      <!-- 4. Настройки -->
+      <div class="manager-card" id="settingsCard">
+        <!-- Иконка «Шестерёнка» -->
+        <div class="card-icon">&#9881;</div>
+        <div class="card-label">Настройки</div>
+      </div>
+
+      <!-- 5. Выход -->
+      <div class="manager-card" id="exitCard">
+        <!-- Иконка «X» -->
+        <div class="card-icon">&#10060;</div>
+        <div class="card-label">Выход</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="Manager.js"></script>
+</body>
+</html>
