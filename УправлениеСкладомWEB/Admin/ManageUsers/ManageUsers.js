@@ -1,7 +1,14 @@
-let usersData = [];      // Список пользователей
-let rolesData = [];      // Список ролей
-let selectedUserId = null;
-let isEditMode = false;  // false = добавление, true = редактирование
+/***************************************
+ *      Управление пользователями
+ *      (Добавление, редактирование,
+ *       удаление, поиск)
+ ***************************************/
+
+// Глобальные переменные
+let usersData = [];      // Список пользователей, загруженных с сервера
+let rolesData = [];      // Список ролей, загруженных с сервера
+let selectedUserId = null; 
+let isEditMode = false;  // false: Добавление, true: Редактирование
 
 document.addEventListener("DOMContentLoaded", () => {
   checkAuthorization();
@@ -10,45 +17,48 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeEventListeners();
 });
 
-/** Проверка авторизации */
+/** 
+ * Проверка авторизации 
+ * Если пользователь не авторизован ИЛИ роль не "Администратор", 
+ * отправляем на страницу логина.
+ */
 function checkAuthorization() {
   const isAuth = localStorage.getItem("auth");
   const userRole = localStorage.getItem("role");
-  // Если не админ, переходим на логин
   if (isAuth !== "true" || userRole !== "Администратор") {
     window.location.href = "../../Login.html";
   }
 }
 
-/** Инициализация всех кнопок и т.п. */
+/** Инициализация всех обработчиков событий */
 function initializeEventListeners() {
   // Кнопка "Назад" (стрелка)
   const backButton = document.getElementById("backButton");
   backButton.addEventListener("click", () => {
-    // Возврат на страницу Admin.html
+    // Переходим на страницу Admin.html
     window.location.href = "../Admin.html";
   });
 
   // Кнопка "Выход"
   const exitBtn = document.getElementById("exitBtn");
   exitBtn.addEventListener("click", () => {
-    // Сброс авторизации
+    // Сбрасываем авторизацию
     localStorage.removeItem("auth");
     localStorage.removeItem("role");
     window.location.href = "../../Login.html";
   });
 
-  // Добавление пользователя
+  // Кнопка "Добавить пользователя"
   document.getElementById("addUserBtn").addEventListener("click", () => {
     isEditMode = false;
     selectedUserId = null;
     openUserModal("Добавить пользователя");
   });
 
-  // Редактирование пользователя
+  // Кнопка "Редактировать пользователя"
   document.getElementById("editUserBtn").addEventListener("click", handleEditUser);
 
-  // Удаление пользователя
+  // Кнопка "Удалить пользователя"
   document.getElementById("deleteUserBtn").addEventListener("click", handleDeleteUser);
 
   // Закрытие модалки (крестик)
@@ -61,7 +71,7 @@ function initializeEventListeners() {
     document.getElementById("userModal").style.display = "none";
   });
 
-  // Сохранение (Добавить / Редактировать)
+  // Сохранить изменения (Добавить / Редактировать)
   document.getElementById("saveUserBtn").addEventListener("click", handleSaveUser);
 
   // Поиск
@@ -75,44 +85,41 @@ function initializeEventListeners() {
     renderUsersTable(filtered);
   });
 
-  // Закрытие модального окна при клике вне контента
+  // Закрытие модальных окон при клике вне их содержимого
   window.addEventListener("click", (event) => {
     const userModal = document.getElementById("userModal");
+    const confirmModal = document.getElementById("confirmModal");
     if (event.target === userModal) {
       userModal.style.display = "none";
     }
-    const confirmModal = document.getElementById("confirmModal");
     if (event.target === confirmModal) {
       confirmModal.style.display = "none";
     }
   });
 
-  // Обработчики кнопок подтверждения
+  // Кнопки подтверждения в модалке удаления
   document.getElementById("confirmYesBtn").addEventListener("click", () => {
-    // Подтвердили удаление
     if (typeof confirmCallback === "function") {
       confirmCallback(true);
     }
     closeConfirmModal();
   });
+
   document.getElementById("confirmNoBtn").addEventListener("click", () => {
-    // Отменили
     if (typeof confirmCallback === "function") {
       confirmCallback(false);
     }
     closeConfirmModal();
   });
 
-  // Закрытие уведомления
+  // Закрытие уведомления (toast)
   document.getElementById("notificationClose").addEventListener("click", () => {
     hideNotification();
   });
 }
 
-/** Загрузка ролей */
+/** Загрузка списка ролей с сервера */
 function loadRoles() {
-  // Если страница открывается на http://localhost:8080/...
-  // меняем путь на полный:
   fetch("http://localhost:8080/api/manageusers/roles")
     .then(resp => resp.json())
     .then(data => {
@@ -124,7 +131,7 @@ function loadRoles() {
     });
 }
 
-/** Загрузка списка пользователей */
+/** Загрузка списка пользователей с сервера */
 function loadUsers() {
   fetch("http://localhost:8080/api/manageusers")
     .then(resp => resp.json())
@@ -142,6 +149,7 @@ function loadUsers() {
 function renderUsersTable(users) {
   const tbody = document.querySelector("#usersTable tbody");
   tbody.innerHTML = "";
+
   users.forEach(user => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -149,17 +157,22 @@ function renderUsersTable(users) {
       <td>${user.username}</td>
       <td>${user.roleName}</td>
     `;
-    // Выделение строки
+
+    // Клик по строке = выбор пользователя
     tr.addEventListener("click", () => {
-      document.querySelectorAll("#usersTable tbody tr").forEach(row => row.classList.remove("selected"));
+      // Снимем выделение со всех строк
+      document.querySelectorAll("#usersTable tbody tr")
+        .forEach(row => row.classList.remove("selected"));
+      
       tr.classList.add("selected");
       selectedUserId = user.userID;
     });
+
     tbody.appendChild(tr);
   });
 }
 
-/** Открытие модального окна (добавить/редактировать) */
+/** Открытие модалки для добавления или редактирования пользователя */
 function openUserModal(title) {
   document.getElementById("userModal").style.display = "flex";
   document.getElementById("modalTitle").textContent = title;
@@ -169,7 +182,7 @@ function openUserModal(title) {
   document.getElementById("passwordInput").value = "";
   document.getElementById("confirmPasswordInput").value = "";
 
-  // Заполнение списка ролей
+  // Заполняем список ролей
   const roleSelect = document.getElementById("roleSelect");
   roleSelect.innerHTML = "";
   rolesData.forEach(role => {
@@ -179,18 +192,18 @@ function openUserModal(title) {
     roleSelect.appendChild(opt);
   });
 
-  // Если редактируем — подставляем
+  // Если редактируем — подставляем данные пользователя
   if (isEditMode && selectedUserId) {
     const user = usersData.find(u => u.userID === selectedUserId);
     if (user) {
       document.getElementById("usernameInput").value = user.username;
-      // Пароль не показываем
+      // Пароль в целях безопасности не показываем
       roleSelect.value = user.roleID;
     }
   }
 }
 
-/** Обработка "Редактировать" */
+/** Обработка нажатия "Редактировать" */
 function handleEditUser() {
   if (!selectedUserId) {
     showNotification("Сначала выберите пользователя", "error");
@@ -200,33 +213,36 @@ function handleEditUser() {
   openUserModal("Редактировать пользователя");
 }
 
-/** Обработка "Удалить" */
+/** Обработка нажатия "Удалить" */
 function handleDeleteUser() {
   if (!selectedUserId) {
     showNotification("Сначала выберите пользователя", "error");
     return;
   }
-  openConfirmModal("Удаление пользователя", "Вы действительно хотите удалить выбранного пользователя?", (confirmed) => {
-    if (confirmed) {
-      // Выполняем удаление
-      fetch(`http://localhost:8080/api/manageusers/${selectedUserId}`, {
-        method: "DELETE"
-      })
-        .then(resp => resp.json())
-        .then(data => {
-          showNotification(data.message || "Пользователь удалён", "success");
-          loadUsers();
-          selectedUserId = null;
+  openConfirmModal(
+    "Удаление пользователя",
+    "Вы действительно хотите удалить выбранного пользователя?",
+    (confirmed) => {
+      if (confirmed) {
+        fetch(`http://localhost:8080/api/manageusers/${selectedUserId}`, {
+          method: "DELETE"
         })
-        .catch(err => {
-          console.error("Ошибка при удалении пользователя:", err);
-          showNotification("Ошибка при удалении пользователя", "error");
-        });
+          .then(resp => resp.json())
+          .then(data => {
+            showNotification(data.message || "Пользователь удалён", "success");
+            loadUsers();
+            selectedUserId = null;
+          })
+          .catch(err => {
+            console.error("Ошибка при удалении пользователя:", err);
+            showNotification("Ошибка при удалении пользователя", "error");
+          });
+      }
     }
-  });
+  );
 }
 
-/** Обработка "Сохранить" (добавление/редактирование) */
+/** Обработка нажатия "Сохранить" (добавление/редактирование) */
 function handleSaveUser() {
   const username = document.getElementById("usernameInput").value.trim();
   const password = document.getElementById("passwordInput").value;
@@ -245,7 +261,7 @@ function handleSaveUser() {
   const userData = { username, password, roleId };
 
   if (isEditMode && selectedUserId) {
-    // Редактируем
+    // Редактирование
     fetch(`http://localhost:8080/api/manageusers/${selectedUserId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -262,7 +278,7 @@ function handleSaveUser() {
         showNotification("Ошибка при редактировании пользователя", "error");
       });
   } else {
-    // Добавляем
+    // Добавление
     fetch("http://localhost:8080/api/manageusers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -281,7 +297,9 @@ function handleSaveUser() {
   }
 }
 
-/* ======= НИЖЕ - функционал подтверждения (confirm modal) и уведомлений (notification) ======= */
+/* =========================================================
+   МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ (confirmModal)
+   ========================================================= */
 let confirmCallback = null;
 
 /** Открыть модалку подтверждения */
@@ -291,12 +309,16 @@ function openConfirmModal(title, text, callback) {
   document.getElementById("confirmText").textContent = text;
   document.getElementById("confirmModal").style.display = "flex";
 }
+
 /** Закрыть модалку подтверждения */
 function closeConfirmModal() {
   document.getElementById("confirmModal").style.display = "none";
   confirmCallback = null;
 }
 
+/* =========================================================
+   УВЕДОМЛЕНИЯ (TOAST)
+   ========================================================= */
 /** Показать уведомление (type: 'success' | 'error' | 'info') */
 function showNotification(message, type = "info") {
   const notification = document.getElementById("notification");
@@ -323,7 +345,7 @@ function showNotification(message, type = "info") {
 
   notification.classList.add("show");
 
-  // Скрыть через 3 сек
+  // Скрыть уведомление через 3 сек
   setTimeout(() => {
     hideNotification();
   }, 3000);

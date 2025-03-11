@@ -5,8 +5,8 @@
   <title>Управление пользователями</title>
   <link rel="icon" href="../Логотип.ico">
   
-  <!-- Подключаем шрифт Inter -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Подключаем шрифт Poppins (как в первом примере) -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Иконки Remix Icon -->
   <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
@@ -42,17 +42,17 @@
       </div>
     </div>
   </header>
-
+  
   <!-- Основной контейнер -->
   <div class="manage-container">
     <h1 class="manage-title">Управление пользователями</h1>
     <p class="manage-subtitle">Создание, редактирование и удаление учетных записей</p>
-
+    
     <!-- Поле поиска -->
     <div class="search-panel">
       <input type="text" id="searchInput" placeholder="Поиск по имени, ID или роли...">
     </div>
-
+    
     <!-- Таблица пользователей -->
     <table class="users-table" id="usersTable">
       <thead>
@@ -63,10 +63,10 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Заполняется динамически JS-ом -->
+        <!-- Данные заполняются через JS -->
       </tbody>
     </table>
-
+    
     <!-- Кнопки управления -->
     <div class="buttons-panel">
       <button id="addUserBtn" class="action-button add-button">
@@ -80,33 +80,28 @@
       </button>
     </div>
   </div>
-
+  
   <!-- Модальное окно для добавления/редактирования пользователя -->
   <div class="modal" id="userModal">
     <div class="modal-content">
       <span class="close-modal" id="closeModal">&times;</span>
       <h2 id="modalTitle">Добавить пользователя</h2>
-
       <label for="usernameInput">Имя пользователя</label>
       <input type="text" id="usernameInput" placeholder="Введите имя пользователя">
-
       <label for="passwordInput">Пароль</label>
       <input type="password" id="passwordInput" placeholder="Введите пароль">
-
       <label for="confirmPasswordInput">Подтверждение пароля</label>
       <input type="password" id="confirmPasswordInput" placeholder="Подтвердите пароль">
-
       <label for="roleSelect">Роль</label>
       <select id="roleSelect"></select>
-
       <div class="modal-buttons">
         <button id="saveUserBtn" class="save-button">Сохранить</button>
         <button id="cancelBtn" class="cancel-button">Отмена</button>
       </div>
     </div>
   </div>
-
-  <!-- Модальное окно подтверждения (для удаления и т.д.) -->
+  
+  <!-- Модальное окно подтверждения -->
   <div class="modal" id="confirmModal">
     <div class="modal-content confirm-content">
       <h2 id="confirmTitle">Подтверждение</h2>
@@ -117,7 +112,7 @@
       </div>
     </div>
   </div>
-
+  
   <!-- Уведомление (toast) -->
   <div class="notification" id="notification">
     <div class="notification-icon">
@@ -130,8 +125,8 @@
       <i class="ri-close-line"></i>
     </div>
   </div>
-
-  <!-- Скрипт -->
+  
+  <!-- Подключение скрипта -->
   <script src="ManageUsers.js"></script>
 </body>
 </html>
