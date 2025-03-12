@@ -5,14 +5,17 @@
   <title>Управление пользователями</title>
   <link rel="icon" href="../Логотип.ico">
   
-  <!-- Подключаем шрифт Poppins (как в первом примере) -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+  <!-- Удалили ссылку на Google Fonts.
+       Теперь будет использоваться локальный шрифт Inter, 
+       заданный в :root (ManageUsers.css) -->
+       
   <!-- Иконки Remix Icon -->
   <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
   
   <!-- Стили для страницы -->
   <link rel="stylesheet" href="ManageUsers.css">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
   <!-- Фоновые анимированные фигуры -->
@@ -31,7 +34,7 @@
     </div>
     <div class="page-title">Управление пользователями</div>
     <div class="user-info">
-      <span class="greeting">Добро пожаловать, </span>
+      <!-- Убрали "Добро пожаловать, ..." -->
       <span class="username">Администратор</span>
       <div class="avatar">
         <i class="ri-user-line"></i>
@@ -69,13 +72,13 @@
     
     <!-- Кнопки управления -->
     <div class="buttons-panel">
-      <button id="addUserBtn" class="action-button add-button">
+      <button id="addUserBtn" class="action-button">
         <i class="ri-user-add-line"></i> Добавить
       </button>
-      <button id="editUserBtn" class="action-button edit-button">
+      <button id="editUserBtn" class="action-button">
         <i class="ri-edit-line"></i> Редактировать
       </button>
-      <button id="deleteUserBtn" class="action-button delete-button">
+      <button id="deleteUserBtn" class="action-button">
         <i class="ri-delete-bin-line"></i> Удалить
       </button>
     </div>
@@ -86,14 +89,19 @@
     <div class="modal-content">
       <span class="close-modal" id="closeModal">&times;</span>
       <h2 id="modalTitle">Добавить пользователя</h2>
+      
       <label for="usernameInput">Имя пользователя</label>
       <input type="text" id="usernameInput" placeholder="Введите имя пользователя">
+      
       <label for="passwordInput">Пароль</label>
       <input type="password" id="passwordInput" placeholder="Введите пароль">
+      
       <label for="confirmPasswordInput">Подтверждение пароля</label>
       <input type="password" id="confirmPasswordInput" placeholder="Подтвердите пароль">
+      
       <label for="roleSelect">Роль</label>
       <select id="roleSelect"></select>
+      
       <div class="modal-buttons">
         <button id="saveUserBtn" class="save-button">Сохранить</button>
         <button id="cancelBtn" class="cancel-button">Отмена</button>

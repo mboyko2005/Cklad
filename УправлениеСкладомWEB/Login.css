@@ -1,3 +1,16 @@
+/***************************************
+ * Подключение локального шрифта Inter
+ ***************************************/
+ @font-face {
+    font-family: 'Inter';
+    src: url('./Font/Inter.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+}
+
+/***************************************
+ * ====== Переменные ======
+ ***************************************/
 :root {
     --primary-color: #3a7bd5;
     --primary-light: #6faae0;
@@ -19,7 +32,7 @@
 }
 
 body {
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Inter', sans-serif;
     background: var(--background-color);
     color: var(--text-color);
     min-height: 100vh;
@@ -444,7 +457,7 @@ body {
     100% { transform: rotate(360deg); }
 }
 
-/* Анимация карточки при ошибке/успехе (добавляем через JS) */
+/* Анимация карточки при ошибке/успехе */
 .error-animation {
     animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }

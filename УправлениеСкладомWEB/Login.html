@@ -10,8 +10,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- AOS для анимаций при скролле -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Google Fonts удалён – шрифт теперь подключается локально через CSS -->
 </head>
 <body>
   <!-- Фоновые плавающие формы -->
@@ -38,7 +37,7 @@
           <div class="input-icon">
             <i class="fas fa-user"></i>
           </div>
-          <input type="text" id="username" required autocomplete="username">
+          <input type="text" id="username" required autocomplete="username" placeholder=" ">
           <label for="username">Логин</label>
           <div class="input-highlight"></div>
         </div>
@@ -47,7 +46,7 @@
           <div class="input-icon">
             <i class="fas fa-lock"></i>
           </div>
-          <input type="password" id="password" required autocomplete="current-password">
+          <input type="password" id="password" required autocomplete="current-password" placeholder=" ">
           <label for="password">Пароль</label>
           <div class="toggle-password" id="togglePassword">
             <i class="fas fa-eye"></i>

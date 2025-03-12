@@ -1,7 +1,20 @@
-/* ====== Переменные ====== */
+/***************************************
+ * Подключение локального шрифта Inter
+ ***************************************/
+ @font-face {
+  font-family: 'Inter';
+  src: url('./Font/Inter.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
+/***************************************
+ *      Основные переменные и базовые  
+ *      стили, как в первом примере    
+ ***************************************/
 :root {
-  --primary-color: #3a7bd5;      /* Тёмно-голубой */
-  --secondary-color: #00d2ff;    /* Светлый голубой */
+  --primary-color: #3a7bd5;
+  --secondary-color: #00d2ff;
   
   --text-primary: #333;
   --text-secondary: #666;
@@ -22,7 +35,7 @@
   --transition: 0.3s ease;
   --transition-slow: 0.5s ease;
   
-  --font-family: 'Poppins', sans-serif;
+  --font-family: 'Inter', sans-serif;
 }
 
 * {
@@ -40,7 +53,7 @@ html, body {
   position: relative;
 }
 
-/* ===== Фоновые формы ===== */
+/* ===== Фоновые фигуры ===== */
 .background-shapes {
   position: fixed;
   width: 100%;
@@ -156,11 +169,10 @@ html, body {
   justify-content: center;
   color: white;
   font-size: 18px;
-  margin-left: 10px;
   cursor: pointer;
 }
 
-/* Меню пользователя при наведении */
+/* Меню пользователя */
 .user-menu {
   position: absolute;
   top: 110%;
@@ -197,14 +209,13 @@ html, body {
 
 /* ===== Основной контейнер ===== */
 .admin-container {
-  /* Изменено для равномерного размещения */
   width: 96%;
   max-width: 1200px;
-  margin: 60px auto;       /* стало больше, чтобы не было "сжато" у верха */
+  margin: 60px auto;
   background-color: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   border-radius: var(--border-radius-lg);
-  padding: 48px;          /* увеличили padding, чтобы внутри было просторнее */
+  padding: 48px;
   box-shadow: var(--shadow);
   transition: transform var(--transition), box-shadow var(--transition);
   animation: fadeInUp 0.8s ease forwards;
@@ -232,13 +243,13 @@ html, body {
 .admin-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 40px; /* Изменено для большего расстояния между карточками */
+  gap: 40px;
 }
 
 .admin-card {
   position: relative;
   display: flex;
-  align-items: flex-start; /* чтобы иконка и текст были сверху */
+  align-items: flex-start;
   background-color: #fff;
   border-radius: var(--border-radius);
   padding: 24px;
@@ -252,7 +263,6 @@ html, body {
   transform: translateY(20px);
 }
 
-/* Задержки для плавной анимации карточек */
 .admin-card:nth-child(1) { animation-delay: 0.3s; }
 .admin-card:nth-child(2) { animation-delay: 0.4s; }
 .admin-card:nth-child(3) { animation-delay: 0.5s; }
@@ -377,13 +387,13 @@ html, body {
   }
   
   .admin-container {
-    padding: 24px;   /* немножко меньше на мобильных */
+    padding: 24px;
     margin: 32px auto;
   }
   
   .admin-cards {
     grid-template-columns: 1fr;
-    gap: 24px; /* чтобы на мобильных не было слишком большого пространства */
+    gap: 24px;
   }
   
   .admin-card {
