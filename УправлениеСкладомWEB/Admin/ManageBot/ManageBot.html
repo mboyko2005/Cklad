@@ -4,27 +4,37 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Управление ботом</title>
-  <!-- Фавикон -->
   <link rel="icon" href="../../Логотип.ico" type="image/x-icon" />
-  <!-- Стили и иконки -->
+  
+  <!-- Иконки Remix Icon -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css">
+  
+  <!-- Подключаем CSS со стилями для страницы -->
   <link rel="stylesheet" href="ManageBot.css">
-  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+  
+  <!-- Подключение шрифта Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+  <!-- Фоновые анимированные фигуры -->
+  <div class="background-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+    <div class="shape shape-4"></div>
+  </div>
+
   <!-- Верхняя панель -->
   <header class="top-bar">
     <div class="back-button" id="backButton">
       <i class="ri-arrow-left-line"></i>
       <span>Назад</span>
     </div>
-
     <!-- Заголовок с иконкой Telegram -->
     <div class="page-title">
       <i class="ri-telegram-line telegram-icon"></i>
       Управление ботом
     </div>
-
     <div class="user-info">
       <span class="username">Администратор</span>
       <div class="avatar">
@@ -41,9 +51,8 @@
     <h1 class="manage-title">Управление ботом</h1>
     <p class="manage-subtitle">Добавление, редактирование и удаление Telegram-пользователей</p>
 
-    <!-- Форма — информация о пользователе Telegram -->
+    <!-- Форма – информация о пользователе Telegram -->
     <div class="form-section">
-      <!-- Здесь будет линия по всей ширине текста -->
       <h3 class="section-title">Информация о пользователе Telegram</h3>
       <div class="form-group">
         <label for="telegramId">Telegram ID:</label>
@@ -120,7 +129,7 @@
     </div>
   </div>
 
-  <!-- Подключение скрипта -->
+  <!-- Подключение скрипта (логика работы, если требуется) -->
   <script src="ManageBot.js"></script>
 </body>
 </html>

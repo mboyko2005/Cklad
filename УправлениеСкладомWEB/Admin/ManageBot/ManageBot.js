@@ -8,6 +8,9 @@ document.addEventListener("DOMContentLoaded", () => {
   checkAuthorization();
   loadBotUsers();
   initializeEventListeners();
+  const savedTheme = localStorage.getItem("appTheme") || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+
 });
 
 /** Проверка авторизации */
