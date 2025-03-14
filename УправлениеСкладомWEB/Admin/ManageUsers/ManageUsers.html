@@ -29,15 +29,15 @@
       <i class="ri-arrow-left-line"></i>
       <span>Назад</span>
     </div>
-    <!-- Центрируем заголовок -->
-    <div class="page-title">Управление пользователями</div>
+    <!-- Центрируем заголовок с новой анимированной иконкой -->
+    <div class="page-title">
+      <i class="ri-team-line animated-icon animate-on-entry"></i> Управление пользователями
+    </div>
     <div class="user-info">
-      <!-- Имя пользователя -->
       <span class="username">Администратор</span>
       <div class="avatar">
         <i class="ri-user-line"></i>
       </div>
-      <!-- Меню пользователя -->
       <div class="user-menu">
         <button id="exitBtn" class="user-menu-item">Выход из системы</button>
       </div>
@@ -82,24 +82,19 @@
     </div>
   </main>
 
-  <!-- Модальное окно для добавления/редактирования пользователя -->
+  <!-- Модальные окна и уведомления (оставляем без изменений) -->
   <div class="modal" id="userModal">
     <div class="modal-content">
       <span class="close-modal" id="closeModal">&times;</span>
       <h2 id="modalTitle">Добавить пользователя</h2>
-
       <label for="usernameInput">Имя пользователя</label>
       <input type="text" id="usernameInput" placeholder="Введите имя пользователя">
-
       <label for="passwordInput">Пароль</label>
       <input type="password" id="passwordInput" placeholder="Введите пароль">
-
       <label for="confirmPasswordInput">Подтверждение пароля</label>
       <input type="password" id="confirmPasswordInput" placeholder="Подтвердите пароль">
-
       <label for="roleSelect">Роль</label>
       <select id="roleSelect"></select>
-
       <div class="modal-buttons">
         <button id="saveUserBtn" class="save-button">Сохранить</button>
         <button id="cancelBtn" class="cancel-button">Отмена</button>
@@ -107,7 +102,6 @@
     </div>
   </div>
 
-  <!-- Модальное окно подтверждения -->
   <div class="modal" id="confirmModal">
     <div class="modal-content confirm-content">
       <h2 id="confirmTitle">Подтверждение</h2>
@@ -119,7 +113,6 @@
     </div>
   </div>
 
-  <!-- Уведомление (toast) -->
   <div class="notification" id="notification">
     <div class="notification-icon">
       <i class="ri-information-line" id="notificationIcon"></i>
@@ -132,7 +125,6 @@
     </div>
   </div>
 
-  <!-- Подключаем JS (если требуется) -->
   <script src="ManageUsers.js"></script>
 </body>
 </html>

@@ -389,7 +389,24 @@ select {
   width: 100% !important;
   height: 100% !important;
 }
-
+/* Анимированная иконка для заголовка */
+.animated-icon {
+  margin-right: 8px;
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 24px;
+  transition: transform 1s;
+}
+.animated-icon.animate-on-entry {
+  animation: rotateIcon 1s linear;
+}
+.animated-icon:hover {
+  transform: rotate(360deg);
+}
+@keyframes rotateIcon {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 /* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
   .container {
