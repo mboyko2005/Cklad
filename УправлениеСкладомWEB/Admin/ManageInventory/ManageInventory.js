@@ -1,7 +1,6 @@
 /*************************************************************
  *  ManageInventory.js (пример с camelCase-свойствами)
- *************************************************************/
-
+*************************************************************/
 let inventoryData = [];
 let selectedPositionId = null;
 let isEditMode = false;
@@ -11,6 +10,9 @@ document.addEventListener("DOMContentLoaded", () => {
   loadWarehouses();
   loadInventory();
   initializeEventListeners();
+  const savedTheme = localStorage.getItem("appTheme") || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+
 });
 
 function checkAuthorization() {
@@ -102,7 +104,7 @@ function initializeEventListeners() {
 
 /** Загрузка списка складов */
 function loadWarehouses() {
-  fetch("http://localhost:8080/api/manageinventory/warehouses")
+ 0
     .then(resp => resp.json())
     .then(data => {
       populateWarehouseSelect(data);

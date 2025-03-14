@@ -1,4 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // ==== 1. Устанавливаем тему из localStorage ====
+  const savedTheme = localStorage.getItem("appTheme") || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+
   const reportTypeSelect = document.getElementById("reportType");
   const chartTypeSelect = document.getElementById("chartType");
   const generateReportBtn = document.getElementById("generateReportBtn");
@@ -17,28 +21,34 @@ document.addEventListener("DOMContentLoaded", () => {
     const notificationIcon = document.getElementById("notificationIcon");
     const notificationMessage = document.getElementById("notificationMessage");
 
+    // Если вёрстка notificationIcon отсутствует в HTML, проверяем:
+    if (!notification || !notificationMessage) return;
+
     notificationMessage.textContent = message;
-    switch (type) {
-      case "success":
-        notificationIcon.className = "ri-checkbox-circle-line";
-        notificationIcon.style.color = "#2ecc71";
-        break;
-      case "error":
-        notificationIcon.className = "ri-close-circle-line";
-        notificationIcon.style.color = "#e53e3e";
-        break;
-      default:
-        notificationIcon.className = "ri-information-line";
-        notificationIcon.style.color = "var(--primary-color)";
-        break;
+    if (notificationIcon) {
+      switch (type) {
+        case "success":
+          notificationIcon.className = "ri-checkbox-circle-line";
+          notificationIcon.style.color = "#2ecc71";
+          break;
+        case "error":
+          notificationIcon.className = "ri-close-circle-line";
+          notificationIcon.style.color = "#e53e3e";
+          break;
+        default:
+          notificationIcon.className = "ri-information-line";
+          notificationIcon.style.color = "var(--primary-color)";
+          break;
+      }
     }
+
     notification.classList.add("show");
     setTimeout(() => {
       notification.classList.remove("show");
     }, 3000);
   }
 
-  // Функция для получения данных отчёта с сервера (пример)
+  // Пример функции для получения данных отчёта с сервера
   async function fetchReportData(reportType) {
     let endpoint = "http://localhost:8080/api/reports/";
     switch (reportType) {
@@ -64,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return response.json();
   }
 
-  // Функция генерации диаграммы
+  // Генерация диаграммы
   async function generateChart() {
     const reportType = reportTypeSelect.value;
     const chartType = chartTypeSelect.value;
@@ -145,7 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "rgba(153, 102, 255, 1)"
       ];
 
-      // Определяем, является ли диаграмма "кругового" типа (без осей)
+      // Определяем, является ли диаграмма круговой (без осей)
       const isCircularType = ["pie", "doughnut", "radar", "polarArea"].includes(chartConfigType);
       // Для круговых типов используем массив цветов, иначе один цвет
       const datasetBackground = isCircularType ? colorSet : "rgba(58, 123, 213, 0.5)";
@@ -311,8 +321,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Слежение за выходом из полноэкранного режима, чтобы подогнать размер диаграммы
   function handleFullscreenChange() {
     if (myChart) {
-      // Если пользователь вышел из fullscreen, 
-      // обновим размеры canvas согласно нашим CSS (max-width, height).
       myChart.resize();
     }
   }

@@ -9,28 +9,32 @@
 }
 
 /***************************************
- *      Основные переменные и базовые  
- *      стили, как в первом примере    
+ *      Переменные (Светлая тема)
  ***************************************/
 :root {
+  /* Основные цвета */
   --primary-color: #3a7bd5;
   --secondary-color: #00d2ff;
   
+  /* Тексты и фоны */
+  --bg-body: #f0f2f5;        /* Фон всего экрана */
+  --bg-window: #ffffff;      /* Фон основных блоков/окон */
+  --bg-section: #f5f7fa;      /* Фон дополнительных секций */
+  --fg-text: #333;           /* Основной цвет текста */
+
+  /* Доп. стили */
   --text-primary: #333;
   --text-secondary: #666;
   --text-muted: #888;
-  
-  --bg-light: #ffffff;
-  --bg-gray: #f5f7fa;
-  
+
   --border-radius-sm: 8px;
   --border-radius: 12px;
   --border-radius-lg: 20px;
-  
+
   --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.05);
   --shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
-  
+
   --transition-fast: 0.2s ease;
   --transition: 0.3s ease;
   --transition-slow: 0.5s ease;
@@ -38,6 +42,26 @@
   --font-family: 'Inter', sans-serif;
 }
 
+/***************************************
+ *      Тёмная тема
+ ***************************************/
+[data-theme="dark"] {
+  --primary-color: #007aff;
+  --secondary-color: #00d2ff;
+
+  --bg-body: #121212;
+  --bg-window: #1c1c1c;
+  --bg-section: #1f1f1f;
+  --fg-text: #ffffff;
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #cccccc;
+  --text-muted: #aaaaaa;
+}
+
+/***************************************
+ *  Сброс и базовые стили
+ ***************************************/
 * {
   margin: 0;
   padding: 0;
@@ -47,18 +71,19 @@
 html, body {
   width: 100%;
   height: 100%;
-  font-family: var(--font-family);
-  color: var(--text-primary);
   overflow-x: hidden;
   position: relative;
+  font-family: var(--font-family);
+  background-color: var(--bg-body);
+  color: var(--fg-text);
 }
 
-/* ===== Фоновые фигуры ===== */
+/* ===== Фоновые фигуры (исправлено) ===== */
 .background-shapes {
   position: fixed;
   width: 100%;
   height: 100%;
-  z-index: -1;
+  z-index: 0; /* z-index изменён, чтобы не уходили за контент */
   overflow: hidden;
 }
 
@@ -117,16 +142,19 @@ html, body {
 
 /* ===== Верхняя панель ===== */
 .top-bar {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
+  background-color: var(--bg-window);
   box-shadow: var(--shadow-sm);
   margin: 16px;
   border-radius: var(--border-radius);
   animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+  transform: translateY(20px);
 }
 
 .logo {
@@ -135,11 +163,11 @@ html, body {
   font-weight: 600;
   font-size: 18px;
   color: var(--primary-color);
+  gap: 8px;
 }
 
 .logo i {
   font-size: 22px;
-  margin-right: 8px;
 }
 
 .user-info {
@@ -177,7 +205,7 @@ html, body {
   position: absolute;
   top: 110%;
   right: 0;
-  background-color: #fff;
+  background-color: var(--bg-window);
   border-radius: var(--border-radius-sm);
   box-shadow: var(--shadow-sm);
   padding: 8px 0;
@@ -209,17 +237,17 @@ html, body {
 
 /* ===== Основной контейнер ===== */
 .admin-container {
+  position: relative;
+  z-index: 1;
   width: 96%;
   max-width: 1200px;
   margin: 60px auto;
-  background-color: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
+  background-color: var(--bg-window);
   border-radius: var(--border-radius-lg);
   padding: 48px;
   box-shadow: var(--shadow);
   transition: transform var(--transition), box-shadow var(--transition);
   animation: fadeInUp 0.8s ease forwards;
-  animation-delay: 0.2s;
   opacity: 0;
   transform: translateY(20px);
 }
@@ -240,6 +268,13 @@ html, body {
 }
 
 /* ===== Карточки ===== */
+/* Определяем CSS-анимацию пульсации */
+@keyframes pulse {
+  0% { box-shadow: none; }
+  50% { box-shadow: 0 5px 20px rgba(58, 123, 213, 0.15); }
+  100% { box-shadow: none; }
+}
+
 .admin-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -250,7 +285,7 @@ html, body {
   position: relative;
   display: flex;
   align-items: flex-start;
-  background-color: #fff;
+  background-color: var(--bg-window);
   border-radius: var(--border-radius);
   padding: 24px;
   box-shadow: var(--shadow-sm);
@@ -258,16 +293,28 @@ html, body {
   overflow: hidden;
   transition: all var(--transition);
   border: 1px solid rgba(230, 230, 230, 0.7);
-  animation: fadeInUp 1s ease forwards;
+  /* Комбинированные анимации: появление и пульсация */
+  animation: fadeInUp 1s ease forwards, pulse 1s ease-in-out;
   opacity: 0;
   transform: translateY(20px);
 }
 
-.admin-card:nth-child(1) { animation-delay: 0.3s; }
-.admin-card:nth-child(2) { animation-delay: 0.4s; }
-.admin-card:nth-child(3) { animation-delay: 0.5s; }
-.admin-card:nth-child(4) { animation-delay: 0.6s; }
-.admin-card:nth-child(5) { animation-delay: 0.7s; }
+/* Задаём индивидуальные задержки для двух анимаций (через запятую) */
+.admin-card:nth-child(1) { 
+  animation-delay: 0.3s, 2s; 
+}
+.admin-card:nth-child(2) { 
+  animation-delay: 0.4s, 2.3s; 
+}
+.admin-card:nth-child(3) { 
+  animation-delay: 0.5s, 2.6s; 
+}
+.admin-card:nth-child(4) { 
+  animation-delay: 0.6s, 2.9s; 
+}
+.admin-card:nth-child(5) { 
+  animation-delay: 0.7s, 3.2s; 
+}
 
 .admin-card:hover {
   transform: translateY(-5px);
@@ -336,7 +383,7 @@ html, body {
   right: 20px;
   display: flex;
   align-items: center;
-  background-color: #fff;
+  background-color: var(--bg-window);
   border-radius: var(--border-radius);
   padding: 16px;
   box-shadow: var(--shadow);
@@ -363,7 +410,7 @@ html, body {
 
 .notification-message {
   font-size: 14px;
-  color: var(--text-primary);
+  color: var(--fg-text);
 }
 
 .notification-close {
@@ -375,7 +422,7 @@ html, body {
 }
 
 .notification-close:hover {
-  color: var(--text-primary);
+  color: var(--fg-text);
 }
 
 /* ===== Адаптивность ===== */

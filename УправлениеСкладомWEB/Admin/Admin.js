@@ -1,7 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Устанавливаем тему из localStorage – если выбрана тёмная, то применяются стили dark-темы
+  const savedTheme = localStorage.getItem("appTheme") || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+
   checkAuthorization();
   initializeEventListeners();
-  initPulseEffect(); // Опциональный "пульс"
 });
 
 /** Проверяем, что пользователь авторизован как Администратор */
@@ -12,7 +15,7 @@ function checkAuthorization() {
     window.location.href = "../Login.html";
     return;
   }
-  // Если хотим приветствовать по имени:
+  // Если имя пользователя сохранено – отображаем его
   const username = localStorage.getItem("username");
   if (username) {
     const usernameEl = document.querySelector(".username");
@@ -24,7 +27,7 @@ function checkAuthorization() {
   }, 1500);
 }
 
-/** Вешаем обработчики на карточки */
+/** Вешаем обработчики на карточки и кнопку выхода */
 function initializeEventListeners() {
   const manageUsersCard = document.getElementById("manageUsersCard");
   const manageInventoryCard = document.getElementById("manageInventoryCard");
@@ -32,10 +35,9 @@ function initializeEventListeners() {
   const settingsCard = document.getElementById("settingsCard");
   const botCard = document.getElementById("botCard");
 
-  // Вместо showNotification — переход на нужные HTML-страницы:
+  // Переходы на нужные HTML-страницы:
   if (manageUsersCard) {
     manageUsersCard.addEventListener("click", () => {
-      // Открываем страницу ManageUsers/ManageUsers.html
       window.location.href = "ManageUsers/ManageUsers.html";
     });
   }
@@ -60,14 +62,14 @@ function initializeEventListeners() {
     });
   }
 
-  // Выход из системы через меню (если есть кнопка exitBtn)
+  // Обработчик кнопки выхода
   const exitBtn = document.getElementById("exitBtn");
   if (exitBtn) {
     exitBtn.addEventListener("click", handleExit);
   }
 }
 
-/** Удаляем данные авторизации и уходим на Login */
+/** Удаляем данные авторизации и перенаправляем на страницу входа */
 function handleExit() {
   localStorage.removeItem("auth");
   localStorage.removeItem("role");
@@ -75,15 +77,31 @@ function handleExit() {
   window.location.href = "../Login.html";
 }
 
-/** Опциональный "пульс" карточек */
-function initPulseEffect() {
-  const cards = document.querySelectorAll(".admin-card");
-  cards.forEach((card, index) => {
-    setTimeout(() => {
-      card.style.boxShadow = "0 5px 20px rgba(58, 123, 213, 0.15)";
-      setTimeout(() => {
-        card.style.boxShadow = "";
-      }, 800);
-    }, 2000 + (index * 300));
-  });
+/** Показать уведомление (toast) */
+function showNotification(message) {
+  const notification = document.getElementById("notification");
+  if (!notification) return;
+
+  const notificationMessage = notification.querySelector(".notification-message");
+  if (notificationMessage) notificationMessage.textContent = message;
+  
+  notification.classList.add("show");
+
+  // Скрываем через 3 секунды
+  setTimeout(() => {
+    hideNotification();
+  }, 3000);
+
+  // Закрытие по нажатию на крестик
+  const closeBtn = notification.querySelector(".notification-close");
+  if (closeBtn) {
+    closeBtn.onclick = hideNotification;
+  }
+}
+
+/** Скрыть уведомление */
+function hideNotification() {
+  const notification = document.getElementById("notification");
+  if (!notification) return;
+  notification.classList.remove("show");
 }

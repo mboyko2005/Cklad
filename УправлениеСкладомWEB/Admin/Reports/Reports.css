@@ -1,14 +1,90 @@
-/* Корневые переменные */
+/* ====== Переменные (Светлая тема по умолчанию) ====== */
 :root {
   --primary-color: #3a7bd5;
   --secondary-color: #00d2ff;
+
   --text-primary: #333;
   --text-secondary: #666;
+
+  /* Для общего фона и блоков */
   --bg-light: #ffffff;
   --bg-gray: #f5f7fa;
+
   --border-radius: 12px;
   --transition: 0.3s ease;
   --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* ====== Тёмная тема (переопределение) ====== */
+[data-theme="dark"] {
+  --primary-color: #007aff;
+  --secondary-color: #00d2ff;
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #cccccc;
+
+  --bg-light: #1c1c1c;
+  --bg-gray: #121212;
+
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* Фоновые фигуры */
+.background-shapes {
+  position: fixed;
+  top: 0; /* чтобы занимали весь экран */
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.6;
+  animation: float 15s infinite ease-in-out;
+}
+.shape-1 {
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  width: 300px;
+  height: 300px;
+  top: -100px;
+  left: -100px;
+  animation-delay: 0s;
+}
+.shape-2 {
+  background: linear-gradient(135deg, #6faae0, var(--secondary-color));
+  width: 400px;
+  height: 400px;
+  bottom: -150px;
+  right: -150px;
+  animation-delay: -5s;
+}
+.shape-3 {
+  background: linear-gradient(225deg, #144e94, var(--secondary-color));
+  width: 250px;
+  height: 250px;
+  bottom: 20%;
+  left: 10%;
+  animation-delay: -2s;
+}
+.shape-4 {
+  background: linear-gradient(315deg, var(--primary-color), #6faae0);
+  width: 350px;
+  height: 350px;
+  top: 15%;
+  right: 10%;
+  animation-delay: -7s;
+}
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.05);
+  }
 }
 
 /* Сброс стилей */
@@ -41,11 +117,15 @@ body {
 
 /* Верхняя панель */
 .top-bar {
+  /* Главное изменение: position relative + z-index: 1 */
+  position: relative;
+  z-index: 1;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 14px 24px;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--bg-light);
   box-shadow: var(--shadow);
   margin: 16px;
   border-radius: var(--border-radius);
@@ -101,7 +181,7 @@ body {
   position: absolute;
   top: 110%;
   right: 0;
-  background-color: #fff;
+  background-color: var(--bg-light);
   border-radius: 8px;
   box-shadow: var(--shadow);
   padding: 8px 0;
@@ -113,7 +193,6 @@ body {
 .user-info:hover .user-menu {
   display: flex;
 }
-
 .user-menu-item {
   background: none;
   border: none;
@@ -131,6 +210,10 @@ body {
 
 /* Основной контейнер */
 .container {
+  /* Также: position relative + z-index: 1, чтобы фон оставался сзади */
+  position: relative;
+  z-index: 1;
+
   display: flex;
   margin: 16px;
   gap: 16px;
@@ -172,6 +255,7 @@ select {
   border-radius: var(--border-radius);
   font-size: 14px;
   color: var(--text-primary);
+  background-color: var(--bg-light);
 }
 
 .btn {
@@ -211,11 +295,11 @@ select {
   animation: fadeInRight var(--transition);
 }
 
-/* Ограничиваем размер диаграммы, чтобы не растягивалась на всю ширину */
+/* Ограничиваем размер диаграммы */
 .chart-container {
-  max-width: 1000px; /* увеличенная максимальная ширина */
+  max-width: 1000px; 
   width: 100%;
-  height: 700px; /* увеличенная высота */
+  height: 700px; 
   margin: 0 auto;
   position: relative;
   transition: all 0.3s ease;
@@ -283,7 +367,7 @@ select {
 /* Полноэкранный режим */
 .chart-container:fullscreen,
 .chart-container:-webkit-full-screen {
-  background-color: #fff;
+  background-color: var(--bg-light);
   width: 100vw !important;
   height: 100vh !important;
   margin: 0 !important;
@@ -319,9 +403,8 @@ select {
   .top-bar {
     margin: 8px;
   }
-
   .chart-container {
     max-width: 100%;
-    height: 350px; /* чтобы диаграмма была поменьше на мобильном */
+    height: 350px;
   }
 }

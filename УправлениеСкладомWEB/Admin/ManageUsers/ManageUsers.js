@@ -15,6 +15,8 @@ document.addEventListener("DOMContentLoaded", () => {
   loadRoles();
   loadUsers();
   initializeEventListeners();
+  const savedTheme = localStorage.getItem("appTheme") || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
 });
 
 /** 

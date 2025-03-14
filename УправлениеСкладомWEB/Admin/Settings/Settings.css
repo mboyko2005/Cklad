@@ -40,6 +40,7 @@ body {
   position: fixed;
   width: 100%;
   height: 100%;
+  top: 0;
   z-index: -1;
   overflow: hidden;
 }
@@ -341,6 +342,7 @@ body {
   font-size: 14px;
   color: var(--fg-text);
 }
+
 .notification-close {
   font-size: 18px;
   cursor: pointer;

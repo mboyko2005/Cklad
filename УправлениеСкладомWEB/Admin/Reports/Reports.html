@@ -30,6 +30,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.3.0/docx.umd.js"></script>
 </head>
 <body>
+  <!-- Фоновые плавающие фигуры (вынесены в самый верх) -->
+  <div class="background-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+    <div class="shape shape-4"></div>
+  </div>
+
   <!-- Верхняя панель -->
   <header class="top-bar">
     <div class="back-button" id="backButton">
@@ -40,7 +48,6 @@
       <i class="ri-bar-chart-fill analytics-icon"></i>
       <span>Аналитика</span>
     </div>
-
     <!-- Иконка пользователя с выпадающим меню -->
     <div class="user-info">
       <div class="avatar">
@@ -52,6 +59,7 @@
     </div>
   </header>
 
+  <!-- Основной контейнер -->
   <div class="container">
     <!-- Левая панель с выбором отчёта и экспортом -->
     <aside class="left-panel">
