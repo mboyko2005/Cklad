@@ -104,7 +104,7 @@ function initializeEventListeners() {
 
 /** Загрузка списка складов */
 function loadWarehouses() {
- 0
+  fetch("http://localhost:8080/api/manageinventory/warehouses")
     .then(resp => resp.json())
     .then(data => {
       populateWarehouseSelect(data);
