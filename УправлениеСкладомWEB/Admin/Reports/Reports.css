@@ -209,8 +209,6 @@ select {
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
   animation: fadeInRight var(--transition);
-  /* Если нужно, можно убрать flex:1, либо оставить,
-     но ограничить ширину chart-container через max-width. */
 }
 
 /* Ограничиваем размер диаграммы, чтобы не растягивалась на всю ширину */

@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function() {
-    // Проверка наличия библиотеки AOS и её инициализация
+    // Инициализация AOS (если библиотека загружена)
     if (typeof AOS !== "undefined") {
         AOS.init({ once: true });
     } else {
@@ -57,7 +57,6 @@ document.addEventListener("DOMContentLoaded", function() {
         if (savedUsername) {
             usernameInput.value = savedUsername;
             rememberMeCheckbox.checked = true;
-            // Имитируем событие ввода, чтобы label поднялся
             usernameInput.dispatchEvent(new Event("input"));
         }
     }
@@ -100,7 +99,7 @@ document.addEventListener("DOMContentLoaded", function() {
         showPreloader();
 
         try {
-            // Отправляем запрос (как во «втором» рабочем примере)
+            // Отправляем запрос на авторизацию с полным URL для localhost
             const response = await fetch("http://localhost:8080/api/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -114,19 +113,12 @@ document.addEventListener("DOMContentLoaded", function() {
             const data = await response.json();
 
             if (data.success) {
-                // Авторизация прошла
+                // Авторизация прошла – сохраняем данные
                 setLoginMessage("Успешный вход! Перенаправление...", "success");
-
-                // Сохраняем роль и прочие данные (пример)
                 localStorage.setItem("auth", "true");
                 localStorage.setItem("role", data.role);
-                // Можно сохранить token, username, если нужно
-                // localStorage.setItem("authToken", data.token || "");
-                // localStorage.setItem("userName", data.username || username);
-
-                // Анимация успешного входа
+                localStorage.setItem("username", data.username);
                 animateSuccess();
-
                 // Перенаправляем в зависимости от роли
                 setTimeout(() => {
                     switch (data.role) {
@@ -144,9 +136,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             animateError();
                     }
                 }, 1000);
-
             } else {
-                // Логин/пароль неверны или другая ошибка
                 setLoginMessage(data.message || "Неправильный логин или пароль!", "error");
                 animateError();
             }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Data.SqlClient;
 
@@ -8,14 +9,13 @@ namespace УправлениеСкладом.Controllers
 	[Route("api/[controller]")]
 	public class AuthController : ControllerBase
 	{
-		// Строка подключения к базе данных
+		// Обновлённая строка подключения с TrustServerCertificate=True
 		private readonly string _connectionString =
-			@"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
+			@"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True;TrustServerCertificate=True";
 
 		/// <summary>
-		/// Метод для проверки работоспособности сервера.
+		/// Проверка работоспособности сервера.
 		/// GET: /api/auth/ping
-		/// Возвращает 200 OK с текстом "pong".
 		/// </summary>
 		[HttpGet("ping")]
 		public IActionResult Ping()
@@ -24,9 +24,10 @@ namespace УправлениеСкладом.Controllers
 		}
 
 		/// <summary>
-		/// Обрабатывает POST-запрос авторизации по адресу /api/auth/login.
-		/// Ожидает JSON вида: { "username": "user1", "password": "pass1" }
-		/// Возвращает успешный ответ с ролью или { success = false }.
+		/// Обработка POST-запроса авторизации.
+		/// POST: /api/auth/login
+		/// Ожидается JSON: { "username": "user1", "password": "pass1" }
+		/// Возвращает { success = true, role = "Роль", username = "ИмяПользователя" } или { success = false, message = "..." }.
 		/// </summary>
 		[HttpPost("login")]
 		public IActionResult Login([FromBody] LoginRequest request)
@@ -43,30 +44,39 @@ namespace УправлениеСкладом.Controllers
 				using (var conn = new SqlConnection(_connectionString))
 				{
 					conn.Open();
-
-					// Поиск пользователя по логину/паролю
 					string sql = @"
                         SELECT u.ПользовательID, u.ИмяПользователя, r.Наименование AS Роль
                         FROM Пользователи u
                         JOIN Роли r ON u.РольID = r.РольID
                         WHERE u.ИмяПользователя = @username
                           AND u.Пароль = @password";
-
 					using (var cmd = new SqlCommand(sql, conn))
 					{
 						cmd.Parameters.AddWithValue("@username", request.Username);
 						cmd.Parameters.AddWithValue("@password", request.Password);
-
 						using (var reader = cmd.ExecuteReader())
 						{
 							if (reader.Read())
 							{
-								var roleName = reader["Роль"].ToString();
-								return Ok(new { success = true, role = roleName });
+								string username = reader["ИмяПользователя"].ToString();
+								string role = reader["Роль"].ToString();
+
+								// Попытка сохранить имя пользователя в сессии.
+								try
+								{
+									HttpContext.Session?.SetString("CurrentUsername", username);
+								}
+								catch (Exception sessEx)
+								{
+									// Если сессия не настроена, просто записываем в лог (или игнорируем)
+									Console.WriteLine("Ошибка при работе с сессией: " + sessEx.Message);
+								}
+
+								return Ok(new { success = true, role = role, username = username });
 							}
 							else
 							{
-								return Ok(new { success = false });
+								return Ok(new { success = false, message = "Неверный логин или пароль." });
 							}
 						}
 					}
@@ -74,6 +84,7 @@ namespace УправлениеСкладом.Controllers
 			}
 			catch (Exception ex)
 			{
+				// Возвращаем сообщение об ошибке с кодом 500
 				return StatusCode(500, new { success = false, message = ex.Message });
 			}
 		}

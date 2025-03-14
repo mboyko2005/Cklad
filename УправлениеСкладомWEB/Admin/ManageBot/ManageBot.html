@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Управление ботом</title>
+  <!-- Фавикон -->
+  <link rel="icon" href="../../Логотип.ico" type="image/x-icon" />
+  <!-- Стили и иконки -->
+  <link rel="stylesheet" href="ManageBot.css">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Верхняя панель -->
+  <header class="top-bar">
+    <div class="back-button" id="backButton">
+      <i class="ri-arrow-left-line"></i>
+      <span>Назад</span>
+    </div>
+
+    <!-- Заголовок с иконкой Telegram -->
+    <div class="page-title">
+      <i class="ri-telegram-line telegram-icon"></i>
+      Управление ботом
+    </div>
+
+    <div class="user-info">
+      <span class="username">Администратор</span>
+      <div class="avatar">
+        <i class="ri-user-line"></i>
+      </div>
+      <div class="user-menu">
+        <button id="exitBtn" class="user-menu-item">Выход из системы</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Основной контейнер окна -->
+  <div class="manage-container">
+    <h1 class="manage-title">Управление ботом</h1>
+    <p class="manage-subtitle">Добавление, редактирование и удаление Telegram-пользователей</p>
+
+    <!-- Форма — информация о пользователе Telegram -->
+    <div class="form-section">
+      <!-- Здесь будет линия по всей ширине текста -->
+      <h3 class="section-title">Информация о пользователе Telegram</h3>
+      <div class="form-group">
+        <label for="telegramId">Telegram ID:</label>
+        <div class="input-wrapper">
+          <i class="ri-user-line input-icon"></i>
+          <input type="number" id="telegramId" placeholder="Введите Telegram ID">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="role">Роль:</label>
+        <div class="input-wrapper">
+          <i class="ri-shield-user-line input-icon"></i>
+          <select id="role">
+            <option value="">Выберите роль</option>
+            <option value="Администратор">Администратор</option>
+            <option value="Менеджер">Менеджер</option>
+            <option value="Сотрудник склада">Сотрудник склада</option>
+            <option value="Курьер">Курьер</option>
+          </select>
+          <i class="ri-arrow-down-s-line select-arrow"></i>
+        </div>
+      </div>
+      <div class="button-group">
+        <button id="addBtn" class="action-button">
+          <i class="ri-user-add-line"></i> Добавить
+        </button>
+        <button id="editBtn" class="action-button">
+          <i class="ri-edit-line"></i> Редактировать
+        </button>
+        <button id="deleteBtn" class="action-button">
+          <i class="ri-delete-bin-line"></i> Удалить
+        </button>
+      </div>
+    </div>
+
+    <!-- Секция списка пользователей -->
+    <div class="users-section">
+      <div class="section-header">
+        <h3 class="section-title">Список Telegram-пользователей</h3>
+        <div class="search-panel">
+          <input type="text" id="searchInput" placeholder="Поиск по Telegram ID или роли...">
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="users-table" id="usersTable">
+          <thead>
+            <tr>
+              <th>Telegram ID</th>
+              <th>Роль</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Данные заполняются через JS -->
+          </tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState">
+        <i class="ri-user-search-line"></i>
+        <p>Нет пользователей для отображения</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Уведомление (toast) -->
+  <div class="notification" id="notification">
+    <div class="notification-icon" id="notificationIcon">
+      <i class="ri-information-line"></i>
+    </div>
+    <div class="notification-content">
+      <div class="notification-message" id="notificationMessage"></div>
+    </div>
+    <div class="notification-close" id="notificationClose">
+      <i class="ri-close-line"></i>
+    </div>
+  </div>
+
+  <!-- Подключение скрипта -->
+  <script src="ManageBot.js"></script>
+</body>
+</html>
