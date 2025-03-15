@@ -15,25 +15,25 @@ document.addEventListener("DOMContentLoaded", () => {
   loadRoles();
   loadUsers();
   initializeEventListeners();
-     // Получаем имя пользователя из localStorage
-     const username = localStorage.getItem("username") || "";
-     // Формируем ключ для темы конкретного пользователя
-     const themeKey = `appTheme-${username}`;
-     // Считываем тему (если нет, по умолчанию "light")
-     const savedTheme = localStorage.getItem(themeKey) || "light";
-     // Применяем тему на странице
-     document.documentElement.setAttribute("data-theme", savedTheme);
+  // Получаем имя пользователя из localStorage
+  const username = localStorage.getItem("username") || "";
+  // Формируем ключ для темы конкретного пользователя
+  const themeKey = `appTheme-${username}`;
+  // Считываем тему (если нет, по умолчанию "light")
+  const savedTheme = localStorage.getItem(themeKey) || "light";
+  // Применяем тему на странице
+  document.documentElement.setAttribute("data-theme", savedTheme);
 });
 
 /** 
  * Проверка авторизации 
- * Если пользователь не авторизован ИЛИ роль не "Администратор", 
+ * Если пользователь не авторизован ИЛИ роль не "Менеджер", 
  * отправляем на страницу логина.
  */
 function checkAuthorization() {
   const isAuth = localStorage.getItem("auth");
   const userRole = localStorage.getItem("role");
-  if (isAuth !== "true" || userRole !== "Администратор") {
+  if (isAuth !== "true" || userRole !== "Менеджер") {
     window.location.href = "../../Login.html";
   }
 }
@@ -43,8 +43,8 @@ function initializeEventListeners() {
   // Кнопка "Назад" (стрелка)
   const backButton = document.getElementById("backButton");
   backButton.addEventListener("click", () => {
-    // Переходим на страницу Admin.html
-    window.location.href = "../Admin.html";
+    // Переходим на страницу Менеджера.html
+    window.location.href = "../Manager.html";
   });
 
   // Кнопка "Выход"
@@ -153,12 +153,15 @@ function loadUsers() {
     });
 }
 
-/** Отрисовка таблицы пользователей */
+/** Отрисовка таблицы пользователей (только сотрудники склада) */
 function renderUsersTable(users) {
   const tbody = document.querySelector("#usersTable tbody");
   tbody.innerHTML = "";
 
-  users.forEach(user => {
+  // Фильтруем пользователей, оставляя только тех, у кого роль "Сотрудник склада"
+  const filteredUsers = users.filter(user => user.roleName === "Сотрудник склада");
+
+  filteredUsers.forEach(user => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${user.userID}</td>
@@ -168,7 +171,7 @@ function renderUsersTable(users) {
 
     // Клик по строке = выбор пользователя
     tr.addEventListener("click", () => {
-      // Снимем выделение со всех строк
+      // Снимаем выделение со всех строк
       document.querySelectorAll("#usersTable tbody tr")
         .forEach(row => row.classList.remove("selected"));
       
@@ -190,14 +193,17 @@ function openUserModal(title) {
   document.getElementById("passwordInput").value = "";
   document.getElementById("confirmPasswordInput").value = "";
 
-  // Заполняем список ролей
+  // Заполняем список ролей (только роль "Сотрудник склада")
   const roleSelect = document.getElementById("roleSelect");
   roleSelect.innerHTML = "";
+  const allowedRoles = ["Сотрудник склада"];
   rolesData.forEach(role => {
-    const opt = document.createElement("option");
-    opt.value = role.id;
-    opt.textContent = role.name;
-    roleSelect.appendChild(opt);
+    if (allowedRoles.includes(role.name)) {
+      const opt = document.createElement("option");
+      opt.value = role.id;
+      opt.textContent = role.name;
+      roleSelect.appendChild(opt);
+    }
   });
 
   // Если редактируем — подставляем данные пользователя

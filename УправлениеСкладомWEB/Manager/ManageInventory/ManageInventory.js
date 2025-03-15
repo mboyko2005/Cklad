@@ -10,21 +10,20 @@ document.addEventListener("DOMContentLoaded", () => {
   loadWarehouses();
   loadInventory();
   initializeEventListeners();
-  // Получаем имя пользователя из localStorage
-  const username = localStorage.getItem("username") || "";
-  // Формируем ключ для темы конкретного пользователя
-  const themeKey = `appTheme-${username}`;
-  // Считываем тему (если нет, по умолчанию "light")
-  const savedTheme = localStorage.getItem(themeKey) || "light";
-  // Применяем тему на странице
-  document.documentElement.setAttribute("data-theme", savedTheme);
-
+ // Получаем имя пользователя из localStorage
+ const username = localStorage.getItem("username") || "";
+ // Формируем ключ для темы конкретного пользователя
+ const themeKey = `appTheme-${username}`;
+ // Считываем тему (если нет, по умолчанию "light")
+ const savedTheme = localStorage.getItem(themeKey) || "light";
+ // Применяем тему на странице
+ document.documentElement.setAttribute("data-theme", savedTheme);
 });
 
 function checkAuthorization() {
   const isAuth = localStorage.getItem("auth");
   const role = localStorage.getItem("role");
-  if (isAuth !== "true" || role !== "Администратор") {
+  if (isAuth !== "true" || role !== "Менеджер") {
     window.location.href = "../../Login.html";
   }
 }
@@ -32,8 +31,8 @@ function checkAuthorization() {
 function initializeEventListeners() {
   // Кнопка "Назад" в шапке
   document.getElementById("backButton").addEventListener("click", () => {
-    // Возвращаемся на админскую страницу
-    window.location.href = "../Admin.html";
+    // Возвращаемся на Менеджера страницу
+    window.location.href = "../Manager.html";
   });
 
   // Кнопка "Выход" в меню пользователя

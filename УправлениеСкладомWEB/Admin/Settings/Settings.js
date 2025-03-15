@@ -1,9 +1,24 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Устанавливаем тему из localStorage при загрузке
-  const savedTheme = localStorage.getItem("appTheme") || "light";
+  // Получаем имя пользователя из localStorage (устанавливается после авторизации)
+  const username = localStorage.getItem("username") || "";
+  
+  // Если нет username, можно либо переадресовать на логин, либо использовать общий ключ
+  // Здесь для примера просто проверяем, есть ли имя пользователя
+  if (!username) {
+    console.warn("Не удалось определить пользователя. Используем гостевую тему.");
+  }
+
+  // Читаем тему из localStorage, используя ключ с учётом имени пользователя
+  const savedTheme = localStorage.getItem(`appTheme-${username}`) || "light";
   document.documentElement.setAttribute("data-theme", savedTheme);
+
+  // Устанавливаем значение в select (если он есть)
   const themeSelect = document.getElementById("themeSelect");
-  themeSelect.value = savedTheme;
+  if (themeSelect) {
+    themeSelect.value = savedTheme;
+  }
+
+  // Обновляем иконку темы
   updateThemeIcon(savedTheme);
 
   // Элементы для смены пароля и их валидация
@@ -18,6 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function validatePasswordFields() {
     const newPass = newPasswordInput.value.trim();
     const confPass = confirmPasswordInput.value.trim();
+    // Проверяем длину нового пароля
     if (newPass !== "") {
       newPasswordStatus.style.display = "block";
       newPasswordStatus.className = "fa-solid " + (newPass.length >= 4 ? "fa-check-circle" : "fa-times-circle");
@@ -26,6 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
       newPasswordStatus.style.display = "none";
     }
 
+    // Проверяем совпадение с подтверждением
     if (confPass !== "") {
       confirmPasswordStatus.style.display = "block";
       if (newPass === confPass && newPass !== "") {
@@ -40,22 +57,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Сохранение темы
+  // Сохранение темы (по кнопке "Сохранить настройки")
   document.getElementById("saveSettingsBtn").addEventListener("click", () => {
     const selectedTheme = themeSelect.value;
-    localStorage.setItem("appTheme", selectedTheme);
+    // Сохраняем тему в localStorage с учётом пользователя
+    localStorage.setItem(`appTheme-${username}`, selectedTheme);
     document.documentElement.setAttribute("data-theme", selectedTheme);
     showNotification("Тема сохранена", "success");
   });
 
-  // Переключение темы по кнопке
+  // Переключение темы по круглой кнопке
   document.getElementById("themeToggleBtn").addEventListener("click", () => {
-    let currentTheme = localStorage.getItem("appTheme") || "light";
+    let currentTheme = localStorage.getItem(`appTheme-${username}`) || "light";
     let newTheme = currentTheme === "light" ? "dark" : "light";
-    localStorage.setItem("appTheme", newTheme);
+    localStorage.setItem(`appTheme-${username}`, newTheme);
     document.documentElement.setAttribute("data-theme", newTheme);
-    themeSelect.value = newTheme;
-    showNotification("Тема сохранена: " + newTheme, "success");
+    if (themeSelect) themeSelect.value = newTheme;
+    showNotification("Тема переключена: " + newTheme, "success");
     updateThemeIcon(newTheme);
   });
 
@@ -71,13 +89,12 @@ document.addEventListener("DOMContentLoaded", () => {
       showNotification("Пароли не совпадают", "error");
       return;
     }
-    // Получаем имя пользователя из localStorage – оно должно быть установлено после авторизации
-    const username = localStorage.getItem("username") || "";
+    // Если нет username — нельзя сменить пароль
     if (!username) {
       showNotification("Не удалось определить пользователя. Повторите вход.", "error");
       return;
     }
-    // Отправка запроса на смену пароля с полным URL для localhost
+    // Отправка запроса на смену пароля
     fetch("http://localhost:8080/api/settings/changepassword", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -141,10 +158,12 @@ function hideNotification() {
   notification.classList.remove("show");
 }
 
-// Обновление иконки темы
+// Обновление иконки темы (солнышко/луна)
 function updateThemeIcon(theme) {
   const themeIcon = document.getElementById("themeIcon");
   if (themeIcon) {
-    themeIcon.className = theme === "dark" ? "fa-solid fa-moon" : "fa-solid fa-sun";
+    themeIcon.className = theme === "dark" 
+      ? "fa-solid fa-moon" 
+      : "fa-solid fa-sun";
   }
 }

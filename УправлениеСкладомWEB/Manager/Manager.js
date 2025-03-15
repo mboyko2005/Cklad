@@ -1,42 +1,106 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Проверка localStorage
-    const isAuth = localStorage.getItem("auth");
-    const userRole = localStorage.getItem("role");
+   // Получаем имя пользователя из localStorage
+   const username = localStorage.getItem("username") || "";
+   // Формируем ключ для темы конкретного пользователя
+   const themeKey = `appTheme-${username}`;
+   // Считываем тему (если нет, по умолчанию "light")
+   const savedTheme = localStorage.getItem(themeKey) || "light";
+   // Применяем тему на странице
+   document.documentElement.setAttribute("data-theme", savedTheme);
+  checkAuthorization();
+  initializeEventListeners();
+});
+
+/** Проверяем, что пользователь авторизован как Менеджер */
+function checkAuthorization() {
+  const isAuth = localStorage.getItem("auth");
+  const userRole = localStorage.getItem("role");
+  if (isAuth !== "true" || userRole !== "Менеджер") {
+    window.location.href = "../Login.html";
+    return;
+  }
+  // Если имя пользователя сохранено – отображаем его
+  const username = localStorage.getItem("username");
+  if (username) {
+    const usernameEl = document.querySelector(".username");
+    if (usernameEl) usernameEl.textContent = username;
+  }
   
-    // Если не авторизован или роль не "Менеджер", переходим на Login.html
-    if (isAuth !== "true" || userRole !== "Менеджер") {
-      window.location.href = "../Login.html";
-      return;
-    }
-  
-    // Инициализируем элементы
-    const manageGoodsCard = document.getElementById("manageGoodsCard");
-    const manageStaffCard = document.getElementById("manageStaffCard");
-    const reportsCard = document.getElementById("reportsCard");
-    const settingsCard = document.getElementById("settingsCard");
-    const exitCard = document.getElementById("exitCard");
-  
-    manageGoodsCard.addEventListener("click", () => {
-      alert("Управление Товаром — ваша логика здесь.");
+  setTimeout(() => {
+    showNotification(`Добро пожаловать в панель управления, ${username || 'Менеджер'}!`);
+  }, 1500);
+}
+
+/** Вешаем обработчики на карточки и кнопку выхода */
+function initializeEventListeners() {
+  const manageUsersCard = document.getElementById("manageUsersCard");
+  const manageInventoryCard = document.getElementById("manageInventoryCard");
+  const reportsCard = document.getElementById("reportsCard");
+  const settingsCard = document.getElementById("settingsCard");
+  const botCard = document.getElementById("botCard");
+
+  // Переходы на нужные HTML-страницы:
+  if (manageUsersCard) {
+    manageUsersCard.addEventListener("click", () => {
+      window.location.href = "ManageUsers/ManageUsers.html";
     });
-  
-    manageStaffCard.addEventListener("click", () => {
-      alert("Управление сотрудниками — ваша логика здесь.");
+  }
+  if (manageInventoryCard) {
+    manageInventoryCard.addEventListener("click", () => {
+      window.location.href = "ManageInventory/ManageInventory.html";
     });
-  
+  }
+  if (reportsCard) {
     reportsCard.addEventListener("click", () => {
-      alert("Просмотр отчётов — ваша логика здесь.");
+      window.location.href = "Reports/Reports.html";
     });
-  
+  }
+  if (settingsCard) {
     settingsCard.addEventListener("click", () => {
-      alert("Настройки — ваша логика здесь.");
+      window.location.href = "Settings/Settings.html";
     });
+  }
+
+  // Обработчик кнопки выхода
+  const exitBtn = document.getElementById("exitBtn");
+  if (exitBtn) {
+    exitBtn.addEventListener("click", handleExit);
+  }
+}
+
+/** Удаляем данные авторизации и перенаправляем на страницу входа */
+function handleExit() {
+  localStorage.removeItem("auth");
+  localStorage.removeItem("role");
+  localStorage.removeItem("username");
+  window.location.href = "../Login.html";
+}
+
+/** Показать уведомление (toast) */
+function showNotification(message) {
+  const notification = document.getElementById("notification");
+  if (!notification) return;
+
+  const notificationMessage = notification.querySelector(".notification-message");
+  if (notificationMessage) notificationMessage.textContent = message;
   
-    // Кнопка "Выход"
-    exitCard.addEventListener("click", () => {
-      localStorage.removeItem("auth");
-      localStorage.removeItem("role");
-      window.location.href = "../Login.html";
-    });
-  });
-  
+  notification.classList.add("show");
+
+  // Скрываем через 3 секунды
+  setTimeout(() => {
+    hideNotification();
+  }, 3000);
+
+  // Закрытие по нажатию на крестик
+  const closeBtn = notification.querySelector(".notification-close");
+  if (closeBtn) {
+    closeBtn.onclick = hideNotification;
+  }
+}
+
+/** Скрыть уведомление */
+function hideNotification() {
+  const notification = document.getElementById("notification");
+  if (!notification) return;
+  notification.classList.remove("show");
+}

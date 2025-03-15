@@ -117,10 +117,8 @@ body {
 
 /* Верхняя панель */
 .top-bar {
-  /* Главное изменение: position relative + z-index: 1 */
   position: relative;
-  z-index: 1;
-
+  z-index: 9999; /* увеличиваем z-index */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -131,6 +129,7 @@ body {
   border-radius: var(--border-radius);
   animation: fadeInDown var(--transition);
 }
+
 
 .back-button {
   display: flex;
