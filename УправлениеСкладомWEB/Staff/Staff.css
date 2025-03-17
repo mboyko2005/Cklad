@@ -2,10 +2,10 @@
  *      Переменные (Светлая тема)
  ***************************************/
  :root {
-  --primary-color: #2563eb;
+  --primary-color: #3a7bd5; /* Согласован с админ-панелью */
   --primary-hover: #1d4ed8;
   --primary-light: #e5edff;
-  --secondary-color: #0ea5e9;
+  --secondary-color: #00d2ff; /* Согласован с админ-панелью */
   --success-color: #10b981;
   --warning-color: #f59e0b;
   --danger-color: #ef4444;
@@ -48,7 +48,7 @@
   --font-size-4xl: 2.25rem;
 }
 
-/* Темная тема из панели администратора */
+/* Темная тема */
 [data-theme="dark"] {
   --primary-color: #007aff;
   --primary-hover: #005bb5;
@@ -86,7 +86,7 @@ body {
   position: relative;
 }
 
-/* Фоновые фигуры из панели администратора */
+/* Фоновые фигуры */
 .background-shapes {
   position: fixed;
   width: 100%;
@@ -177,6 +177,13 @@ body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--border-color);
+  position: relative;
+}
+
+.top-bar:hover .user-menu {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .logo {
@@ -227,7 +234,7 @@ body {
 .search-bar input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 3px rgba(58, 123, 213, 0.15);
 }
 
 .search-bar input::placeholder {
@@ -315,7 +322,7 @@ body {
 
 .user-menu {
   position: absolute;
-  top: 110%;
+  top: 100%;
   right: 0;
   min-width: 200px;
   background-color: var(--bg-overlay);
@@ -332,12 +339,7 @@ body {
   z-index: 100;
 }
 
-.user-info:hover .user-menu {
-  visibility: visible;
-  opacity: 1;
-  transform: translateY(0);
-}
-
+/* Удаляем старую логику hover для .user-info */
 .menu-item {
   display: flex;
   align-items: center;
@@ -419,16 +421,25 @@ body {
   box-shadow: var(--shadow-md);
 }
 
-.analytic-icon {
+/* Удаляем старый .analytic-icon и используем .card-icon-wrapper */
+.analytic-item .card-icon-wrapper {
+  font-size: 24px;
+  color: var(--primary-color);
+  background-color: rgba(58, 123, 213, 0.1);
+  width: 56px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 50px;
-  height: 50px;
-  background: var(--primary-color);
-  border-radius: var(--border-radius);
-  color: white;
-  font-size: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  transition: all var(--transition);
+}
+
+.analytic-item:hover .card-icon-wrapper {
+  transform: scale(1.1);
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: #fff;
 }
 
 .analytic-info {
@@ -472,6 +483,23 @@ body {
   box-shadow: var(--shadow-xl);
 }
 
+.hover-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(58, 123, 213, 0.05) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity var(--transition);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card:hover .hover-effect {
+  opacity: 1;
+}
+
 .card-content {
   position: relative;
   z-index: 2;
@@ -484,21 +512,23 @@ body {
 }
 
 .card-icon-wrapper {
-  width: 60px;
-  height: 60px;
-  border-radius: var(--border-radius);
-  background-color: var(--primary-color);
+  font-size: 24px;
+  color: var(--primary-color);
+  background-color: rgba(58, 123, 213, 0.1);
+  width: 56px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
+  border-radius: 12px;
   margin-bottom: 1rem;
-  transition: var(--transition);
-  color: white;
+  transition: all var(--transition);
 }
 
 .card:hover .card-icon-wrapper {
-  transform: scale(1.1) rotate(5deg);
+  transform: scale(1.1);
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: #fff;
 }
 
 .card-title {
@@ -508,66 +538,6 @@ body {
 }
 
 .card-description {
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
-}
-
-.card-actions {
-  margin-top: 1.5rem;
-}
-
-.card-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background-color: var(--primary-color);
-  border: none;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.card-btn:hover {
-  background-color: var(--primary-hover);
-}
-
-.card-btn i {
-  transition: var(--transition);
-}
-
-/* Нижняя панель */
-.footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  background: var(--bg-glass);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--border-color);
-}
-
-.system-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-secondary);
-}
-
-.status-indicator {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: var(--success-color);
-}
-
-.last-login {
   font-size: var(--font-size-sm);
   color: var(--text-muted);
 }
@@ -651,55 +621,6 @@ body {
 
 .btn-secondary:hover {
   background-color: var(--bg-card);
-}
-
-/* Уведомление */
-.notification {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  display: flex;
-  align-items: center;
-  background-color: var(--bg-card);
-  border-radius: var(--border-radius);
-  padding: 1rem;
-  box-shadow: var(--shadow-lg);
-  z-index: 1000;
-  transition: bottom 0.5s ease, opacity 0.5s ease;
-  width: 300px;
-  opacity: 0;
-}
-
-.notification.show {
-  bottom: 20px;
-  opacity: 1;
-}
-
-.notification-icon {
-  font-size: 1.25rem;
-  color: var(--primary-color);
-  margin-right: 0.75rem;
-}
-
-.notification-content {
-  flex: 1;
-}
-
-.notification-message {
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-}
-
-.notification-close {
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: 1rem;
-  margin-left: 0.75rem;
-  transition: color var(--transition-fast);
-}
-
-.notification-close:hover {
-  color: var(--text-primary);
 }
 
 /* Анимация появления */

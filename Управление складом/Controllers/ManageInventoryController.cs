@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Threading.Tasks;
 
 namespace Управление_складом.Controllers
 {
@@ -71,6 +72,31 @@ ORDER BY t.ТоварID;";
 			catch (Exception ex)
 			{
 				return StatusCode(500, new { message = "Ошибка при получении данных", error = ex.Message });
+			}
+		}
+
+		// GET: api/manageinventory/totalquantity
+		[HttpGet("totalquantity")]
+		public IActionResult GetTotalQuantity()
+		{
+			try
+			{
+				int totalQuantity = 0;
+				using (var conn = new SqlConnection(_connectionString))
+				{
+					conn.Open();
+					string sql = "SELECT SUM(Количество) AS TotalQuantity FROM СкладскиеПозиции";
+					using (var cmd = new SqlCommand(sql, conn))
+					{
+						var result = cmd.ExecuteScalar();
+						totalQuantity = result == DBNull.Value ? 0 : Convert.ToInt32(result);
+					}
+				}
+				return Ok(new { totalQuantity });
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Ошибка при получении общего количества", error = ex.Message });
 			}
 		}
 
@@ -261,7 +287,6 @@ WHERE ПозицияID = @id;";
 							}
 							int productId = Convert.ToInt32(objProduct);
 
-							// Удаляем связанные движения
 							string sqlMov = "DELETE FROM ДвиженияТоваров WHERE ТоварID=@p";
 							using (var cmdMov = new SqlCommand(sqlMov, conn, tran))
 							{
@@ -269,7 +294,6 @@ WHERE ПозицияID = @id;";
 								cmdMov.ExecuteNonQuery();
 							}
 
-							// Удаляем позицию
 							string sqlPos = "DELETE FROM СкладскиеПозиции WHERE ПозицияID=@pid";
 							using (var cmdPos = new SqlCommand(sqlPos, conn, tran))
 							{
@@ -277,7 +301,6 @@ WHERE ПозицияID = @id;";
 								cmdPos.ExecuteNonQuery();
 							}
 
-							// Если у товара не осталось позиций, удаляем товар и (при необходимости) поставщика
 							string sqlCheck = "SELECT COUNT(*) FROM СкладскиеПозиции WHERE ТоварID=@p";
 							int countProd;
 							using (var cmdC = new SqlCommand(sqlCheck, conn, tran))

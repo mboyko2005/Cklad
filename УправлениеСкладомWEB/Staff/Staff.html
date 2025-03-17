@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="dark">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,8 +7,8 @@
   <link rel="icon" href="../../Логотип.ico" type="image/x-icon" />
   <!-- Подключаем стили -->
   <link rel="stylesheet" href="Staff.css">
-  <!-- Phosphor Icons -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/phosphor-icons/2.0.2/phosphor.min.js"></script>
+  <!-- Remix Icons (обновленная версия) -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet">
   <!-- Шрифт -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Анимации -->
@@ -28,16 +28,16 @@
     <!-- Верхняя панель -->
     <header class="top-bar">
       <div class="logo">
-        <i class="ph-warehouse-fill"></i>
+        <i class="ri-warehouse-line"></i>
         <span>Панель сотрудника склада</span>
       </div>
       <div class="actions">
         <div class="search-bar">
-          <i class="ph-magnifying-glass"></i>
+          <i class="ri-search-line"></i>
           <input type="text" placeholder="Поиск...">
         </div>
         <div class="notifications">
-          <i class="ph-bell"></i>
+          <i class="ri-notification-3-line"></i>
           <span class="badge">3</span>
         </div>
         <div class="user-info">
@@ -51,16 +51,16 @@
           <!-- Выпадающее меню -->
           <div class="user-menu">
             <div class="menu-item">
-              <i class="ph-user"></i>
+              <i class="ri-user-line"></i>
               <span>Профиль</span>
             </div>
             <div class="menu-item">
-              <i class="ph-gear"></i>
+              <i class="ri-settings-3-line"></i>
               <span>Настройки</span>
             </div>
             <div class="menu-divider"></div>
             <div class="menu-item" id="exitBtn">
-              <i class="ph-sign-out"></i>
+              <i class="ri-logout-box-line"></i>
               <span>Выход из системы</span>
             </div>
           </div>
@@ -77,18 +77,18 @@
         <!-- Аналитика -->
         <div class="analytics-strip animate__animated animate__fadeInUp animate__delay-2s">
           <div class="analytic-item">
-            <div class="analytic-icon">
-              <i class="ph-package"></i>
+            <div class="card-icon-wrapper">
+              <i class="ri-box-3-line"></i>
             </div>
             <div class="analytic-info">
-              <span class="analytic-value counter">1,342</span>
+              <span class="analytic-value counter">0</span>
               <span class="analytic-label">Товаров на складе</span>
             </div>
           </div>
           
           <div class="analytic-item">
-            <div class="analytic-icon">
-              <i class="ph-truck"></i>
+            <div class="card-icon-wrapper">
+              <i class="ri-truck-line"></i>
             </div>
             <div class="analytic-info">
               <span class="analytic-value counter">87</span>
@@ -97,8 +97,8 @@
           </div>
           
           <div class="analytic-item">
-            <div class="analytic-icon">
-              <i class="ph-clipboard-text"></i>
+            <div class="card-icon-wrapper">
+              <i class="ri-checkbox-line"></i>
             </div>
             <div class="analytic-info">
               <span class="analytic-value counter">245</span>
@@ -112,101 +112,70 @@
       <div class="card-grid">
         <!-- Карточка "Просмотр товаров" -->
         <div class="card" id="viewGoodsCard">
+          <div class="hover-effect"></div>
           <div class="card-content">
             <div class="card-icon-wrapper">
-              <i class="ph-eye"></i>
+              <i class="ri-eye-line"></i>
             </div>
             <h3 class="card-title">Просмотр товаров</h3>
             <p class="card-description">
               Просмотр ассортимента товаров на складе с детальной информацией
             </p>
-            <div class="card-actions">
-              <button class="card-btn">
-                <span>Перейти</span>
-                <i class="ph-arrow-right"></i>
-              </button>
-            </div>
           </div>
         </div>
 
         <!-- Карточка "Управление запасами" -->
         <div class="card" id="manageStocksCard">
+          <div class="hover-effect"></div>
           <div class="card-content">
             <div class="card-icon-wrapper">
-              <i class="ph-archive"></i>
+              <i class="ri-archive-line"></i>
             </div>
             <h3 class="card-title">Управление запасами</h3>
             <p class="card-description">
               Контроль и обновление складских запасов, инвентаризация
             </p>
-            <div class="card-actions">
-              <button class="card-btn">
-                <span>Перейти</span>
-                <i class="ph-arrow-right"></i>
-              </button>
-            </div>
           </div>
         </div>
 
         <!-- Карточка "Перемещение товаров" -->
         <div class="card" id="moveGoodsCard">
+          <div class="hover-effect"></div>
           <div class="card-content">
             <div class="card-icon-wrapper">
-              <i class="ph-arrows-clockwise"></i>
+              <i class="ri-arrow-left-right-line"></i>
             </div>
             <h3 class="card-title">Перемещение товаров</h3>
             <p class="card-description">
               Организация перемещения товаров между позициями и секторами
             </p>
-            <div class="card-actions">
-              <button class="card-btn">
-                <span>Перейти</span>
-                <i class="ph-arrow-right"></i>
-              </button>
-            </div>
           </div>
         </div>
 
         <!-- Карточка "Учёт приходов/расходов" -->
         <div class="card" id="inoutAccountingCard">
+          <div class="hover-effect"></div>
           <div class="card-content">
             <div class="card-icon-wrapper">
-              <i class="ph-currency-dollar"></i>
+              <i class="ri-money-dollar-circle-line"></i>
             </div>
             <h3 class="card-title">Учёт приходов/расходов</h3>
             <p class="card-description">
               Регистрация поступлений и отгрузок товаров со склада
             </p>
-            <div class="card-actions">
-              <button class="card-btn">
-                <span>Перейти</span>
-                <i class="ph-arrow-right"></i>
-              </button>
-            </div>
           </div>
         </div>
       </div>
     </main>
-
-    <!-- Нижняя панель с информацией -->
-    <footer class="footer">
-      <div class="system-info">
-        <span class="status-indicator"></span>
-        <span>Система работает в штатном режиме</span>
-      </div>
-      <div class="last-login">
-        Последний вход: сегодня в 09:45
-      </div>
-    </footer>
   </div>
 
-  <!-- Модальные окна -->
-  <div class="modal" id="logoutModal">
+  <!-- Модальное окно подтверждения выхода -->
+  <div class="modal" id="logoutModal" style="display: none;">
     <div class="modal-content animate__animated animate__zoomIn">
       <div class="modal-header">
         <h3>Подтверждение выхода</h3>
         <button class="modal-close">
-          <i class="ph-x"></i>
+          <i class="ri-close-line"></i>
         </button>
       </div>
       <div class="modal-body">
@@ -217,20 +186,6 @@
         <button class="btn btn-primary" id="confirmLogout">Выйти</button>
       </div>
     </div>
-  </div>
-
-  <!-- Уведомление (toast) -->
-  <div class="notification" id="notification">
-    <div class="notification-icon">
-      <i class="ph-info"></i>
-    </div>
-    <div class="notification-content">
-      <div class="notification-message"></div>
-    </div>
-    <div class="notification-close">
-      <i class="ph-x"></i>
-    </div>
-    <div class="notification-progress"></div>
   </div>
 
   <!-- Подключаем скрипты -->
