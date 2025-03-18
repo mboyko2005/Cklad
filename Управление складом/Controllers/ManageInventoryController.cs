@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Threading.Tasks;
 
 namespace Управление_складом.Controllers
 {
@@ -97,6 +96,36 @@ ORDER BY t.ТоварID;";
 			catch (Exception ex)
 			{
 				return StatusCode(500, new { message = "Ошибка при получении общего количества", error = ex.Message });
+			}
+		}
+
+		// GET: api/manageinventory/missing
+		[HttpGet("missing")]
+		public IActionResult GetMissingProductsCount()
+		{
+			try
+			{
+				int missingCount = 0;
+				using (var conn = new SqlConnection(_connectionString))
+				{
+					conn.Open();
+					// Считаем товар «пропавшим» если у него нет записи (sp.ТоварID IS NULL) или Количество=0
+					string sql = @"
+                        SELECT COUNT(*) 
+                        FROM Товары t
+                        LEFT JOIN СкладскиеПозиции sp ON t.ТоварID = sp.ТоварID
+                        WHERE sp.ТоварID IS NULL OR sp.Количество = 0;
+                    ";
+					using (var cmd = new SqlCommand(sql, conn))
+					{
+						missingCount = (int)cmd.ExecuteScalar();
+					}
+				}
+				return Ok(new { missingCount });
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Ошибка при получении количества отсутствующих товаров", error = ex.Message });
 			}
 		}
 
@@ -287,6 +316,7 @@ WHERE ПозицияID = @id;";
 							}
 							int productId = Convert.ToInt32(objProduct);
 
+							// Удаляем движения товара
 							string sqlMov = "DELETE FROM ДвиженияТоваров WHERE ТоварID=@p";
 							using (var cmdMov = new SqlCommand(sqlMov, conn, tran))
 							{
@@ -294,6 +324,7 @@ WHERE ПозицияID = @id;";
 								cmdMov.ExecuteNonQuery();
 							}
 
+							// Удаляем саму позицию
 							string sqlPos = "DELETE FROM СкладскиеПозиции WHERE ПозицияID=@pid";
 							using (var cmdPos = new SqlCommand(sqlPos, conn, tran))
 							{
@@ -301,6 +332,7 @@ WHERE ПозицияID = @id;";
 								cmdPos.ExecuteNonQuery();
 							}
 
+							// Проверяем, остались ли ещё позиции у этого товара
 							string sqlCheck = "SELECT COUNT(*) FROM СкладскиеПозиции WHERE ТоварID=@p";
 							int countProd;
 							using (var cmdC = new SqlCommand(sqlCheck, conn, tran))
@@ -310,13 +342,15 @@ WHERE ПозицияID = @id;";
 							}
 							if (countProd == 0)
 							{
+								// Если нет, то возможно удалим сам товар и, при необходимости, поставщика
 								int supplierId = 0;
 								string sqlSup = "SELECT ПоставщикID FROM Товары WHERE ТоварID=@p";
 								using (var cmdSup = new SqlCommand(sqlSup, conn, tran))
 								{
 									cmdSup.Parameters.AddWithValue("@p", productId);
 									object supObj = cmdSup.ExecuteScalar();
-									if (supObj != null) supplierId = Convert.ToInt32(supObj);
+									if (supObj != null)
+										supplierId = Convert.ToInt32(supObj);
 								}
 								string sqlDelProd = "DELETE FROM Товары WHERE ТоварID=@p";
 								using (var cmdDP = new SqlCommand(sqlDelProd, conn, tran))
@@ -326,6 +360,7 @@ WHERE ПозицияID = @id;";
 								}
 								if (supplierId > 0)
 								{
+									// Проверяем, остались ли ещё товары у этого поставщика
 									string sqlCheckSup = "SELECT COUNT(*) FROM Товары WHERE ПоставщикID=@s";
 									int supCount;
 									using (var cmdCS = new SqlCommand(sqlCheckSup, conn, tran))
@@ -335,6 +370,7 @@ WHERE ПозицияID = @id;";
 									}
 									if (supCount == 0)
 									{
+										// Если нет, удаляем и поставщика
 										string sqlDelSup = "DELETE FROM Поставщики WHERE ПоставщикID=@s";
 										using (var cmdDS = new SqlCommand(sqlDelSup, conn, tran))
 										{
@@ -369,7 +405,8 @@ WHERE ПозицияID = @id;";
 			{
 				cmdF.Parameters.AddWithValue("@n", supplierName);
 				object obj = cmdF.ExecuteScalar();
-				if (obj != null) return Convert.ToInt32(obj);
+				if (obj != null)
+					return Convert.ToInt32(obj);
 			}
 			string sqlIns = @"
 INSERT INTO Поставщики (Наименование)
@@ -391,7 +428,8 @@ SELECT SCOPE_IDENTITY();";
 			{
 				cmdF.Parameters.AddWithValue("@pn", productName);
 				object obj = cmdF.ExecuteScalar();
-				if (obj != null) productId = Convert.ToInt32(obj);
+				if (obj != null)
+					productId = Convert.ToInt32(obj);
 			}
 
 			if (productId == 0)

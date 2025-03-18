@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Панель сотрудника склада</title>
   <link rel="icon" href="../../Логотип.ico" type="image/x-icon" />
   <!-- Подключаем стили -->
   <link rel="stylesheet" href="Staff.css">
-  <!-- Remix Icons (обновленная версия) -->
+  <!-- Remix Icons -->
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet">
   <!-- Шрифт -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -50,11 +50,7 @@
           </div>
           <!-- Выпадающее меню -->
           <div class="user-menu">
-            <div class="menu-item">
-              <i class="ri-user-line"></i>
-              <span>Профиль</span>
-            </div>
-            <div class="menu-item">
+            <div class="menu-item" id="settingsMenuItem">
               <i class="ri-settings-3-line"></i>
               <span>Настройки</span>
             </div>
@@ -71,8 +67,12 @@
     <!-- Основной контейнер -->
     <main class="dashboard">
       <div class="welcome-section">
-        <h1 class="welcome-title animate__animated animate__fadeInUp">Добро пожаловать в панель управления</h1>
-        <p class="welcome-subtitle animate__animated animate__fadeInUp animate__delay-1s">Выберите нужный раздел для работы со складом</p>
+        <h1 class="welcome-title animate__animated animate__fadeInUp">
+          Добро пожаловать в панель управления
+        </h1>
+        <p class="welcome-subtitle animate__animated animate__fadeInUp animate__delay-1s">
+          Выберите нужный раздел для работы со складом
+        </p>
         
         <!-- Аналитика -->
         <div class="analytics-strip animate__animated animate__fadeInUp animate__delay-2s">
@@ -91,7 +91,7 @@
               <i class="ri-truck-line"></i>
             </div>
             <div class="analytic-info">
-              <span class="analytic-value counter">87</span>
+              <span class="analytic-value counter">0</span>
               <span class="analytic-label">Ожидается поставок</span>
             </div>
           </div>
@@ -189,7 +189,6 @@
   </div>
 
   <!-- Подключаем скрипты -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
   <script src="Staff.js"></script>
 </body>
 </html>
