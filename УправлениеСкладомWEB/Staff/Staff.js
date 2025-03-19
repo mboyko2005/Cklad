@@ -11,6 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Загрузка данных о товарах и ожидаемых поставках
   loadInventoryData();
   loadExpectedDeliveriesData();
+  // Загрузка отсутствующих товаров для меню уведомлений
+  loadMissingProductsList();
 });
 
 /** Проверяем, что пользователь авторизован как Сотрудник склада */
@@ -40,7 +42,6 @@ function initializeEventListeners() {
 
   if (viewGoodsCard) {
     viewGoodsCard.addEventListener("click", () => {
-      // Пример пути, измените на свой
       window.location.href = "ViewItems/ViewItems.html";
     });
   }
@@ -60,7 +61,10 @@ function initializeEventListeners() {
     });
   }
 
-  // Меню пользователя: кнопка "Выход"
+  // Меню пользователя: теперь без таймера (убраны setTimeout)
+  // Всё, что нужно – при наведении (hover) .user-info / .user-menu, оно уже открывается (CSS).
+
+  // Кнопка "Выход" – открывает модалку
   const exitBtn = document.getElementById("exitBtn");
   if (exitBtn) {
     exitBtn.addEventListener("click", () => {
@@ -71,11 +75,10 @@ function initializeEventListeners() {
     });
   }
 
-  // Меню пользователя: кнопка "Настройки"
+  // Кнопка "Настройки"
   const settingsMenuItem = document.getElementById("settingsMenuItem");
   if (settingsMenuItem) {
     settingsMenuItem.addEventListener("click", () => {
-      // Пример пути, измените на свой
       window.location.href = "Settings/Settings.html";
     });
   }
@@ -118,7 +121,7 @@ function handleExit() {
   window.location.href = "../Login.html";
 }
 
-/** Загрузка данных о товарах из API */
+/** Загрузка данных о товарах (общее количество) из API */
 async function loadInventoryData() {
   try {
     const response = await fetch("http://localhost:8080/api/manageinventory/totalquantity");
@@ -126,7 +129,7 @@ async function loadInventoryData() {
       throw new Error("Ошибка сети или API недоступен");
     }
     const data = await response.json();
-    const totalGoods = data.totalQuantity || 0; // Устанавливаем 0, если данные отсутствуют
+    const totalGoods = data.totalQuantity || 0;
     const goodsCounter = document.querySelector(".analytic-item:nth-child(1) .analytic-value");
     if (goodsCounter) {
       goodsCounter.textContent = totalGoods.toLocaleString();
@@ -140,7 +143,7 @@ async function loadInventoryData() {
   }
 }
 
-/** Загрузка данных об отсутствующих товарах (где количество = 0 или записи нет) */
+/** Загрузка данных об ожидаемых поставках (количество отсутствующих товаров) */
 async function loadExpectedDeliveriesData() {
   try {
     const response = await fetch("http://localhost:8080/api/manageinventory/missing");
@@ -157,6 +160,44 @@ async function loadExpectedDeliveriesData() {
     const missingCounter = document.querySelector(".analytic-item:nth-child(2) .analytic-value");
     if (missingCounter) {
       missingCounter.textContent = "Ошибка";
+    }
+  }
+}
+
+/** Загрузка списка отсутствующих товаров для выпадающего меню уведомлений */
+async function loadMissingProductsList() {
+  try {
+    const response = await fetch("http://localhost:8080/api/manageinventory/missingproducts");
+    if (!response.ok) {
+      throw new Error("Ошибка сети или API недоступен");
+    }
+    const missingList = await response.json();
+
+    // Устанавливаем количество в badge
+    const notificationsBadge = document.querySelector(".notifications .badge");
+    if (notificationsBadge) {
+      notificationsBadge.textContent = missingList.length.toString();
+    }
+
+    // Формируем список в выпадающем меню
+    const notificationsListEl = document.querySelector(".notifications-list");
+    if (!notificationsListEl) return;
+
+    if (missingList.length === 0) {
+      notificationsListEl.innerHTML = "<div class='notification-item'>Все товары в наличии</div>";
+    } else {
+      const itemsHtml = missingList.map(item => {
+        const name = item.productName || "Без названия";
+        return `<div class="notification-item">${name}</div>`;
+      }).join("");
+      notificationsListEl.innerHTML = itemsHtml;
+    }
+  } catch (error) {
+    console.error("Ошибка загрузки списка отсутствующих товаров:", error);
+    // На случай ошибки можно вывести сообщение
+    const notificationsListEl = document.querySelector(".notifications-list");
+    if (notificationsListEl) {
+      notificationsListEl.innerHTML = "<div class='notification-item'>Ошибка загрузки</div>";
     }
   }
 }

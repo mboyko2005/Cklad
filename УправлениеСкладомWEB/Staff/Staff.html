@@ -9,8 +9,8 @@
   <link rel="stylesheet" href="Staff.css">
   <!-- Remix Icons -->
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet">
-  <!-- Шрифт -->
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Шрифт Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Анимации -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 </head>
@@ -32,14 +32,27 @@
         <span>Панель сотрудника склада</span>
       </div>
       <div class="actions">
+        <!-- Блок поиска -->
         <div class="search-bar">
           <i class="ri-search-line"></i>
           <input type="text" placeholder="Поиск...">
         </div>
+
+        <!-- Уведомления -->
         <div class="notifications">
           <i class="ri-notification-3-line"></i>
-          <span class="badge">3</span>
+          <!-- Счётчик уведомлений -->
+          <span class="badge">0</span>
+          <!-- Выпадающее меню уведомлений (показывается на hover) -->
+          <div class="notifications-menu">
+            <div class="notifications-header">Отсутствующие товары</div>
+            <div class="notifications-list">
+              <!-- Список формируется динамически -->
+            </div>
+          </div>
         </div>
+
+        <!-- Информация о пользователе -->
         <div class="user-info">
           <div class="user-avatar">
             <img src="https://avatars.dicebear.com/api/micah/warehouse.svg" alt="Аватар">
@@ -48,7 +61,7 @@
             <span class="username">Сотрудник склада</span>
             <span class="user-role">Оператор</span>
           </div>
-          <!-- Выпадающее меню -->
+          <!-- Выпадающее меню пользователя -->
           <div class="user-menu">
             <div class="menu-item" id="settingsMenuItem">
               <i class="ri-settings-3-line"></i>

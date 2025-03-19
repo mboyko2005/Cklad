@@ -129,6 +129,47 @@ ORDER BY t.ТоварID;";
 			}
 		}
 
+		// GET: api/manageinventory/missingproducts
+		[HttpGet("missingproducts")]
+		public IActionResult GetMissingProducts()
+		{
+			try
+			{
+				var result = new List<InventoryDto>();
+				using (var conn = new SqlConnection(_connectionString))
+				{
+					conn.Open();
+					string sql = @"
+SELECT
+    t.ТоварID AS ProductId,
+    t.Наименование AS ProductName
+FROM Товары t
+LEFT JOIN СкладскиеПозиции sp ON t.ТоварID = sp.ТоварID
+WHERE sp.ТоварID IS NULL OR sp.Количество = 0;
+";
+					using (var cmd = new SqlCommand(sql, conn))
+					using (var rdr = cmd.ExecuteReader())
+					{
+						while (rdr.Read())
+						{
+							result.Add(new InventoryDto
+							{
+								ProductId = rdr.GetInt32(rdr.GetOrdinal("ProductId")),
+								ProductName = rdr.IsDBNull(rdr.GetOrdinal("ProductName"))
+									? ""
+									: rdr.GetString(rdr.GetOrdinal("ProductName"))
+							});
+						}
+					}
+				}
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Ошибка при получении списка отсутствующих товаров", error = ex.Message });
+			}
+		}
+
 		// GET: api/manageinventory/warehouses
 		[HttpGet("warehouses")]
 		public IActionResult GetWarehouses()
@@ -238,6 +279,7 @@ SELECT SCOPE_IDENTITY();";
 
 							if (id == 0)
 							{
+								// Если позицияID = 0, то вставляем новую запись
 								string sqlPos = @"
 INSERT INTO СкладскиеПозиции (ТоварID, СкладID, Количество, ДатаОбновления)
 VALUES (@p, @w, @q, GETDATE());";
@@ -251,6 +293,7 @@ VALUES (@p, @w, @q, GETDATE());";
 							}
 							else
 							{
+								// Обновляем существующую позицию
 								string sqlUp = @"
 UPDATE СкладскиеПозиции
 SET ТоварID = @p,
@@ -342,7 +385,7 @@ WHERE ПозицияID = @id;";
 							}
 							if (countProd == 0)
 							{
-								// Если нет, то возможно удалим сам товар и, при необходимости, поставщика
+								// Если нет позиций, удаляем товар и при необходимости поставщика
 								int supplierId = 0;
 								string sqlSup = "SELECT ПоставщикID FROM Товары WHERE ТоварID=@p";
 								using (var cmdSup = new SqlCommand(sqlSup, conn, tran))
@@ -360,7 +403,7 @@ WHERE ПозицияID = @id;";
 								}
 								if (supplierId > 0)
 								{
-									// Проверяем, остались ли ещё товары у этого поставщика
+									// Проверяем, остались ли ещё товары у поставщика
 									string sqlCheckSup = "SELECT COUNT(*) FROM Товары WHERE ПоставщикID=@s";
 									int supCount;
 									using (var cmdCS = new SqlCommand(sqlCheckSup, conn, tran))
@@ -370,7 +413,7 @@ WHERE ПозицияID = @id;";
 									}
 									if (supCount == 0)
 									{
-										// Если нет, удаляем и поставщика
+										// Удаляем поставщика
 										string sqlDelSup = "DELETE FROM Поставщики WHERE ПоставщикID=@s";
 										using (var cmdDS = new SqlCommand(sqlDelSup, conn, tran))
 										{
