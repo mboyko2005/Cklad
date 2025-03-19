@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Управление запасами</title>
+  <link rel="icon" href="../../Логотип.ico" type="image/x-icon" />
+  <!-- Подключаем Font Awesome для красивых иконок -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Подключаем шрифт Inter -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <!-- Подключаем CSS со стилями для страницы -->
+  <link rel="stylesheet" href="ManageStock.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+  <!-- Фоновые анимированные фигуры -->
+  <div class="background-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+    <div class="shape shape-4"></div>
+  </div>
+
+  <!-- Верхняя панель -->
+  <header class="top-bar">
+    <div class="back-button" id="backButton">
+      <i class="fas fa-chevron-left"></i>
+      <span>Назад</span>
+    </div>
+    <!-- Заголовок с анимированной иконкой -->
+    <div class="page-title">
+      <i class="fas fa-database animated-icon animate-on-entry"></i> Управление запасами
+    </div>
+    <div class="user-info">
+      <span class="username" id="userNameSpan">Сотрудник склада</span>
+      <div class="avatar">
+        <i class="fas fa-user"></i>
+      </div>
+      <!-- Меню пользователя -->
+      <div class="user-menu">
+        <button id="exitBtn" class="user-menu-item">
+          <i class="fas fa-sign-out-alt"></i> Выход из системы
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Основной контейнер -->
+  <main class="view-container">
+    <h1 class="view-title">Фильтрация и просмотр товаров на складе</h1>
+    <p class="view-subtitle">Удобный поиск и отображение актуальных остатков</p>
+
+    <!-- Блок фильтров (современный дизайн) -->
+    <div class="filters-panel">
+      <!-- Поиск + голосовой ввод -->
+      <div class="filter-group search-group">
+        <div class="search-container">
+          <i class="fas fa-search search-icon"></i>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Поиск по наименованию или категории..." 
+            class="search-input" />
+          <button 
+            id="voiceSearchBtn" 
+            class="voice-button" 
+            title="Голосовой поиск">
+            <i id="voiceIcon" class="fas fa-microphone"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Мин/Макс количество -->
+      <div class="filter-group quantity-group">
+        <div class="quantity-container">
+          <div class="qty-input-wrapper">
+            <i class="fas fa-arrow-down min-icon"></i>
+            <input 
+              type="number" 
+              id="minQuantityInput" 
+              placeholder="Мин. количество" 
+              class="qty-input" />
+          </div>
+          <div class="qty-input-wrapper">
+            <i class="fas fa-arrow-up max-icon"></i>
+            <input 
+              type="number" 
+              id="maxQuantityInput" 
+              placeholder="Макс. количество" 
+              class="qty-input" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Кнопка "Показать все товары" -->
+      <button 
+        id="toggleShowAllBtn" 
+        class="show-all-button" 
+        title="Показать все товары">
+        <i id="toggleShowAllIcon" class="fas fa-filter"></i>
+        <span>Все товары</span>
+      </button>
+    </div>
+
+    <!-- Таблица товаров -->
+    <div class="table-wrapper">
+      <table class="goods-table" id="stockTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Наименование</th>
+            <th>Категория</th>
+            <th>Количество</th>
+            <th>Цена</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Заполняется через JS -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Уведомление (toast) -->
+  <div class="notification" id="notification">
+    <div class="notification-icon">
+      <i class="fas fa-info-circle" id="notificationIcon"></i>
+    </div>
+    <div class="notification-content">
+      <div class="notification-message" id="notificationMessage"></div>
+    </div>
+    <div class="notification-close" id="notificationClose">
+      <i class="fas fa-times"></i>
+    </div>
+  </div>
+
+  <!-- Подключаем JS-логику -->
+  <script src="ManageStock.js"></script>
+</body>
+</html>

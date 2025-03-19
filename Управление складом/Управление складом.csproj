@@ -12,9 +12,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="API\**" />
     <Compile Remove="WEB\**" />
+    <EmbeddedResource Remove="API\**" />
     <EmbeddedResource Remove="WEB\**" />
+    <None Remove="API\**" />
     <None Remove="WEB\**" />
+    <Page Remove="API\**" />
     <Page Remove="WEB\**" />
   </ItemGroup>
 
@@ -234,10 +238,6 @@
     <None Update="Models\RU\rnnlm\word_feats.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="API\" />
   </ItemGroup>
 
 </Project>
