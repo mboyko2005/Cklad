@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Настройки</title>
+  <link rel="icon" href="../../Логотип.ico" type="image/x-icon" />
+  <!-- Подключение внешних стилей -->
+  <link rel="stylesheet" href="settings.css" />
+  <!-- Иконки FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Фоновые плавающие формы -->
+  <div class="background-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+    <div class="shape shape-4"></div>
+  </div>
+
+  <!-- Верхняя панель -->
+  <header class="top-bar">
+    <div class="back-button" id="backButton">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Назад</span>
+    </div>
+    <div class="page-title">
+      <i class="fa-solid fa-gear settings-icon analytics-icon animate-on-entry"></i>
+      Настройки
+    </div>
+    <div class="user-info">
+      <span class="username">Менеджер</span>
+      <div class="avatar">
+        <i class="fa-solid fa-user"></i>
+      </div>
+      <!-- Меню пользователя -->
+      <div class="user-menu">
+        <button id="exitBtn" class="user-menu-item">Выход из системы</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Основное окно настроек -->
+  <div class="settings-container" id="settingsWindow">
+    <h1 class="manage-title">Настройки</h1>
+    <p class="manage-subtitle">Смена пароля, выбор темы и другие параметры</p>
+
+    <!-- Секция смены пароля -->
+    <div class="settings-section">
+      <h2 class="section-title">Смена пароля</h2>
+      <div class="form-group">
+        <label for="newPassword">Новый пароль:</label>
+        <div class="input-wrapper">
+          <i class="fa-solid fa-lock icon-left"></i>
+          <input type="password" id="newPassword" class="input-field" placeholder="Введите новый пароль" />
+          <i class="fa-solid fa-check-circle icon-right" id="newPasswordStatus" style="display: none;"></i>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="confirmPassword">Подтверждение пароля:</label>
+        <div class="input-wrapper">
+          <i class="fa-solid fa-lock icon-left"></i>
+          <input type="password" id="confirmPassword" class="input-field" placeholder="Подтвердите пароль" />
+          <i class="fa-solid fa-check-circle icon-right" id="confirmPasswordStatus" style="display: none;"></i>
+        </div>
+      </div>
+      <button class="button" id="savePasswordBtn">
+        <i class="fa-solid fa-check-circle"></i>
+        Сохранить пароль
+      </button>
+    </div>
+
+    <!-- Секция выбора темы -->
+    <div class="settings-section">
+      <h2 class="section-title">Выбор темы</h2>
+      <div class="form-group">
+        <label for="themeSelect">Тема приложения:</label>
+        <select id="themeSelect" class="select-field">
+          <option value="light">Светлая</option>
+          <option value="dark">Тёмная</option>
+        </select>
+      </div>
+      <button class="button" id="saveSettingsBtn">
+        <i class="fa-solid fa-check-circle"></i>
+        Сохранить настройки
+      </button>
+      <!-- Кнопка переключения темы -->
+      <button class="theme-toggle-button" id="themeToggleBtn" title="Переключить тему">
+        <i class="fa-solid fa-sun" id="themeIcon"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Уведомление (toast) -->
+  <div class="notification" id="notificationToast">
+    <div class="notification-icon">
+      <i class="fa-solid fa-info-circle"></i>
+    </div>
+    <div class="notification-message" id="notificationMessage"></div>
+    <div class="notification-close" id="notificationClose">
+      <i class="fa-solid fa-times"></i>
+    </div>
+  </div>
+
+  <!-- Подключение скрипта -->
+  <script src="settings.js"></script>
+</body>
+</html>
