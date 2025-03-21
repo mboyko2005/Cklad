@@ -239,6 +239,9 @@
     <None Update="Models\RU\rnnlm\word_feats.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Required packages\node-v22.14.0-x64.msi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="УправлениеСкладомWEB\Admin\Admin.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
