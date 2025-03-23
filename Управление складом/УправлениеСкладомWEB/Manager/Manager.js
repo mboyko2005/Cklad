@@ -1,15 +1,34 @@
+// Manager.js
+
 document.addEventListener("DOMContentLoaded", () => {
-   // Получаем имя пользователя из localStorage
-   const username = localStorage.getItem("username") || "";
-   // Формируем ключ для темы конкретного пользователя
-   const themeKey = `appTheme-${username}`;
-   // Считываем тему (если нет, по умолчанию "light")
-   const savedTheme = localStorage.getItem(themeKey) || "light";
-   // Применяем тему на странице
-   document.documentElement.setAttribute("data-theme", savedTheme);
   checkAuthorization();
+  // Привязываем сразу события на карточки и кнопку выхода
   initializeEventListeners();
+  
+  // Применяем тему при первой загрузке (если пришли напрямую)
+  applyTheme();
 });
+
+/**
+ * При возвращении на эту страницу (например, при нажатии "Назад" из кеша bfcache),
+ * событие `pageshow` срабатывает, даже если страница не была перезагружена.
+ * Здесь мы ещё раз читаем тему и устанавливаем её.
+ */
+window.addEventListener("pageshow", () => {
+  applyTheme();
+});
+
+/** Устанавливает тему из localStorage для текущего пользователя */
+function applyTheme() {
+  // Получаем имя пользователя из localStorage
+  const username = localStorage.getItem("username") || "";
+  // Формируем ключ для темы конкретного пользователя
+  const themeKey = `appTheme-${username}`;
+  // Считываем тему (если нет, по умолчанию "light")
+  const savedTheme = localStorage.getItem(themeKey) || "light";
+  // Применяем тему на странице
+  document.documentElement.setAttribute("data-theme", savedTheme);
+}
 
 /** Проверяем, что пользователь авторизован как Менеджер */
 function checkAuthorization() {
@@ -20,14 +39,14 @@ function checkAuthorization() {
     return;
   }
   // Если имя пользователя сохранено – отображаем его
-  const username = localStorage.getItem("username");
-  if (username) {
-    const usernameEl = document.querySelector(".username");
-    if (usernameEl) usernameEl.textContent = username;
+  const username = localStorage.getItem("username") || "Менеджер";
+  const usernameEl = document.querySelector(".username");
+  if (usernameEl) {
+    usernameEl.textContent = username;
   }
-  
+  // Приветственное уведомление
   setTimeout(() => {
-    showNotification(`Добро пожаловать в панель управления, ${username || 'Менеджер'}!`);
+    showNotification(`Добро пожаловать в панель управления, ${username}!`);
   }, 1500);
 }
 
@@ -37,9 +56,7 @@ function initializeEventListeners() {
   const manageInventoryCard = document.getElementById("manageInventoryCard");
   const reportsCard = document.getElementById("reportsCard");
   const settingsCard = document.getElementById("settingsCard");
-  const botCard = document.getElementById("botCard");
 
-  // Переходы на нужные HTML-страницы:
   if (manageUsersCard) {
     manageUsersCard.addEventListener("click", () => {
       window.location.href = "ManageUsers/ManageUsers.html";
@@ -82,7 +99,9 @@ function showNotification(message) {
   if (!notification) return;
 
   const notificationMessage = notification.querySelector(".notification-message");
-  if (notificationMessage) notificationMessage.textContent = message;
+  if (notificationMessage) {
+    notificationMessage.textContent = message;
+  }
   
   notification.classList.add("show");
 
