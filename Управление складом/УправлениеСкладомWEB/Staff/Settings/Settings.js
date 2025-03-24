@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     // Отправка запроса на смену пароля
-    fetch("http://localhost:8080/api/settings/changepassword", {
+    fetch("/api/settings/changepassword", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 

@@ -10,14 +10,14 @@ document.addEventListener("DOMContentLoaded", () => {
   loadWarehouses();
   loadInventory();
   initializeEventListeners();
- // Получаем имя пользователя из localStorage
- const username = localStorage.getItem("username") || "";
- // Формируем ключ для темы конкретного пользователя
- const themeKey = `appTheme-${username}`;
- // Считываем тему (если нет, по умолчанию "light")
- const savedTheme = localStorage.getItem(themeKey) || "light";
- // Применяем тему на странице
- document.documentElement.setAttribute("data-theme", savedTheme);
+  // Получаем имя пользователя из localStorage
+  const username = localStorage.getItem("username") || "";
+  // Формируем ключ для темы конкретного пользователя
+  const themeKey = `appTheme-${username}`;
+  // Считываем тему (если нет, по умолчанию "light")
+  const savedTheme = localStorage.getItem(themeKey) || "light";
+  // Применяем тему на странице
+  document.documentElement.setAttribute("data-theme", savedTheme);
 });
 
 function checkAuthorization() {
@@ -109,7 +109,7 @@ function initializeEventListeners() {
 
 /** Загрузка списка складов */
 function loadWarehouses() {
-  fetch("http://localhost:8080/api/manageinventory/warehouses")
+  fetch("/api/manageinventory/warehouses")
     .then(resp => resp.json())
     .then(data => {
       populateWarehouseSelect(data);
@@ -133,7 +133,7 @@ function populateWarehouseSelect(warehouses) {
 
 /** Загрузка всех позиций на складе */
 function loadInventory() {
-  fetch("http://localhost:8080/api/manageinventory")
+  fetch("/api/manageinventory")
     .then(resp => resp.json())
     .then(data => {
       inventoryData = data;
@@ -229,7 +229,7 @@ function handleDeleteInventory() {
   }
   openConfirmModal("Удаление", "Вы действительно хотите удалить эту позицию?", (confirmed) => {
     if (!confirmed) return;
-    fetch(`http://localhost:8080/api/manageinventory/${selectedPositionId}`, {
+    fetch(`/api/manageinventory/${selectedPositionId}`, {
       method: "DELETE"
     })
       .then(resp => resp.json())
@@ -271,7 +271,7 @@ function handleSaveInventory() {
 
   if (isEditMode && selectedPositionId !== null) {
     // PUT — обновление
-    fetch(`http://localhost:8080/api/manageinventory/${selectedPositionId}`, {
+    fetch(`/api/manageinventory/${selectedPositionId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -288,7 +288,7 @@ function handleSaveInventory() {
       });
   } else {
     // POST — создание
-    fetch("http://localhost:8080/api/manageinventory", {
+    fetch("/api/manageinventory", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -326,7 +326,7 @@ function handleShowQr() {
     return;
   }
 
-  fetch(`http://localhost:8080/api/qrcode/product/${productId}`)
+  fetch(`/api/qrcode/product/${productId}`)
     .then(resp => {
       if (!resp.ok) throw new Error("Ошибка при генерации QR: " + resp.status);
       return resp.blob();
@@ -388,7 +388,6 @@ function showNotification(message, type = "info") {
   const msg = document.getElementById("notificationMessage");
 
   msg.textContent = message;
-
   switch (type) {
     case "success":
       icon.className = "ri-checkbox-circle-line";
@@ -403,7 +402,6 @@ function showNotification(message, type = "info") {
       icon.style.color = "var(--primary-color)";
       break;
   }
-
   notification.classList.add("show");
   setTimeout(() => {
     hideNotification();

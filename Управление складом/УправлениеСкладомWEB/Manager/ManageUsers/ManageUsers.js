@@ -128,7 +128,7 @@ function initializeEventListeners() {
 
 /** Загрузка списка ролей с сервера */
 function loadRoles() {
-  fetch("http://localhost:8080/api/manageusers/roles")
+  fetch("/api/manageusers/roles")
     .then(resp => resp.json())
     .then(data => {
       rolesData = data;
@@ -141,7 +141,7 @@ function loadRoles() {
 
 /** Загрузка списка пользователей с сервера */
 function loadUsers() {
-  fetch("http://localhost:8080/api/manageusers")
+  fetch("/api/manageusers")
     .then(resp => resp.json())
     .then(data => {
       usersData = data;
@@ -168,17 +168,13 @@ function renderUsersTable(users) {
       <td>${user.username}</td>
       <td>${user.roleName}</td>
     `;
-
     // Клик по строке = выбор пользователя
     tr.addEventListener("click", () => {
-      // Снимаем выделение со всех строк
       document.querySelectorAll("#usersTable tbody tr")
         .forEach(row => row.classList.remove("selected"));
-      
       tr.classList.add("selected");
       selectedUserId = user.userID;
     });
-
     tbody.appendChild(tr);
   });
 }
@@ -187,12 +183,10 @@ function renderUsersTable(users) {
 function openUserModal(title) {
   document.getElementById("userModal").style.display = "flex";
   document.getElementById("modalTitle").textContent = title;
-
   // Сброс полей
   document.getElementById("usernameInput").value = "";
   document.getElementById("passwordInput").value = "";
   document.getElementById("confirmPasswordInput").value = "";
-
   // Заполняем список ролей (только роль "Сотрудник склада")
   const roleSelect = document.getElementById("roleSelect");
   roleSelect.innerHTML = "";
@@ -205,7 +199,6 @@ function openUserModal(title) {
       roleSelect.appendChild(opt);
     }
   });
-
   // Если редактируем — подставляем данные пользователя
   if (isEditMode && selectedUserId) {
     const user = usersData.find(u => u.userID === selectedUserId);
@@ -238,9 +231,7 @@ function handleDeleteUser() {
     "Вы действительно хотите удалить выбранного пользователя?",
     (confirmed) => {
       if (confirmed) {
-        fetch(`http://localhost:8080/api/manageusers/${selectedUserId}`, {
-          method: "DELETE"
-        })
+        fetch(`/api/manageusers/${selectedUserId}`, { method: "DELETE" })
           .then(resp => resp.json())
           .then(data => {
             showNotification(data.message || "Пользователь удалён", "success");
@@ -262,7 +253,6 @@ function handleSaveUser() {
   const password = document.getElementById("passwordInput").value;
   const confirmPassword = document.getElementById("confirmPasswordInput").value;
   const roleId = parseInt(document.getElementById("roleSelect").value, 10);
-
   if (!username || !password || !confirmPassword || !roleId) {
     showNotification("Заполните все поля", "error");
     return;
@@ -271,12 +261,10 @@ function handleSaveUser() {
     showNotification("Пароли не совпадают", "error");
     return;
   }
-
   const userData = { username, password, roleId };
-
   if (isEditMode && selectedUserId) {
     // Редактирование
-    fetch(`http://localhost:8080/api/manageusers/${selectedUserId}`, {
+    fetch(`/api/manageusers/${selectedUserId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData)
@@ -293,7 +281,7 @@ function handleSaveUser() {
       });
   } else {
     // Добавление
-    fetch("http://localhost:8080/api/manageusers", {
+    fetch("/api/manageusers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData)
@@ -315,16 +303,12 @@ function handleSaveUser() {
    МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ (confirmModal)
    ========================================================= */
 let confirmCallback = null;
-
-/** Открыть модалку подтверждения */
 function openConfirmModal(title, text, callback) {
   confirmCallback = callback;
   document.getElementById("confirmTitle").textContent = title;
   document.getElementById("confirmText").textContent = text;
   document.getElementById("confirmModal").style.display = "flex";
 }
-
-/** Закрыть модалку подтверждения */
 function closeConfirmModal() {
   document.getElementById("confirmModal").style.display = "none";
   confirmCallback = null;
@@ -333,15 +317,11 @@ function closeConfirmModal() {
 /* =========================================================
    УВЕДОМЛЕНИЯ (TOAST)
    ========================================================= */
-/** Показать уведомление (type: 'success' | 'error' | 'info') */
 function showNotification(message, type = "info") {
   const notification = document.getElementById("notification");
   const notificationIcon = document.getElementById("notificationIcon");
   const notificationMessage = document.getElementById("notificationMessage");
-
   notificationMessage.textContent = message;
-
-  // Меняем иконку и цвет в зависимости от типа
   switch (type) {
     case "success":
       notificationIcon.className = "ri-checkbox-circle-line";
@@ -356,16 +336,11 @@ function showNotification(message, type = "info") {
       notificationIcon.style.color = "var(--primary-color)";
       break;
   }
-
   notification.classList.add("show");
-
-  // Скрыть уведомление через 3 сек
   setTimeout(() => {
     hideNotification();
   }, 3000);
 }
-
-/** Скрыть уведомление */
 function hideNotification() {
   const notification = document.getElementById("notification");
   notification.classList.remove("show");

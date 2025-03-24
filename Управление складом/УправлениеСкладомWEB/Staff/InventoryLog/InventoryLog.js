@@ -1,3 +1,10 @@
+/*************************************************************
+ *  ManageInventory.js (пример с camelCase-свойствами)
+*************************************************************/
+let inventoryData = [];
+let selectedPositionId = null;
+let isEditMode = false;
+
 let logEntries = [];          // Список записей журнала (движения товаров)
 let outOfStockItems = [];     // Список товаров, отсутствующих на складе
 let selectedLogEntry = null;  // Выбранная запись журнала
@@ -12,6 +19,15 @@ document.addEventListener("DOMContentLoaded", () => {
   checkAuthorization();
   initializeEventListeners();
   loadAllData();
+  
+  // Получаем имя пользователя из localStorage
+  const username = localStorage.getItem("username") || "";
+  // Формируем ключ для темы конкретного пользователя
+  const themeKey = `appTheme-${username}`;
+  // Считываем тему (если нет, по умолчанию "light")
+  const savedTheme = localStorage.getItem(themeKey) || "light";
+  // Применяем тему на странице
+  document.documentElement.setAttribute("data-theme", savedTheme);
 });
 
 /** Проверка авторизации (пример) */
@@ -132,12 +148,12 @@ function handleExit() {
 async function loadAllData() {
   try {
     // Загружаем журнал
-    let resp = await fetch("http://localhost:8080/api/inventorylog/logs");
+    let resp = await fetch("/api/inventorylog/logs");
     if (!resp.ok) throw new Error("Ошибка при загрузке журнала");
     logEntries = await resp.json();
 
     // Загружаем список отсутствующих товаров
-    resp = await fetch("http://localhost:8080/api/inventorylog/outofstock");
+    resp = await fetch("/api/inventorylog/outofstock");
     if (!resp.ok) throw new Error("Ошибка при загрузке отсутствующих товаров");
     outOfStockItems = await resp.json();
 
@@ -191,11 +207,8 @@ function renderOutOfStockTable() {
 
 /** Обработка выбора строки в журнале */
 function handleLogRowSelection(row) {
-  // Снимаем выделение со всех
   document.querySelectorAll("#inventoryLogTable tbody tr").forEach(tr => tr.classList.remove("selected"));
   row.classList.add("selected");
-
-  // Достаём данные
   const cells = row.querySelectorAll("td");
   selectedLogEntry = {
     date: cells[0].textContent,
@@ -212,7 +225,6 @@ function handleLogRowSelection(row) {
 function handleOutOfStockRowSelection(row) {
   document.querySelectorAll("#outOfStockTable tbody tr").forEach(tr => tr.classList.remove("selected"));
   row.classList.add("selected");
-
   const cells = row.querySelectorAll("td");
   selectedOutOfStockItem = {
     productId: parseInt(cells[0].textContent),
@@ -228,17 +240,11 @@ function openMovementModal(type) {
     return;
   }
   movementType = type; // "Приход" или "Расход"
-
-  // Устанавливаем заголовок, подзаголовок, очищаем инпут
   const titleEl = document.getElementById("movementModalTitle");
   const subtitleEl = document.getElementById("movementModalSubtitle");
   const qtyInput = document.getElementById("movementQtyInput");
 
-  if (type === "Приход") {
-    titleEl.textContent = "Добавить приход";
-  } else {
-    titleEl.textContent = "Добавить расход";
-  }
+  titleEl.textContent = type === "Приход" ? "Добавить приход" : "Добавить расход";
   subtitleEl.textContent = `Товар: ${selectedLogEntry.itemName}`;
   qtyInput.value = "";
 
@@ -280,12 +286,13 @@ function openDeleteModal() {
 /** Закрыть модал удаления */
 function closeDeleteModal() {
   deleteModal.classList.remove("show");
+  // Можно сбросить selectedLogEntry если нужно
 }
 
 /** Подтвердить удаление */
 async function confirmDelete() {
   try {
-    const resp = await fetch(`http://localhost:8080/api/inventorylog/${selectedLogEntry.movementId}`, {
+    const resp = await fetch(`/api/inventorylog/${selectedLogEntry.movementId}`, {
       method: "DELETE"
     });
     if (!resp.ok) {
@@ -333,7 +340,7 @@ async function addMovement(productId, warehouseId, quantity, type, userId) {
     type,
     userId
   };
-  const resp = await fetch("http://localhost:8080/api/inventorylog", {
+  const resp = await fetch("/api/inventorylog", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
@@ -379,12 +386,12 @@ function showNotification(message, type = "info") {
       icon.style.color = "var(--primary-color)";
       break;
   }
-
   notification.classList.add("show");
   setTimeout(() => {
     hideNotification();
   }, 3000);
 }
+
 function hideNotification() {
   document.getElementById("notification").classList.remove("show");
 }

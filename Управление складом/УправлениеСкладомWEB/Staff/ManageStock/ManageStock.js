@@ -95,7 +95,7 @@ function initializeEventListeners() {
 async function loadItems(showAllFlag) {
   try {
     // Запрашиваем GET: /api/managestock?showAll=true/false
-    const response = await fetch(`http://localhost:8080/api/managestock?showAll=${showAllFlag}`);
+    const response = await fetch(`/api/managestock?showAll=${showAllFlag}`);
     if (!response.ok) {
       throw new Error("Ошибка сети или API недоступен");
     }

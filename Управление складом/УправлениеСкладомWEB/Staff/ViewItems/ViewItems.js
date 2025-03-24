@@ -110,7 +110,7 @@ function initializeEventListeners() {
 /** Загрузка списка товаров */
 async function loadGoods() {
   try {
-    const response = await fetch("http://localhost:8080/api/manageinventory");
+    const response = await fetch("/api/manageinventory");
     if (!response.ok) {
       throw new Error("Ошибка сети или API недоступен");
     }
@@ -159,7 +159,7 @@ function handleShowQr() {
     return;
   }
   // Запрашиваем QR-код по ID
-  fetch(`http://localhost:8080/api/qrcode/product/${selectedProductId}`)
+  fetch(`/api/qrcode/product/${selectedProductId}`)
     .then(resp => {
       if (!resp.ok) throw new Error("Ошибка при генерации QR: " + resp.status);
       return resp.blob();

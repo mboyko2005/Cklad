@@ -156,7 +156,7 @@ function handleExit() {
 /** Загрузка данных о товарах (общее количество) из API */
 async function loadInventoryData() {
   try {
-    const response = await fetch("http://localhost:8080/api/manageinventory/totalquantity");
+    const response = await fetch("/api/manageinventory/totalquantity");
     if (!response.ok) {
       throw new Error("Ошибка сети или API недоступен");
     }
@@ -178,7 +178,7 @@ async function loadInventoryData() {
 /** Загрузка данных об ожидаемых поставках (количество отсутствующих товаров) */
 async function loadExpectedDeliveriesData() {
   try {
-    const response = await fetch("http://localhost:8080/api/manageinventory/missing");
+    const response = await fetch("/api/manageinventory/missing");
     if (!response.ok) {
       throw new Error("Ошибка сети или API недоступен");
     }
@@ -199,7 +199,7 @@ async function loadExpectedDeliveriesData() {
 /** Загрузка списка отсутствующих товаров для выпадающего меню уведомлений */
 async function loadMissingProductsList() {
   try {
-    const response = await fetch("http://localhost:8080/api/manageinventory/missingproducts");
+    const response = await fetch("/api/manageinventory/missingproducts");
     if (!response.ok) {
       throw new Error("Ошибка сети или API недоступен");
     }
