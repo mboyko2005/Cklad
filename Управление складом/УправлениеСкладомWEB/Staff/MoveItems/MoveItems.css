@@ -662,7 +662,6 @@ select.category-select option {
   color: #e0e0e0;
 }
 
-/* Исправление для выпадающего меню в темной теме */
 [data-theme="dark"] .dropdown-content {
   background-color: #1c1c1c;
   border: 1px solid #444;
