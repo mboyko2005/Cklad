@@ -1,12 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
-     // Получаем имя пользователя из localStorage
-     const username = localStorage.getItem("username") || "";
-     // Формируем ключ для темы конкретного пользователя
-     const themeKey = `appTheme-${username}`;
-     // Считываем тему (если нет, по умолчанию "light")
-     const savedTheme = localStorage.getItem(themeKey) || "light";
-     // Применяем тему на странице
-     document.documentElement.setAttribute("data-theme", savedTheme);
+  // Получаем имя пользователя из localStorage
+  const username = localStorage.getItem("username") || "";
+  // Формируем ключ для темы конкретного пользователя
+  const themeKey = `appTheme-${username}`;
+  // Считываем тему (если нет, по умолчанию "light")
+  const savedTheme = localStorage.getItem(themeKey) || "light";
+  // Применяем тему на странице
+  document.documentElement.setAttribute("data-theme", savedTheme);
 
   const reportTypeSelect = document.getElementById("reportType");
   const chartTypeSelect = document.getElementById("chartType");
@@ -18,6 +18,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const fullscreenBtn = document.getElementById("fullscreenBtn");
   const chartContainer = document.getElementById("chartContainer");
 
+  // Добавляем CORS-атрибут к canvas для Safari
+  chartCanvas.setAttribute("crossorigin", "anonymous");
+
   let myChart = null;
 
   // Функция уведомления (toast)
@@ -26,9 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const notificationIcon = document.getElementById("notificationIcon");
     const notificationMessage = document.getElementById("notificationMessage");
 
-    // Если вёрстка notificationIcon отсутствует в HTML, проверяем:
     if (!notification || !notificationMessage) return;
-
     notificationMessage.textContent = message;
     if (notificationIcon) {
       switch (type) {
@@ -46,16 +47,15 @@ document.addEventListener("DOMContentLoaded", () => {
           break;
       }
     }
-
     notification.classList.add("show");
     setTimeout(() => {
       notification.classList.remove("show");
     }, 3000);
   }
 
-  // Пример функции для получения данных отчёта с сервера
+  // Функция для получения данных отчёта с сервера через fetch
   async function fetchReportData(reportType) {
-    let endpoint = "http://localhost:8080/api/reports/";
+    let endpoint = "/api/reports/";
     switch (reportType) {
       case "mostSold":
         endpoint += "mostSoldProducts";
@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const reportData = await fetchReportData(reportType);
 
-      // Предположим, что сервер возвращает такой формат:
+      // Ожидаемый формат ответа от сервера:
       // {
       //   "labels": [...],
       //   "data": [...],
@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       chartTitleElement.textContent = title;
 
-      // Уничтожаем предыдущий экземпляр, если есть
+      // Если диаграмма уже создана – уничтожаем
       if (myChart) {
         myChart.destroy();
       }
@@ -110,7 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       let chartConfigType;
       let additionalOptions = {};
-
       switch (chartType) {
         case "bar":
           chartConfigType = "bar";
@@ -160,25 +159,21 @@ document.addEventListener("DOMContentLoaded", () => {
         "rgba(153, 102, 255, 1)"
       ];
 
-      // Определяем, является ли диаграмма круговой (без осей)
       const isCircularType = ["pie", "doughnut", "radar", "polarArea"].includes(chartConfigType);
-      // Для круговых типов используем массив цветов, иначе один цвет
       const datasetBackground = isCircularType ? colorSet : "rgba(58, 123, 213, 0.5)";
       const datasetBorder = isCircularType ? borderColorSet : "rgba(58, 123, 213, 1)";
 
       const options = {
         responsive: true,
-        scales: isCircularType
-          ? {}
-          : {
-              y: {
-                beginAtZero: true,
-                title: { display: Boolean(yTitle), text: yTitle }
-              },
-              x: {
-                title: { display: Boolean(xTitle), text: xTitle }
-              }
-            }
+        scales: isCircularType ? {} : {
+          y: {
+            beginAtZero: true,
+            title: { display: Boolean(yTitle), text: yTitle }
+          },
+          x: {
+            title: { display: Boolean(xTitle), text: xTitle }
+          }
+        }
       };
       Object.assign(options, additionalOptions);
 
@@ -207,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   generateReportBtn.addEventListener("click", generateChart);
 
-  // Функции экспорта
+  // Функции экспорта отчёта
   function exportToPng() {
     if (!myChart) {
       showNotification("Сначала сгенерируйте отчёт!", "error");
@@ -240,14 +235,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const imgData = myChart.toBase64Image();
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Report");
-
     worksheet.getCell("A1").value = "Отчёт: " + chartTitleElement.textContent;
     worksheet.getCell("A2").value = "Дата создания: " + new Date().toLocaleString();
-
-    // Добавляем картинку в Excel
     const imageId = workbook.addImage({ base64: imgData, extension: "png" });
     worksheet.addImage(imageId, "A4:F20");
-
     const buffer = await workbook.xlsx.writeBuffer();
     saveAs(new Blob([buffer]), "report.xlsx");
   }
@@ -312,24 +303,32 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "/Login.html";
   });
 
-  // Кнопка полноэкранного режима
+  // Полноэкранный режим с учетом префиксов для Safari
   fullscreenBtn.addEventListener("click", () => {
-    if (!document.fullscreenElement) {
-      chartContainer.requestFullscreen().catch(err => {
-        showNotification(`Ошибка перехода в полноэкранный режим: ${err.message}`, "error");
-      });
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      if (chartContainer.requestFullscreen) {
+        chartContainer.requestFullscreen().catch(handleFullscreenError);
+      } else if (chartContainer.webkitRequestFullscreen) {
+        chartContainer.webkitRequestFullscreen();
+      }
     } else {
-      document.exitFullscreen();
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
     }
   });
+  function handleFullscreenError(err) {
+    showNotification(`Ошибка перехода в полноэкранный режим: ${err.message}`, "error");
+  }
 
-  // Слежение за выходом из полноэкранного режима, чтобы подогнать размер диаграммы
+  // Отслеживаем изменение полноэкранного режима для обновления размера диаграммы
   function handleFullscreenChange() {
     if (myChart) {
       myChart.resize();
     }
   }
-
   document.addEventListener("fullscreenchange", handleFullscreenChange);
   document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
   document.addEventListener("mozfullscreenchange", handleFullscreenChange);

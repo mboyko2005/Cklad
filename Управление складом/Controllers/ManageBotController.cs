@@ -37,7 +37,7 @@ namespace Управление_складом.Controllers
 						{
 							result.Add(new BotUserDto
 							{
-								// Исправлено: считываем TelegramUserID как Int64 для обоих свойств
+								// Считываем TelegramUserID как Int64 для обоих свойств
 								Id = reader.GetInt64(reader.GetOrdinal("TelegramUserID")),
 								TelegramId = reader.GetInt64(reader.GetOrdinal("TelegramUserID")),
 								Role = reader.GetString(reader.GetOrdinal("Роль"))

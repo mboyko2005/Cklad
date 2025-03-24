@@ -8,15 +8,15 @@ document.addEventListener("DOMContentLoaded", () => {
   checkAuthorization();
   loadBotUsers();
   initializeEventListeners();
-   // Получаем имя пользователя из localStorage
-   const username = localStorage.getItem("username") || "";
-   // Формируем ключ для темы конкретного пользователя
-   const themeKey = `appTheme-${username}`;
-   // Считываем тему (если нет, по умолчанию "light")
-   const savedTheme = localStorage.getItem(themeKey) || "light";
-   // Применяем тему на странице
-   document.documentElement.setAttribute("data-theme", savedTheme);
-
+  
+  // Получаем имя пользователя из localStorage
+  const username = localStorage.getItem("username") || "";
+  // Формируем ключ для темы конкретного пользователя
+  const themeKey = `appTheme-${username}`;
+  // Считываем тему (если нет, по умолчанию "light")
+  const savedTheme = localStorage.getItem(themeKey) || "light";
+  // Применяем тему на странице
+  document.documentElement.setAttribute("data-theme", savedTheme);
 });
 
 /** Проверка авторизации */
@@ -63,7 +63,7 @@ function initializeEventListeners() {
 
 /** Загрузка списка Telegram-пользователей с сервера */
 function loadBotUsers() {
-  fetch("http://localhost:8080/api/managebot")
+  fetch("/api/managebot")
     .then(resp => resp.json())
     .then(data => {
       botUsers = data;
@@ -121,7 +121,7 @@ function handleAddBotUser() {
   
   const userData = { telegramId, role };
   
-  fetch("http://localhost:8080/api/managebot", {
+  fetch("/api/managebot", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(userData)
@@ -155,7 +155,7 @@ function handleEditBotUser() {
   
   const userData = { telegramId, role };
   
-  fetch(`http://localhost:8080/api/managebot/${selectedBotUserId}`, {
+  fetch(`/api/managebot/${selectedBotUserId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(userData)
@@ -179,7 +179,7 @@ function handleDeleteBotUser() {
     return;
   }
   
-  fetch(`http://localhost:8080/api/managebot/${selectedBotUserId}`, {
+  fetch(`/api/managebot/${selectedBotUserId}`, {
     method: "DELETE"
   })
     .then(resp => resp.json())

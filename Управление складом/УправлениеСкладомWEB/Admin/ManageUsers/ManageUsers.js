@@ -15,14 +15,14 @@ document.addEventListener("DOMContentLoaded", () => {
   loadRoles();
   loadUsers();
   initializeEventListeners();
-     // Получаем имя пользователя из localStorage
-     const username = localStorage.getItem("username") || "";
-     // Формируем ключ для темы конкретного пользователя
-     const themeKey = `appTheme-${username}`;
-     // Считываем тему (если нет, по умолчанию "light")
-     const savedTheme = localStorage.getItem(themeKey) || "light";
-     // Применяем тему на странице
-     document.documentElement.setAttribute("data-theme", savedTheme);
+  // Получаем имя пользователя из localStorage
+  const username = localStorage.getItem("username") || "";
+  // Формируем ключ для темы конкретного пользователя
+  const themeKey = `appTheme-${username}`;
+  // Считываем тему (если нет, по умолчанию "light")
+  const savedTheme = localStorage.getItem(themeKey) || "light";
+  // Применяем тему на странице
+  document.documentElement.setAttribute("data-theme", savedTheme);
 });
 
 /** 
@@ -128,7 +128,7 @@ function initializeEventListeners() {
 
 /** Загрузка списка ролей с сервера */
 function loadRoles() {
-  fetch("http://localhost:8080/api/manageusers/roles")
+  fetch("/api/manageusers/roles")
     .then(resp => resp.json())
     .then(data => {
       rolesData = data;
@@ -141,7 +141,7 @@ function loadRoles() {
 
 /** Загрузка списка пользователей с сервера */
 function loadUsers() {
-  fetch("http://localhost:8080/api/manageusers")
+  fetch("/api/manageusers")
     .then(resp => resp.json())
     .then(data => {
       usersData = data;
@@ -168,7 +168,7 @@ function renderUsersTable(users) {
 
     // Клик по строке = выбор пользователя
     tr.addEventListener("click", () => {
-      // Снимем выделение со всех строк
+      // Снимаем выделение со всех строк
       document.querySelectorAll("#usersTable tbody tr")
         .forEach(row => row.classList.remove("selected"));
       
@@ -205,7 +205,7 @@ function openUserModal(title) {
     const user = usersData.find(u => u.userID === selectedUserId);
     if (user) {
       document.getElementById("usernameInput").value = user.username;
-      // Пароль в целях безопасности не показываем
+      // Пароль по соображениям безопасности не показываем
       roleSelect.value = user.roleID;
     }
   }
@@ -232,7 +232,7 @@ function handleDeleteUser() {
     "Вы действительно хотите удалить выбранного пользователя?",
     (confirmed) => {
       if (confirmed) {
-        fetch(`http://localhost:8080/api/manageusers/${selectedUserId}`, {
+        fetch(`/api/manageusers/${selectedUserId}`, {
           method: "DELETE"
         })
           .then(resp => resp.json())
@@ -270,7 +270,7 @@ function handleSaveUser() {
 
   if (isEditMode && selectedUserId) {
     // Редактирование
-    fetch(`http://localhost:8080/api/manageusers/${selectedUserId}`, {
+    fetch(`/api/manageusers/${selectedUserId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData)
@@ -287,7 +287,7 @@ function handleSaveUser() {
       });
   } else {
     // Добавление
-    fetch("http://localhost:8080/api/manageusers", {
+    fetch("/api/manageusers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData)
