@@ -12,7 +12,46 @@ document.addEventListener("DOMContentLoaded", () => {
   loadData();
   initEventListeners();
   initVoiceRecognition();
+  
+  // Применяем тему при первой загрузке
+  applyTheme();
 });
+
+// При возвращении на страницу (например, через bfcache) повторно применяем тему
+window.addEventListener("pageshow", () => {
+  applyTheme();
+});
+
+// Обработчик события изменения localStorage для мгновенного обновления темы
+window.addEventListener("storage", (event) => {
+  const username = localStorage.getItem("username") || "";
+  const themeKey = `appTheme-${username}`;
+  if (event.key === themeKey) {
+    document.documentElement.setAttribute("data-theme", event.newValue);
+  }
+});
+
+// Fallback-механизм: опрос localStorage каждые 500 мс для проверки изменений темы
+(function pollThemeChange() {
+  const username = localStorage.getItem("username") || "";
+  const themeKey = `appTheme-${username}`;
+  let currentTheme = localStorage.getItem(themeKey) || "light";
+  setInterval(() => {
+    const newTheme = localStorage.getItem(themeKey) || "light";
+    if (newTheme !== currentTheme) {
+      currentTheme = newTheme;
+      document.documentElement.setAttribute("data-theme", newTheme);
+    }
+  }, 500);
+})();
+
+// Функция установки темы из localStorage для текущего пользователя
+function applyTheme() {
+  const username = localStorage.getItem("username") || "";
+  const themeKey = `appTheme-${username}`;
+  const savedTheme = localStorage.getItem(themeKey) || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+}
 
 /** Проверка авторизации (пример) */
 function checkAuthorization() {

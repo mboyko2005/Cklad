@@ -28,7 +28,7 @@ namespace УправлениеСкладом
 		/// Если хотите другой - просто замените эту строку.
 		/// Например, "warehousemanagementweb2" => warehousemanagementweb2.loca.lt
 		/// </summary>
-		private const string Subdomain = "ckladtestt";
+		private const string Subdomain = "ckladtest";
 
 		private IHost _webHost;
 		private Process _ltProcess; // Процесс для localtunnel
