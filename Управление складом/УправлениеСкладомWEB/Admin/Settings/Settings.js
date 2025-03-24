@@ -1,6 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
   // Получаем имя пользователя из localStorage (устанавливается после авторизации)
   const username = localStorage.getItem("username") || "";
+  
+  // Если нет username, можно либо переадресовать на логин, либо использовать общий ключ
+  // Здесь для примера просто проверяем, есть ли имя пользователя
   if (!username) {
     console.warn("Не удалось определить пользователя. Используем гостевую тему.");
   }
@@ -14,6 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (themeSelect) {
     themeSelect.value = savedTheme;
   }
+
+  // Обновляем иконку темы
   updateThemeIcon(savedTheme);
 
   // Элементы для смены пароля и их валидация
@@ -28,7 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function validatePasswordFields() {
     const newPass = newPasswordInput.value.trim();
     const confPass = confirmPasswordInput.value.trim();
-
     // Проверяем длину нового пароля
     if (newPass !== "") {
       newPasswordStatus.style.display = "block";
@@ -54,54 +58,27 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Сохранение темы (по кнопке "Сохранить настройки")
-  document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
+  document.getElementById("saveSettingsBtn").addEventListener("click", () => {
     const selectedTheme = themeSelect.value;
-    try {
-      const response = await fetch("/api/settings/theme", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ Theme: selectedTheme })
-      });
-      const data = await response.json();
-      if (data.success) {
-        localStorage.setItem(`appTheme-${username}`, selectedTheme);
-        document.documentElement.setAttribute("data-theme", selectedTheme);
-        if (themeSelect) themeSelect.value = selectedTheme;
-        updateThemeIcon(selectedTheme);
-        showNotification("Тема сохранена", "success");
-      } else {
-        showNotification(data.message || "Ошибка при сохранении темы", "error");
-      }
-    } catch (err) {
-      console.error("Ошибка при сохранении темы:", err);
-      showNotification("Ошибка соединения с сервером", "error");
-    }
+    // Сохраняем тему в localStorage с учётом пользователя
+    localStorage.setItem(`appTheme-${username}`, selectedTheme);
+    document.documentElement.setAttribute("data-theme", selectedTheme);
+    // Отправляем событие изменения темы
+    window.dispatchEvent(new Event('themeChanged'));
+    showNotification("Тема сохранена", "success");
   });
 
   // Переключение темы по круглой кнопке
-  document.getElementById("themeToggleBtn").addEventListener("click", async () => {
+  document.getElementById("themeToggleBtn").addEventListener("click", () => {
     let currentTheme = localStorage.getItem(`appTheme-${username}`) || "light";
     let newTheme = currentTheme === "light" ? "dark" : "light";
-    try {
-      const response = await fetch("/api/settings/theme", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ Theme: newTheme })
-      });
-      const data = await response.json();
-      if (data.success) {
-        localStorage.setItem(`appTheme-${username}`, newTheme);
-        document.documentElement.setAttribute("data-theme", newTheme);
-        if (themeSelect) themeSelect.value = newTheme;
-        updateThemeIcon(newTheme);
-        showNotification("Тема переключена: " + newTheme, "success");
-      } else {
-        showNotification(data.message || "Ошибка при переключении темы", "error");
-      }
-    } catch (err) {
-      console.error("Ошибка при переключении темы:", err);
-      showNotification("Ошибка соединения с сервером", "error");
-    }
+    localStorage.setItem(`appTheme-${username}`, newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
+    if (themeSelect) themeSelect.value = newTheme;
+    // Отправляем событие изменения темы
+    window.dispatchEvent(new Event('themeChanged'));
+    showNotification("Тема переключена: " + newTheme, "success");
+    updateThemeIcon(newTheme);
   });
 
   // Смена пароля
