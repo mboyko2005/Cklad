@@ -34,7 +34,7 @@ async function loadData() {
   try {
     // 1) Загружаем список товаров (с их суммарным количеством)
     //    GET /api/moveitems/items
-    const itemsResp = await fetch("http://localhost:8080/api/moveitems/items");
+    const itemsResp = await fetch("/api/moveitems/items");
     if (!itemsResp.ok) throw new Error("Ошибка при загрузке товаров");
     allItems = await itemsResp.json();
 
@@ -48,7 +48,7 @@ async function loadData() {
 
     // 3) Загружаем все склады
     //    GET /api/moveitems/warehouses
-    const whResp = await fetch("http://localhost:8080/api/moveitems/warehouses");
+    const whResp = await fetch("/api/moveitems/warehouses");
     if (!whResp.ok) throw new Error("Ошибка при загрузке складов");
     warehouses = await whResp.json();
 
@@ -171,7 +171,7 @@ async function handleItemSelection(e) {
   // Загружаем склады, где есть этот товар (с ненулевым количеством)
   // GET /api/moveitems/warehouses/{itemId} - или ваш метод
   try {
-    const resp = await fetch(`http://localhost:8080/api/moveitems/warehouses/${itemId}`);
+    const resp = await fetch(`/api/moveitems/warehouses/${itemId}`);
     if (!resp.ok) throw new Error("Ошибка при получении складов для товара");
     sourceWarehousesForItem = await resp.json();
 
@@ -276,7 +276,7 @@ async function handleMove() {
   // Тело: { productId, sourceWarehouseId, targetWarehouseId, quantity, userId }
   try {
     const userId = 3; // Пример, можно брать из локального хранилища
-    const response = await fetch("http://localhost:8080/api/moveitems", {
+    const response = await fetch("/api/moveitems", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
