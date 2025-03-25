@@ -34,6 +34,22 @@
                 <StackPanel>
                     <!-- Панель с кнопками -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+                        <Button Content="Печать акта о списании" Margin="5,0,5,0" Click="PrintWriteOffAct_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border CornerRadius="10" Background="{DynamicResource ButtonBackgroundBrush}" 
+                                            BorderBrush="{DynamicResource ButtonBorderBrush}" BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,10,0">
+                                            <iconPacks:PackIconMaterial Kind="Printer" Width="24" Height="24" 
+                                                                        Foreground="{DynamicResource ButtonForegroundBrush}" Margin="0,0,5,0"/>
+                                            <TextBlock Text="{TemplateBinding Content}" FontSize="14" 
+                                                       Foreground="{DynamicResource ButtonForegroundBrush}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+
                         <Button Content="Добавить приход" Margin="5,0,5,0" Click="AddIncome_Click">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
@@ -87,7 +103,7 @@
                     <TextBlock Text="История учёта" FontSize="16" FontWeight="Bold" 
                                Foreground="{DynamicResource ForegroundBrush}" Margin="0,0,0,10" HorizontalAlignment="Center"/>
 
-                    <!-- DataGrid для отображения журнала -->
+                    <!-- DataGrid -->
                     <DataGrid x:Name="InventoryLogDataGrid"
                               AutoGenerateColumns="False" 
                               CanUserAddRows="False"
@@ -104,7 +120,6 @@
                               SelectionUnit="FullRow">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Дата" Binding="{Binding Date, StringFormat={}{0:dd.MM.yyyy HH:mm}}" Width="*"/>
-                            <!-- Колонка Тип с иконкой -->
                             <DataGridTemplateColumn Header="Тип" Width="*">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -130,7 +145,6 @@
                             </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Название товара" Binding="{Binding ItemName}" Width="*"/>
                             <DataGridTextColumn Header="Количество" Binding="{Binding Quantity}" Width="*"/>
-                            <!-- Скрытые колонки -->
                             <DataGridTextColumn Header="ДвижениеID" Binding="{Binding MovementID}" Width="0" Visibility="Hidden"/>
                             <DataGridTextColumn Header="ТоварID" Binding="{Binding ТоварID}" Width="0" Visibility="Hidden"/>
                             <DataGridTextColumn Header="СкладID" Binding="{Binding СкладID}" Width="0" Visibility="Hidden"/>
@@ -138,12 +152,11 @@
                     </DataGrid>
                 </StackPanel>
 
-                <!-- Раздел для товаров с нулевым количеством -->
+                <!-- Раздел для отсутствующих товаров -->
                 <TextBlock Text="Товары, отсутствующие на складе:" FontSize="16" 
                            Foreground="{DynamicResource PrimaryBrush}" Margin="0,20,0,10" HorizontalAlignment="Center"/>
 
                 <StackPanel>
-                    <!-- DataGrid для отсутствующих товаров с выделением выбранной строки -->
                     <DataGrid x:Name="OutOfStockDataGrid"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"
@@ -177,7 +190,6 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <!-- Панель для добавления прихода для отсутствующего товара (склад по умолчанию = 1) -->
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Center">
                         <TextBlock Text="Количество для добавления:" Foreground="{DynamicResource ForegroundBrush}" 
                                    VerticalAlignment="Center" Margin="0,0,10,0"/>
@@ -200,7 +212,7 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- Кнопка для переключения темы -->
+                <!-- Переключатель темы -->
                 <Button Width="30" Height="30" Background="Transparent" BorderThickness="0"
                         HorizontalAlignment="Center" Margin="0,20,0,0"
                         Click="ToggleTheme_Click">
