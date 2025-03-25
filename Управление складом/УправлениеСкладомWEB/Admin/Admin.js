@@ -1,15 +1,29 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Устанавливаем тему из localStorage – если выбрана тёмная, то применяются стили dark-темы
-  // Получаем имя пользователя из localStorage
-  const username = localStorage.getItem("username") || "";
-  // Формируем ключ для темы конкретного пользователя
-  const themeKey = `appTheme-${username}`;
-  // Считываем тему (если нет, по умолчанию "light")
-  const savedTheme = localStorage.getItem(themeKey) || "light";
-  // Применяем тему на странице
-  document.documentElement.setAttribute("data-theme", savedTheme);
+  applyTheme();
   checkAuthorization();
   initializeEventListeners();
+});
+
+// Обработчик события pageshow (срабатывает при возврате на страницу)
+window.addEventListener('pageshow', () => {
+  applyTheme();
+});
+
+// Функция применения темы
+function applyTheme() {
+  const username = localStorage.getItem("username") || "";
+  const themeKey = `appTheme-${username}`;
+  const savedTheme = localStorage.getItem(themeKey) || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+}
+
+// Обработчик события изменения localStorage для мгновенного обновления темы
+window.addEventListener("storage", (event) => {
+  const username = localStorage.getItem("username") || "";
+  const themeKey = `appTheme-${username}`;
+  if (event.key === themeKey) {
+    document.documentElement.setAttribute("data-theme", event.newValue);
+  }
 });
 
 /** Проверяем, что пользователь авторизован как Администратор */

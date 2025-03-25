@@ -63,8 +63,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Сохраняем тему в localStorage с учётом пользователя
     localStorage.setItem(`appTheme-${username}`, selectedTheme);
     document.documentElement.setAttribute("data-theme", selectedTheme);
-    // Отправляем событие изменения темы
-    window.dispatchEvent(new Event('themeChanged'));
     showNotification("Тема сохранена", "success");
   });
 
@@ -75,8 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem(`appTheme-${username}`, newTheme);
     document.documentElement.setAttribute("data-theme", newTheme);
     if (themeSelect) themeSelect.value = newTheme;
-    // Отправляем событие изменения темы
-    window.dispatchEvent(new Event('themeChanged'));
     showNotification("Тема переключена: " + newTheme, "success");
     updateThemeIcon(newTheme);
   });
