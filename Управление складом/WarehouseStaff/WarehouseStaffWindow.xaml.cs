@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Input;
 using Управление_складом.Themes;
+using System.Data.SqlClient;
 
 namespace УправлениеСкладом.Сотрудник_склада
 {
@@ -72,6 +73,50 @@ namespace УправлениеСкладом.Сотрудник_склада
 			InventoryLogWindow inventoryLogWindow = new InventoryLogWindow();
 			inventoryLogWindow.Owner = this;
 			inventoryLogWindow.ShowDialog();
+		}
+
+		// Метод для обработки нажатия на кнопку "Мессенджер"
+		private void Messenger_Click(object sender, RoutedEventArgs e)
+		{
+			// Получаем имя текущего пользователя
+			string currentUsername = Application.Current.Properties["CurrentUsername"]?.ToString();
+			int userId = 1; // По умолчанию ID=1
+			
+			// Если имя пользователя известно, находим его ID
+			if (!string.IsNullOrEmpty(currentUsername))
+			{
+				using (SqlConnection connection = new SqlConnection(@"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True;TrustServerCertificate=True"))
+				{
+					try
+					{
+						connection.Open();
+						string query = "SELECT ПользовательID FROM Пользователи WHERE ИмяПользователя = @username";
+						using (SqlCommand command = new SqlCommand(query, connection))
+						{
+							command.Parameters.AddWithValue("@username", currentUsername);
+							var result = command.ExecuteScalar();
+							if (result != null)
+							{
+								userId = Convert.ToInt32(result);
+							}
+						}
+					}
+					catch (Exception ex)
+					{
+						MessageBox.Show("Ошибка при получении данных пользователя: " + ex.Message);
+					}
+				}
+			}
+			
+			// Убедимся, что логин пользователя сохранен в свойствах приложения
+			if (!string.IsNullOrEmpty(currentUsername))
+			{
+				Application.Current.Properties["CurrentUsername"] = currentUsername;
+			}
+			
+			// Открываем окно мессенджера с ID пользователя
+			MessengerWindow messengerWindow = new MessengerWindow(userId);
+			messengerWindow.Show();
 		}
 	}
 }
