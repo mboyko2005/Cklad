@@ -7,7 +7,7 @@ using Управление_складом.Админ;
 namespace УправлениеСкладом
 {
 	/// <summary>
-	/// Окно администратора с функционалом управления пользователями, инвентарем, отчетами, настройками, ботом и проверкой API.
+	/// Окно администратора с функционалом управления пользователями, инвентарем, отчетами, настройками, ботом, проверкой API и мессенджером.
 	/// </summary>
 	public partial class AdministratorWindow : Window, IRoleWindow, IThemeable
 	{
@@ -66,6 +66,16 @@ namespace УправлениеСкладом
 			var manageBotWindow = new ManageBotWindow();
 			manageBotWindow.Show();
 			this.Close();
+		}
+
+		// Обработчик нажатия кнопки мессенджера.
+		private void Messenger_Click(object sender, RoutedEventArgs e)
+		{
+			// Создаём и отображаем окно мессенджера.
+			MessengerWindow messengerWindow = new MessengerWindow();
+			messengerWindow.Show();
+			// При необходимости можно скрыть или закрыть текущее окно:
+			// this.Close();
 		}
 
 		// Обработчик нажатия кнопки переключения темы.

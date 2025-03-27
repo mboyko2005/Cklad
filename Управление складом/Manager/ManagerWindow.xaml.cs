@@ -1,5 +1,4 @@
-﻿
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using MahApps.Metro.IconPacks;
 using Управление_складом.Themes;
@@ -48,7 +47,9 @@ namespace УправлениеСкладом
 		{
 			if (ThemeIcon != null)
 			{
-				ThemeIcon.Kind = ThemeManager.IsDarkTheme ? PackIconMaterialKind.WeatherNight : PackIconMaterialKind.WeatherSunny;
+				ThemeIcon.Kind = ThemeManager.IsDarkTheme
+					? PackIconMaterialKind.WeatherNight
+					: PackIconMaterialKind.WeatherSunny;
 			}
 		}
 
@@ -86,6 +87,15 @@ namespace УправлениеСкладом
 			SettingsWindow settingsWindow = new SettingsWindow();
 			settingsWindow.Owner = this;
 			settingsWindow.ShowDialog();
+		}
+
+		// Метод для обработки нажатия на кнопку "Мессенджер"
+		private void Messenger_Click(object sender, RoutedEventArgs e)
+		{
+			// Открываем окно мессенджера
+			MessengerWindow messengerWindow = new MessengerWindow();
+			messengerWindow.Show();
+			// Или ShowDialog(), если хотите модально
 		}
 	}
 }

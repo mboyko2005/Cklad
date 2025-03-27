@@ -24,10 +24,10 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
-                    BorderBrush="{TemplateBinding BorderBrush}"
-                    BorderThickness="{TemplateBinding BorderThickness}"
-                    CornerRadius="10"
-                    Padding="{TemplateBinding Padding}">
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -69,8 +69,8 @@
 
     <Grid>
         <Border Background="{DynamicResource WindowBackgroundBrush}" 
-            CornerRadius="30" 
-            Padding="20">
+                CornerRadius="30" 
+                Padding="20">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="15" ShadowDepth="0" Opacity="0.3"/>
             </Border.Effect>
@@ -78,36 +78,37 @@
                 <!-- Заголовок с кнопкой закрытия -->
                 <Grid Margin="0,0,0,10">
                     <TextBlock Text="Администратор" 
-                     FontSize="20" 
-                     FontWeight="Bold" 
-                     Foreground="{DynamicResource PrimaryBrush}" 
-                     HorizontalAlignment="Center"
-                     FontFamily="Segoe UI"/>
+                               FontSize="20" 
+                               FontWeight="Bold" 
+                               Foreground="{DynamicResource PrimaryBrush}" 
+                               HorizontalAlignment="Center"
+                               FontFamily="Segoe UI"/>
                     <Button Width="30" Height="30" 
-                  Background="Transparent" 
-                  BorderThickness="0"
-                  HorizontalAlignment="Right" 
-                  VerticalAlignment="Top" 
-                  Click="CloseButton_Click" 
-                  Style="{StaticResource ModernButtonStyle}">
+                            Background="Transparent" 
+                            BorderThickness="0"
+                            HorizontalAlignment="Right" 
+                            VerticalAlignment="Top" 
+                            Click="CloseButton_Click" 
+                            Style="{StaticResource ModernButtonStyle}">
                         <iconPacks:PackIconMaterial Kind="Close" 
-                                        Width="24" Height="24" 
-                                        Foreground="{DynamicResource PrimaryBrush}"/>
+                                                    Width="24" Height="24" 
+                                                    Foreground="{DynamicResource PrimaryBrush}"/>
                     </Button>
                 </Grid>
 
                 <!-- Добро пожаловать -->
                 <TextBlock Text="Добро пожаловать, Администратор!" 
-                   FontSize="26" 
-                   FontWeight="SemiBold" 
-                   Foreground="{DynamicResource ForegroundBrush}" 
-                   HorizontalAlignment="Center" 
-                   Margin="0,0,0,20"
-                   FontFamily="Segoe UI"/>
+                           FontSize="26" 
+                           FontWeight="SemiBold" 
+                           Foreground="{DynamicResource ForegroundBrush}" 
+                           HorizontalAlignment="Center" 
+                           Margin="0,0,0,20"
+                           FontFamily="Segoe UI"/>
 
-                <!-- Сетка кнопок управления (3 строки, 2 столбца) -->
+                <!-- Сетка кнопок управления (4 строки, 2 столбца) -->
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -119,137 +120,157 @@
 
                     <!-- Строка 0 -->
                     <Button Grid.Row="0" Grid.Column="0" 
-                  Click="ManageUsers_Click" 
-                  Height="50" Margin="10" 
-                  Style="{StaticResource ModernButtonStyle}"
-                  Background="{DynamicResource ButtonBackgroundBrush}" 
-                  BorderBrush="{DynamicResource ButtonBorderBrush}" 
-                  BorderThickness="1">
+                            Click="ManageUsers_Click" 
+                            Height="50" Margin="10" 
+                            Style="{StaticResource ModernButtonStyle}"
+                            Background="{DynamicResource ButtonBackgroundBrush}" 
+                            BorderBrush="{DynamicResource ButtonBorderBrush}" 
+                            BorderThickness="1">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <iconPacks:PackIconMaterial Kind="AccountSettingsOutline" 
-                                          Width="24" Height="24" 
-                                          Foreground="{DynamicResource ButtonForegroundBrush}" 
-                                          Margin="0,0,10,0"/>
+                                                        Width="24" Height="24" 
+                                                        Foreground="{DynamicResource ButtonForegroundBrush}" 
+                                                        Margin="0,0,10,0"/>
                             <TextBlock Text="Управление пользователями" 
-                         FontSize="16" 
-                         Foreground="{DynamicResource ButtonForegroundBrush}"
-                         FontFamily="Segoe UI"/>
+                                       FontSize="16" 
+                                       Foreground="{DynamicResource ButtonForegroundBrush}"
+                                       FontFamily="Segoe UI"/>
                         </StackPanel>
                     </Button>
 
                     <Button Grid.Row="0" Grid.Column="1" 
-                  Click="ManageInventory_Click" 
-                  Height="50" Margin="10" 
-                  Style="{StaticResource ModernButtonStyle}"
-                  Background="{DynamicResource ButtonBackgroundBrush}" 
-                  BorderBrush="{DynamicResource ButtonBorderBrush}" 
-                  BorderThickness="1">
+                            Click="ManageInventory_Click" 
+                            Height="50" Margin="10" 
+                            Style="{StaticResource ModernButtonStyle}"
+                            Background="{DynamicResource ButtonBackgroundBrush}" 
+                            BorderBrush="{DynamicResource ButtonBorderBrush}" 
+                            BorderThickness="1">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <iconPacks:PackIconMaterial Kind="Warehouse" 
-                                          Width="24" Height="24" 
-                                          Foreground="{DynamicResource ButtonForegroundBrush}" 
-                                          Margin="0,0,10,0"/>
+                                                        Width="24" Height="24" 
+                                                        Foreground="{DynamicResource ButtonForegroundBrush}" 
+                                                        Margin="0,0,10,0"/>
                             <TextBlock Text="Управление складскими позициями" 
-                         FontSize="16" 
-                         Foreground="{DynamicResource ButtonForegroundBrush}"
-                         FontFamily="Segoe UI"/>
+                                       FontSize="16" 
+                                       Foreground="{DynamicResource ButtonForegroundBrush}"
+                                       FontFamily="Segoe UI"/>
                         </StackPanel>
                     </Button>
 
                     <!-- Строка 1 -->
                     <Button Grid.Row="1" Grid.Column="0" 
-                  Click="Reports_Click" 
-                  Height="50" Margin="10" 
-                  Style="{StaticResource ModernButtonStyle}"
-                  Background="{DynamicResource ButtonBackgroundBrush}" 
-                  BorderBrush="{DynamicResource ButtonBorderBrush}" 
-                  BorderThickness="1">
+                            Click="Reports_Click" 
+                            Height="50" Margin="10" 
+                            Style="{StaticResource ModernButtonStyle}"
+                            Background="{DynamicResource ButtonBackgroundBrush}" 
+                            BorderBrush="{DynamicResource ButtonBorderBrush}" 
+                            BorderThickness="1">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <iconPacks:PackIconMaterial Kind="ChartBar" 
-                                          Width="24" Height="24" 
-                                          Foreground="{DynamicResource ButtonForegroundBrush}" 
-                                          Margin="0,0,10,0"/>
+                                                        Width="24" Height="24" 
+                                                        Foreground="{DynamicResource ButtonForegroundBrush}" 
+                                                        Margin="0,0,10,0"/>
                             <TextBlock Text="Отчёты" 
-                         FontSize="16" 
-                         Foreground="{DynamicResource ButtonForegroundBrush}"
-                         FontFamily="Segoe UI"/>
+                                       FontSize="16" 
+                                       Foreground="{DynamicResource ButtonForegroundBrush}"
+                                       FontFamily="Segoe UI"/>
                         </StackPanel>
                     </Button>
 
                     <Button Grid.Row="1" Grid.Column="1" 
-                  Click="Settings_Click" 
-                  Height="50" Margin="10" 
-                  Style="{StaticResource ModernButtonStyle}"
-                  Background="{DynamicResource ButtonBackgroundBrush}" 
-                  BorderBrush="{DynamicResource ButtonBorderBrush}" 
-                  BorderThickness="1">
+                            Click="Settings_Click" 
+                            Height="50" Margin="10" 
+                            Style="{StaticResource ModernButtonStyle}"
+                            Background="{DynamicResource ButtonBackgroundBrush}" 
+                            BorderBrush="{DynamicResource ButtonBorderBrush}" 
+                            BorderThickness="1">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <iconPacks:PackIconMaterial Kind="CogOutline" 
-                                          Width="24" Height="24" 
-                                          Foreground="{DynamicResource ButtonForegroundBrush}" 
-                                          Margin="0,0,10,0"/>
+                                                        Width="24" Height="24" 
+                                                        Foreground="{DynamicResource ButtonForegroundBrush}" 
+                                                        Margin="0,0,10,0"/>
                             <TextBlock Text="Настройки" 
-                         FontSize="16" 
-                         Foreground="{DynamicResource ButtonForegroundBrush}"
-                         FontFamily="Segoe UI"/>
+                                       FontSize="16" 
+                                       Foreground="{DynamicResource ButtonForegroundBrush}"
+                                       FontFamily="Segoe UI"/>
                         </StackPanel>
                     </Button>
 
-                    <!-- Строка 2: две кнопки маленького размера -->
+                    <!-- Строка 2 -->
                     <Button Grid.Row="2" Grid.Column="0" 
-                  Click="CheckApiButton_Click" 
-                  Height="50" Margin="10" 
-                  Style="{StaticResource ModernButtonStyle}"
-                  Background="{DynamicResource ButtonBackgroundBrush}" 
-                  BorderBrush="{DynamicResource ButtonBorderBrush}" 
-                  BorderThickness="1">
+                            Click="CheckApiButton_Click" 
+                            Height="50" Margin="10" 
+                            Style="{StaticResource ModernButtonStyle}"
+                            Background="{DynamicResource ButtonBackgroundBrush}" 
+                            BorderBrush="{DynamicResource ButtonBorderBrush}" 
+                            BorderThickness="1">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <iconPacks:PackIconMaterial Kind="Signal" 
-                                          Width="24" Height="24" 
-                                          Foreground="{DynamicResource ButtonForegroundBrush}" 
-                                          Margin="0,0,10,0"/>
+                                                        Width="24" Height="24" 
+                                                        Foreground="{DynamicResource ButtonForegroundBrush}" 
+                                                        Margin="0,0,10,0"/>
                             <TextBlock Text="Проверка API" 
-                         FontSize="16" 
-                         Foreground="{DynamicResource ButtonForegroundBrush}"
-                         FontFamily="Segoe UI"/>
+                                       FontSize="16" 
+                                       Foreground="{DynamicResource ButtonForegroundBrush}"
+                                       FontFamily="Segoe UI"/>
                         </StackPanel>
                     </Button>
 
                     <Button Grid.Row="2" Grid.Column="1" 
-                  Click="ManageBot_Click" 
-                  Height="50" Margin="10" 
-                  Style="{StaticResource ModernButtonStyle}"
-                  Background="{DynamicResource ButtonBackgroundBrush}" 
-                  BorderBrush="{DynamicResource ButtonBorderBrush}" 
-                  BorderThickness="1">
+                            Click="ManageBot_Click" 
+                            Height="50" Margin="10" 
+                            Style="{StaticResource ModernButtonStyle}"
+                            Background="{DynamicResource ButtonBackgroundBrush}" 
+                            BorderBrush="{DynamicResource ButtonBorderBrush}" 
+                            BorderThickness="1">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <iconPacks:PackIconMaterial Kind="Send" 
-                                          Width="24" Height="24" 
-                                          Foreground="{DynamicResource ButtonForegroundBrush}" 
-                                          Margin="0,0,10,0"
-                                          RenderTransformOrigin="0.5,0.5">
+                                                        Width="24" Height="24" 
+                                                        Foreground="{DynamicResource ButtonForegroundBrush}" 
+                                                        Margin="0,0,10,0"
+                                                        RenderTransformOrigin="0.5,0.5">
                                 <iconPacks:PackIconMaterial.RenderTransform>
                                     <RotateTransform Angle="320"/>
                                 </iconPacks:PackIconMaterial.RenderTransform>
                             </iconPacks:PackIconMaterial>
                             <TextBlock Text="Управление ботом" 
-                         FontSize="16" 
-                         Foreground="{DynamicResource ButtonForegroundBrush}"
-                         FontFamily="Segoe UI"/>
+                                       FontSize="16" 
+                                       Foreground="{DynamicResource ButtonForegroundBrush}"
+                                       FontFamily="Segoe UI"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Строка 3: кнопка Мессенджер, занимающая обе колонки -->
+                    <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                            Click="Messenger_Click" 
+                            Height="50" Margin="10" 
+                            Style="{StaticResource ModernButtonStyle}"
+                            Background="{DynamicResource ButtonBackgroundBrush}" 
+                            BorderBrush="{DynamicResource ButtonBorderBrush}" 
+                            BorderThickness="1">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <iconPacks:PackIconMaterial Kind="MessageTextOutline" 
+                                                        Width="24" Height="24" 
+                                                        Foreground="{DynamicResource ButtonForegroundBrush}" 
+                                                        Margin="0,0,10,0"/>
+                            <TextBlock Text="Мессенджер" 
+                                       FontSize="16" 
+                                       Foreground="{DynamicResource ButtonForegroundBrush}"
+                                       FontFamily="Segoe UI"/>
                         </StackPanel>
                     </Button>
                 </Grid>
 
                 <!-- Кнопка переключения темы -->
                 <Button Width="30" Height="30" 
-                Background="Transparent" 
-                BorderThickness="0"
-                HorizontalAlignment="Center" Margin="0,20,0,0"
-                Click="ToggleTheme_Click" Style="{StaticResource ModernButtonStyle}">
+                        Background="Transparent" 
+                        BorderThickness="0"
+                        HorizontalAlignment="Center" Margin="0,20,0,0"
+                        Click="ToggleTheme_Click" Style="{StaticResource ModernButtonStyle}">
                     <iconPacks:PackIconMaterial x:Name="ThemeIcon" 
-                                      Kind="WeatherSunny" 
-                                      Width="24" Height="24" 
-                                      Foreground="{DynamicResource PrimaryBrush}"/>
+                                                Kind="WeatherSunny" 
+                                                Width="24" Height="24" 
+                                                Foreground="{DynamicResource PrimaryBrush}"/>
                 </Button>
             </StackPanel>
         </Border>
