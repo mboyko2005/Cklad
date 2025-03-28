@@ -53,6 +53,18 @@ namespace УправлениеСкладом
 		private MessageManager messageManager;
 		private ContactManager contactManager;
 		private ConversationManager conversationManager;
+		private SearchManager searchManager;
+		private MessengerUIManager uiManager;
+		private SearchService searchService;
+		private UserManager userManager;
+		private ClipboardManager clipboardManager;
+		
+		// Переменные для поиска сообщений
+		private List<SearchResult> searchResults = new List<SearchResult>();
+		private int currentSearchResultIndex = -1;
+		private string currentSearchQuery = "";
+		private bool isSearchActive = false;
+		private DispatcherTimer searchInactivityTimer; // Таймер для скрытия панели поиска
 		
 		// Событие изменения свойства
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -68,13 +80,38 @@ namespace УправлениеСкладом
 			
 			currentUserId = userId;
 			
-			// Получаем логин текущего пользователя из базы данных
-			LoadCurrentUserInfo();
+			// Инициализируем менеджер пользователей
+			userManager = new UserManager(connectionString, currentUserId);
+			
+			// Получаем имя текущего пользователя
+			currentUserName = userManager.CurrentUserName;
 			
 			// Инициализируем менеджеры
 			messageManager = new MessageManager(connectionString, currentUserId, currentUserName);
 			contactManager = new ContactManager(connectionString, currentUserId, ContactsListBox);
 			conversationManager = new ConversationManager(connectionString, currentUserId, MessagesPanel, messageElements);
+			searchManager = new SearchManager(connectionString, currentUserId);
+			
+			// Инициализируем UI менеджер
+			uiManager = new MessengerUIManager(
+				this,
+				MessagesPanel,
+				MessagesScrollViewer,
+				SearchPanelBorder,
+				SearchMessageTextBox,
+				SearchResultsCountText,
+				SearchResultsList,
+				SuggestedMessagesPanel,
+				MessageTextBox,
+				ChatTitle,
+				ChatUserLogin
+			);
+			
+			// Инициализируем сервис поиска
+			searchService = new SearchService(searchManager, uiManager, messageElements);
+			
+			// Инициализируем менеджер буфера обмена
+			clipboardManager = new ClipboardManager(messageManager, MessageTextBox);
 			
 			// Устанавливаем заголовок окна с именем пользователя
 			this.Title = $"Мессенджер - {currentUserName}";
@@ -101,13 +138,52 @@ namespace УправлениеСкладом
 			ApplyTheme();
 			
 			// Устанавливаем заглушки предложенных сообщений
-			SetupSuggestedMessages();
+			uiManager.SetupSuggestedMessages();
 			
 			// Настраиваем таймер автоудаления старых сообщений
 			SetupAutoDeleteTimer();
 			
 			// Прокрутка сообщений при изменении
-			MessagesPanel.SizeChanged += (s, e) => ScrollToBottom();
+			MessagesPanel.SizeChanged += (s, e) => uiManager.ScrollToBottom();
+			
+			// Настройка горячих клавиш для поиска
+			this.KeyDown += MessengerWindow_KeyDown;
+			
+			// Инициализируем таймер неактивности поиска
+			InitializeSearchInactivityTimer();
+		}
+		
+		// Инициализация таймера неактивности поиска
+		private void InitializeSearchInactivityTimer()
+		{
+			searchInactivityTimer = new DispatcherTimer();
+			searchInactivityTimer.Interval = TimeSpan.FromSeconds(5);
+			searchInactivityTimer.Tick += (s, e) =>
+			{
+				// Если поисковое поле пустое, скрываем панель
+				if (string.IsNullOrWhiteSpace(SearchMessageTextBox.Text))
+				{
+					uiManager.ToggleSearchPanel(false);
+					searchInactivityTimer.Stop();
+				}
+			};
+		}
+
+		// Обработчик горячих клавиш
+		private void MessengerWindow_KeyDown(object sender, KeyEventArgs e)
+		{
+			// Ctrl+F для открытия поиска
+			if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
+			{
+				e.Handled = true;
+				uiManager.ToggleSearchPanel(true);
+			}
+			// Esc для закрытия поиска
+			else if (e.Key == Key.Escape)
+			{
+				e.Handled = true;
+				uiManager.ToggleSearchPanel(false);
+			}
 		}
 
 		// Загрузка информации о текущем пользователе
@@ -212,6 +288,28 @@ namespace УправлениеСкладом
 			updateTimer.Start();
 		}
 
+		// Настройка таймера автоудаления старых сообщений
+		private void SetupAutoDeleteTimer()
+		{
+			// Таймер для автоматического удаления сообщений старше N дней
+			DispatcherTimer autoDeleteTimer = new DispatcherTimer();
+			autoDeleteTimer.Interval = TimeSpan.FromHours(24); // Проверяем раз в день
+			autoDeleteTimer.Tick += (s, e) =>
+			{
+				int deletedCount = userManager.DeleteOldMessages(30); // Удаляем сообщения старше 30 дней
+				
+				if (deletedCount > 0 && selectedContactId > 0)
+				{
+					// Перезагружаем текущую переписку, если сообщения были удалены
+					conversationManager.LoadConversation(selectedContactId);
+				}
+			};
+			autoDeleteTimer.Start();
+			
+			// Запускаем первичную проверку при старте
+			userManager.DeleteOldMessages(30);
+		}
+
 		// Выбор контакта
 		private void ContactsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
@@ -221,6 +319,12 @@ namespace УправлениеСкладом
 				ChatUserLogin.Text = $"Роль: {info.Role}";
 				selectedContactId = info.UserId;
 				selectedContactName = info.Login;
+
+				// Обновляем ID выбранного контакта в сервисе поиска
+				searchService.SetSelectedContactId(selectedContactId);
+				
+				// Обновляем ID выбранного контакта в менеджере буфера обмена
+				clipboardManager.SetSelectedContactId(selectedContactId);
 
 				// Сбрасываем непрочитанные
 				contactManager.ResetUnreadCount(info.UserId);
@@ -240,71 +344,6 @@ namespace УправлениеСкладом
 			}
 		}
 
-		// Настройка таймера автоудаления старых сообщений
-		private void SetupAutoDeleteTimer()
-		{
-			// Таймер для автоматического удаления сообщений старше N дней
-			DispatcherTimer autoDeleteTimer = new DispatcherTimer();
-			autoDeleteTimer.Interval = TimeSpan.FromHours(24); // Проверяем раз в день
-			autoDeleteTimer.Tick += (s, e) =>
-			{
-				DeleteOldMessages(30); // Удаляем сообщения старше 30 дней
-			};
-			autoDeleteTimer.Start();
-			
-			// Запускаем первичную проверку при старте
-			DeleteOldMessages(30);
-		}
-		
-		// Удаление старых сообщений
-		private void DeleteOldMessages(int daysOld)
-		{
-			try
-			{
-				using (SqlConnection connection = new SqlConnection(connectionString))
-				{
-					connection.Open();
-					
-					// Запрос для пометки сообщений как скрытых для текущего пользователя
-					string sql = @"
-						UPDATE Сообщения
-						SET СкрытоОтправителем = CASE WHEN ОтправительID = @userId THEN 1 ELSE СкрытоОтправителем END,
-							СкрытоПолучателем = CASE WHEN ПолучательID = @userId THEN 1 ELSE СкрытоПолучателем END
-						WHERE ДатаОтправки < @oldDate
-						AND (
-							(ОтправительID = @userId AND СкрытоОтправителем = 0)
-							OR 
-							(ПолучательID = @userId AND СкрытоПолучателем = 0)
-						)";
-						
-						using (SqlCommand command = new SqlCommand(sql, connection))
-						{
-							DateTime oldDate = DateTime.Now.AddDays(-daysOld);
-							command.Parameters.AddWithValue("@userId", currentUserId);
-							command.Parameters.AddWithValue("@oldDate", oldDate);
-							
-							int affectedRows = command.ExecuteNonQuery();
-							
-							if (affectedRows > 0 && selectedContactId > 0)
-							{
-								// Перезагружаем текущую переписку, если сообщения были удалены
-								conversationManager.LoadConversation(selectedContactId);
-							}
-						}
-				}
-			}
-			catch (Exception ex)
-			{
-				// Логируем ошибку, но не показываем пользователю
-				System.Diagnostics.Debug.WriteLine($"Ошибка при удалении старых сообщений: {ex.Message}");
-			}
-		}
-
-		// Параметрless конструктор для XAML (будет использовать дефолтный ID = 1)
-		public MessengerWindow() : this(1)
-		{
-		}
-		
 		// Обновление иконки темы
 		public void UpdateThemeIcon()
 		{
@@ -383,7 +422,7 @@ namespace УправлениеСкладом
 										messageBlock.Text = messageText;
 										
 										// Анимация обновления сообщения
-										AnimateMessageUpdate(messageBubble);
+										uiManager.AnimateMessageUpdate(messageBubble);
 									}
 								}
 							}
@@ -411,7 +450,7 @@ namespace УправлениеСкладом
 						messageElements[messageId] = messageBubble;
 						
 						// Прокручиваем к новому сообщению
-						ScrollToBottom();
+						uiManager.ScrollToBottom();
 						
 						// Очищаем поле ввода и сбрасываем ответ
 						MessageTextBox.Clear();
@@ -466,7 +505,7 @@ namespace УправлениеСкладом
 		}
 
 		// Отправка медиафайла
-		private void AttachButton_Click(object sender, RoutedEventArgs e)
+		private async void AttachButton_Click(object sender, RoutedEventArgs e)
 		{
 			if (selectedContactId == 0)
 			{
@@ -484,37 +523,23 @@ namespace УправлениеСкладом
 
 				try
 				{
-					int messageId = 0;
-					using (SqlConnection connection = new SqlConnection(connectionString))
+					// Создаем объект вложения
+					MessageAttachment attachment = new MessageAttachment
 					{
-						connection.Open();
-						string sqlMsg = @"
-                            INSERT INTO Сообщения (ОтправительID, ПолучательID, Текст)
-                            OUTPUT INSERTED.СообщениеID
-                            VALUES (@sender, @receiver, @text)";
-						using (SqlCommand cmdMsg = new SqlCommand(sqlMsg, connection))
-						{
-							string encryptedBase64 = EncryptionHelper.EncryptString("[Медиафайл]");
-							byte[] encryptedBytes = Convert.FromBase64String(encryptedBase64);
-							cmdMsg.Parameters.AddWithValue("@sender", currentUserId);
-							cmdMsg.Parameters.AddWithValue("@receiver", selectedContactId);
-							cmdMsg.Parameters.Add("@text", SqlDbType.VarBinary).Value = encryptedBytes;
-							messageId = (int)cmdMsg.ExecuteScalar();
-						}
-
-						string sqlMedia = @"
-                            INSERT INTO МедиаФайлы (СообщениеID, Тип, Файл)
-                            VALUES (@msgId, @type, @file)";
-						using (SqlCommand cmdMedia = new SqlCommand(sqlMedia, connection))
-						{
-							cmdMedia.Parameters.AddWithValue("@msgId", messageId);
-							cmdMedia.Parameters.AddWithValue("@type", fileType);
-							byte[] encryptedFile = EncryptionHelper.EncryptBytes(fileBytes);
-							cmdMedia.Parameters.AddWithValue("@file", encryptedFile);
-							cmdMedia.ExecuteNonQuery();
-						}
+						Type = (fileType == "Фото") ? AttachmentType.Image : AttachmentType.Video,
+						FileName = System.IO.Path.GetFileName(ofd.FileName),
+						FileSize = fileBytes.Length,
+						Content = fileBytes
+					};
+					
+					// Отправляем сообщение с вложением через MessageManager
+					int messageId = await messageManager.SendMessageWithAttachmentAsync(selectedContactId, "", attachment);
+					
+					if (messageId > 0)
+					{
+						// Обновляем переписку
+						conversationManager.LoadConversation(selectedContactId);
 					}
-					conversationManager.LoadConversation(selectedContactId);
 				}
 				catch (Exception ex)
 				{
@@ -551,7 +576,8 @@ namespace УправлениеСкладом
 					if (success)
 					{
 						// Анимируем удаление сообщения
-						AnimateMessageRemoval(messageId, isOutgoing);
+						AnimationHelper.MessageRemoveAnimation(messageElements[messageId], isOutgoing, true);
+						messageElements.Remove(messageId);
 					}
 				}
 				catch (Exception ex)
@@ -597,7 +623,8 @@ namespace УправлениеСкладом
 						if (success)
 						{
 							// Анимируем удаление сообщения
-							AnimateMessageRemoval(messageId, isOutgoing);
+							AnimationHelper.MessageRemoveAnimation(messageElements[messageId], isOutgoing, true);
+							messageElements.Remove(messageId);
 						}
 					}
 					catch (Exception ex)
@@ -768,10 +795,71 @@ namespace УправлениеСкладом
 			MessageBox.Show("Дополнительные функции управления чатами будут реализованы в следующей версии.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 		
-		// Поиск в чате (заглушка)
+		// Поиск в чате
 		private void Search_Click(object sender, RoutedEventArgs e)
 		{
-			MessageBox.Show("Функция поиска в чате будет реализована в следующей версии.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+			uiManager.ToggleSearchPanel(SearchPanelBorder.Visibility != Visibility.Visible);
+		}
+		
+		// Обработчик изменения текста в поисковом поле
+		private void SearchMessageTextBox_TextChanged(object sender, TextChangedEventArgs e)
+		{
+			searchService.HandleSearchTextChanged(
+				SearchMessageTextBox.Text,
+				() => uiManager.StartSearchInactivityTimer()
+			);
+		}
+		
+		// Обработчик нажатия Enter в поисковом поле
+		private void SearchMessageTextBox_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.Key == Key.Enter)
+			{
+				e.Handled = true;
+				
+				// Если уже есть результаты, перейдем к следующему
+				var results = searchService.GetSearchResults();
+				if (results.Count > 0)
+				{
+					searchService.NavigateToNextResult();
+				}
+				// Иначе выполним новый поиск
+				else
+				{
+					searchService.PerformSearch(SearchMessageTextBox.Text.Trim());
+				}
+			}
+			else if (e.Key == Key.Escape)
+			{
+				e.Handled = true;
+				uiManager.ToggleSearchPanel(false);
+			}
+		}
+		
+		// Очистка текста поиска
+		private void ClearSearchText_Click(object sender, RoutedEventArgs e)
+		{
+			SearchMessageTextBox.Clear();
+			searchService.ClearSearchResults();
+			SearchMessageTextBox.Focus();
+		}
+		
+		// Переход к предыдущему результату поиска
+		private void PreviousSearchResult_Click(object sender, RoutedEventArgs e)
+		{
+			searchService.NavigateToPreviousResult();
+		}
+		
+	// Переход к следующему результату поиска
+		private void NextSearchResult_Click(object sender, RoutedEventArgs e)
+		{
+			searchService.NavigateToNextResult();
+		}
+		
+		// Выбор элемента в списке результатов
+		private void SearchResultsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			searchService.HandleSearchResultSelection(SearchResultsList.SelectedIndex);
 		}
 		
 		// Информация о контакте (заглушка)
@@ -834,7 +922,7 @@ namespace УправлениеСкладом
 								{
 									bool isOutgoing = Convert.ToInt32(senderId) == currentUserId;
 									// Анимируем удаление
-									AnimateMessageRemoval(messageId, isOutgoing);
+									AnimationHelper.MessageRemoveAnimation(messageElements[messageId], isOutgoing, true);
 								}
 							}
 						}
@@ -843,7 +931,7 @@ namespace УправлениеСкладом
 						await Task.Delay(50);
 					}
 					
-					// Используем новый MessageManager для удаления переписки
+					// Используем MessageManager для удаления переписки
 					int deletedMessages = await messageManager.DeleteConversationAsync(selectedContactId);
 					
 					// Очищаем UI остатки сообщений, которые могли не анимироваться
@@ -924,8 +1012,8 @@ namespace УправлениеСкладом
 				"😑", "😶", "😏", "😒", "🙄", "😬", "🤥", "😌", 
 				"😔", "😪", "🤤", "😴", "😷", "🤒", "🤕", "🤢", 
 				"🤮", "🤧", "🥵", "🥶", "🥴", "😵", "🤯", "🤠", 
-				"👋", "🤚", "✋", "🖖", "👌", "🤌", "🤏", "✌️", 
-				"❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍",
+				"👋", "🤚", "✋", "🖖", "👌", "🤏", "✌️", "❤️", 
+				"🧡", "💛", "💚", "💙", "💜", "🖤", "🤍",
 				"👍", "👎", "👏", "🙌", "🤝", "🙏", "💪", "🎉"
 			};
 			
@@ -1046,150 +1134,13 @@ namespace УправлениеСкладом
 			}
 		}
 
-		// Анимация удаления сообщения
-		private void AnimateMessageRemoval(int messageId, bool isOutgoing)
-		{
-			if (messageElements.TryGetValue(messageId, out var element))
-			{
-				// Используем AnimationHelper для анимации удаления
-				AnimationHelper.MessageRemoveAnimation(element, isOutgoing, true);
-				
-				// Удаляем ссылку на элемент из словаря
-				messageElements.Remove(messageId);
-			}
-		}
-
 		// Обработчик нажатия Ctrl+V для вставки изображений из буфера обмена
 		private void MessageTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
 		{
 			if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
 			{
 				e.Handled = true; // Предотвращаем стандартное поведение
-				HandlePaste();
-			}
-		}
-
-		// Обработчик вставки содержимого из буфера обмена
-		private void HandlePaste()
-		{
-			if (Clipboard.ContainsImage())
-			{
-				// Получаем изображение из буфера обмена
-				BitmapSource bitmapSource = Clipboard.GetImage();
-				
-				if (bitmapSource != null)
-				{
-					// Если выбран контакт для отправки
-					if (selectedContactId <= 0)
-					{
-						MessageBox.Show("Пожалуйста, выберите контакт для отправки изображения.");
-						return;
-					}
-					
-					try
-					{
-						// Преобразуем BitmapSource в массив байтов
-						byte[] imageBytes = ConvertBitmapSourceToBytes(bitmapSource);
-						
-						// Создаем объект вложения
-						MessageAttachment attachment = new MessageAttachment
-						{
-							Type = УправлениеСкладом.Class.AttachmentType.Image,
-							FileName = $"clip_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.png",
-							FileSize = imageBytes.Length,
-							Content = imageBytes,
-							Thumbnail = CreateThumbnail(bitmapSource, 100, 100)
-						};
-						
-						// Отправляем сообщение с вложением
-						SendMessageWithAttachment(attachment);
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show($"Ошибка при вставке изображения: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-					}
-				}
-			}
-			else if (Clipboard.ContainsText())
-			{
-				// Если в буфере текст, вставляем его в поле ввода
-				string clipboardText = Clipboard.GetText();
-				int caretIndex = MessageTextBox.CaretIndex;
-				string text = MessageTextBox.Text;
-				
-				MessageTextBox.Text = text.Insert(caretIndex, clipboardText);
-				MessageTextBox.CaretIndex = caretIndex + clipboardText.Length;
-			}
-		}
-		
-		// Преобразование BitmapSource в массив байтов
-		private byte[] ConvertBitmapSourceToBytes(BitmapSource bitmapSource)
-		{
-			JpegBitmapEncoder encoder = new JpegBitmapEncoder();
-			encoder.QualityLevel = 80; // Качество сжатия
-			encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
-			
-			using (MemoryStream ms = new MemoryStream())
-			{
-				encoder.Save(ms);
-				return ms.ToArray();
-			}
-		}
-		
-		// Создание миниатюры для изображения
-		private byte[] CreateThumbnail(BitmapSource source, int maxWidth, int maxHeight)
-		{
-			// Вычисляем новые размеры с сохранением соотношения сторон
-			double scale = Math.Min((double)maxWidth / source.PixelWidth, (double)maxHeight / source.PixelHeight);
-			int newWidth = (int)(source.PixelWidth * scale);
-			int newHeight = (int)(source.PixelHeight * scale);
-			
-			// Создаем миниатюру
-			TransformedBitmap thumbnail = new TransformedBitmap(source, new ScaleTransform(scale, scale));
-			
-			// Сохраняем в формате JPEG
-			JpegBitmapEncoder encoder = new JpegBitmapEncoder();
-			encoder.QualityLevel = 70; // Качество миниатюры
-			encoder.Frames.Add(BitmapFrame.Create(thumbnail));
-			
-			using (MemoryStream ms = new MemoryStream())
-			{
-				encoder.Save(ms);
-				return ms.ToArray();
-			}
-		}
-		
-		// Отправка сообщения с вложением
-		private async void SendMessageWithAttachment(MessageAttachment attachment)
-		{
-			try
-			{
-				// Получаем текст сообщения (если есть)
-				string messageText = MessageTextBox.Text.Trim();
-				
-				// Отправляем сообщение с вложением
-				int messageId = await messageManager.SendMessageWithAttachmentAsync(selectedContactId, messageText, attachment);
-				
-				if (messageId > 0)
-				{
-					// Очищаем поле ввода
-					MessageTextBox.Clear();
-					
-					// Создаем и добавляем новое сообщение в интерфейс с текстом о вложении
-					string displayText = $"[Изображение] {attachment.FileName}";
-					DateTime now = DateTime.Now;
-					
-					StackPanel messageBubble = UIMessageFactory.CreateMessageBubble(messageId, currentUserId, displayText, now, true, false, false, false, currentUserId);
-					MessagesPanel.Children.Add(messageBubble);
-					messageElements[messageId] = messageBubble;
-					
-					// Прокручиваем к новому сообщению
-					ScrollToBottom();
-				}
-			}
-			catch (Exception ex)
-			{
-				MessageBox.Show($"Ошибка при отправке сообщения с вложением: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+				clipboardManager.HandlePaste();
 			}
 		}
 	}

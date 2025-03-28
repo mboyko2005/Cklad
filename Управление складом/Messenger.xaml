@@ -286,6 +286,156 @@
             <Setter Property="MaxHeight" Value="300" />
             <Setter Property="Stretch" Value="Uniform" />
         </Style>
+
+        <!-- Стиль для поля поиска сообщений -->
+        <Style x:Key="SearchMessageInputStyle" TargetType="TextBox">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Grid>
+                            <Border x:Name="border"
+                                    CornerRadius="20"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    Background="{TemplateBinding Background}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <iconPacks:PackIconMaterial Grid.Column="0" 
+                                                                Kind="Magnify"
+                                                                Width="18" Height="18"
+                                                                Margin="12,0,5,0"
+                                                                VerticalAlignment="Center"
+                                                                Foreground="#777777"/>
+                                    <ScrollViewer Grid.Column="1" 
+                                                  x:Name="PART_ContentHost" 
+                                                  Margin="0,0,10,0"
+                                                  VerticalAlignment="Center"/>
+                                    <Button x:Name="ClearButton" 
+                                            Grid.Column="2" 
+                                            Width="20" Height="20" 
+                                            Margin="0,0,12,0"
+                                            Background="Transparent" 
+                                            BorderThickness="0"
+                                            Visibility="Collapsed"
+                                            Click="ClearSearchText_Click">
+                                        <iconPacks:PackIconMaterial Kind="Close"
+                                                                    Width="16" Height="16"
+                                                                    Foreground="#777777"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="ClearButton" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <Trigger Property="Text" Value="{x:Null}">
+                                <Setter TargetName="ClearButton" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="Text" Value=""/>
+                                    <Condition Property="IsFocused" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="ClearButton" Property="Visibility" Value="Collapsed"/>
+                            </MultiTrigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="Text" Value="{x:Null}"/>
+                                    <Condition Property="IsFocused" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="ClearButton" Property="Visibility" Value="Collapsed"/>
+                            </MultiTrigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="Text" Value=""/>
+                                    <Condition Property="IsFocused" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="ClearButton" Property="Visibility" Value="Collapsed"/>
+                            </MultiTrigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="Text" Value="{x:Null}"/>
+                                    <Condition Property="IsFocused" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="ClearButton" Property="Visibility" Value="Collapsed"/>
+                            </MultiTrigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="Text" Value=""/>
+                                    <Condition Property="IsFocused" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="ClearButton" Property="Visibility" Value="Collapsed"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Шаблон для результатов поиска -->
+        <DataTemplate x:Key="SearchResultTemplate">
+            <Border Margin="5" Padding="10" 
+                    Background="{DynamicResource ButtonBackgroundBrush}" 
+                    CornerRadius="10" 
+                    BorderBrush="{DynamicResource ButtonBorderBrush}" 
+                    BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Дата сообщения -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
+                        <TextBlock Text="{Binding Date, StringFormat='{}{0:dd.MM.yyyy HH:mm}'}" 
+                                   FontSize="11" 
+                                   Foreground="#888888"/>
+                        <TextBlock Text=" - " 
+                                   FontSize="11" 
+                                   Foreground="#888888"/>
+                        <TextBlock Text="{Binding IsOutgoing, Converter={StaticResource BoolToDirectionConverter}}" 
+                                   FontSize="11" 
+                                   Foreground="#888888"/>
+                    </StackPanel>
+                    
+                    <!-- Текст сообщения с выделенным результатом поиска -->
+                    <TextBlock Grid.Row="1" 
+                               Text="{Binding Text}" 
+                               TextWrapping="Wrap" 
+                               MaxWidth="300"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- Конвертер для отображения направления сообщения -->
+        <cls:BoolToMessageDirectionConverter x:Key="BoolToDirectionConverter"/>
+
+        <!-- Стиль для иконок навигации в результатах поиска -->
+        <Style x:Key="NavigationButtonStyle" TargetType="Button" BasedOn="{StaticResource IconButtonStyle}">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="5,0"/>
+        </Style>
+
+        <!-- Стиль для кнопок в заголовке чата -->
+        <Style x:Key="HeaderButtonStyle" TargetType="Button" BasedOn="{StaticResource IconButtonStyle}">
+            <Setter Property="ClipToBounds" Value="True"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+        </Style>
     </Window.Resources>
 
     <Window.Triggers>
@@ -300,7 +450,7 @@
     </Window.Triggers>
 
     <Grid>
-        <Border Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="20" Padding="15">
+        <Border Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="20" Padding="15" ClipToBounds="True">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
             </Border.Effect>
@@ -317,7 +467,8 @@
                         Background="{DynamicResource ButtonBackgroundBrush}" 
                         CornerRadius="15,0,0,15"
                         BorderBrush="{DynamicResource ButtonBorderBrush}"
-                        BorderThickness="1,1,0,1">
+                        BorderThickness="1,1,0,1"
+                        ClipToBounds="True">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- Заголовок и поиск -->
@@ -457,10 +608,13 @@
                         Background="{DynamicResource WindowBackgroundBrush}" 
                         CornerRadius="0,15,15,0"
                         BorderBrush="{DynamicResource ButtonBorderBrush}"
-                        BorderThickness="0,1,1,1">
-                    <Grid>
+                        BorderThickness="0,1,1,1"
+                        ClipToBounds="True">
+                    <Grid ClipToBounds="True">
                         <Grid.RowDefinitions>
                             <!-- Заголовок чата -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- Панель поиска (появляется при нажатии на кнопку поиска) -->
                             <RowDefinition Height="Auto"/>
                             <!-- Область сообщений -->
                             <RowDefinition Height="*"/>
@@ -471,76 +625,147 @@
                         </Grid.RowDefinitions>
 
                         <!-- Заголовок чата -->
-                        <Grid Grid.Row="0" Background="{DynamicResource ButtonBackgroundBrush}" Margin="0,0,0,1">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            
-                            <!-- Аватар собеседника -->
-                            <Border Grid.Column="0" 
-                                    Width="40" Height="40" 
-                                    CornerRadius="20" 
-                                    Background="#E0E0E0" 
-                                    Margin="15,10">
-                                <iconPacks:PackIconMaterial Kind="AccountCircle"
-                                                            Width="40"
-                                                            Height="40"
-                                                            Padding="5"
-                                                            Foreground="#757575"/>
-                            </Border>
-                            
-                            <!-- Информация о собеседнике -->
-                            <StackPanel Grid.Column="1" 
-                                        VerticalAlignment="Center" 
-                                        Margin="5,0">
-                                <TextBlock x:Name="ChatTitle"
-                                           Text="Выберите контакт"
-                                           FontSize="16"
-                                           FontWeight="Bold"
-                                           Foreground="{DynamicResource ForegroundBrush}"
-                                           FontFamily="Segoe UI"/>
-                                <TextBlock x:Name="ChatUserLogin"
-                                           Text=""
-                                           FontSize="12"
-                                           Foreground="#888888"
-                                           FontFamily="Segoe UI"/>
-                            </StackPanel>
-                            
-                            <!-- Кнопки управления -->
-                            <StackPanel Grid.Column="2" 
-                                        Orientation="Horizontal" 
-                                        Margin="5,0,15,0">
-                                <Button Style="{StaticResource IconButtonStyle}"
-                                        Click="Search_Click"
-                                        ToolTip="Поиск"
-                                        Margin="5,0">
-                                    <iconPacks:PackIconMaterial Kind="Magnify"
-                                                                Width="20" Height="20"
-                                                                Foreground="{DynamicResource ForegroundBrush}"/>
-                                </Button>
-                                <Button Style="{StaticResource IconButtonStyle}"
-                                        Click="Info_Click"
-                                        ToolTip="Информация"
-                                        Margin="5,0">
-                                    <iconPacks:PackIconMaterial Kind="InformationOutline"
-                                                                Width="20" Height="20"
-                                                                Foreground="{DynamicResource ForegroundBrush}"/>
-                                </Button>
-                                <Button Style="{StaticResource IconButtonStyle}"
-                                        Click="CloseButton_Click"
-                                        ToolTip="Закрыть"
-                                        Margin="5,0">
-                                    <iconPacks:PackIconMaterial Kind="Close"
-                                                                Width="20" Height="20"
-                                                                Foreground="{DynamicResource ForegroundBrush}"/>
-                                </Button>
-                            </StackPanel>
-                        </Grid>
+                        <Border Grid.Row="0" Background="{DynamicResource ButtonBackgroundBrush}" ClipToBounds="True" CornerRadius="0,15,0,0">
+                            <Grid Margin="0,0,0,1" ClipToBounds="True">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <!-- Аватар собеседника -->
+                                <Border Grid.Column="0" 
+                                        Width="40" Height="40" 
+                                        CornerRadius="20" 
+                                        Background="#E0E0E0" 
+                                        Margin="15,10">
+                                    <iconPacks:PackIconMaterial Kind="AccountCircle"
+                                                                Width="40"
+                                                                Height="40"
+                                                                Padding="5"
+                                                                Foreground="#757575"/>
+                                </Border>
+                                
+                                <!-- Информация о собеседнике -->
+                                <StackPanel Grid.Column="1" 
+                                            VerticalAlignment="Center" 
+                                            Margin="5,0">
+                                    <TextBlock x:Name="ChatTitle"
+                                               Text="Выберите контакт"
+                                               FontSize="16"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource ForegroundBrush}"
+                                               FontFamily="Segoe UI"/>
+                                    <TextBlock x:Name="ChatUserLogin"
+                                               Text=""
+                                               FontSize="12"
+                                               Foreground="#888888"
+                                               FontFamily="Segoe UI"/>
+                                </StackPanel>
+                                
+                                <!-- Кнопки управления -->
+                                <StackPanel Grid.Column="2" 
+                                            Orientation="Horizontal" 
+                                            Margin="5,0,15,0"
+                                            ClipToBounds="True">
+                                    <Button Style="{StaticResource HeaderButtonStyle}"
+                                            Click="Search_Click"
+                                            ToolTip="Поиск"
+                                            Margin="5,0">
+                                        <iconPacks:PackIconMaterial Kind="Magnify"
+                                                                    Width="20" Height="20"
+                                                                    Foreground="{DynamicResource ForegroundBrush}"/>
+                                    </Button>
+                                    <Button Style="{StaticResource HeaderButtonStyle}"
+                                            Click="Info_Click"
+                                            ToolTip="Информация"
+                                            Margin="5,0">
+                                        <iconPacks:PackIconMaterial Kind="InformationOutline"
+                                                                    Width="20" Height="20"
+                                                                    Foreground="{DynamicResource ForegroundBrush}"/>
+                                    </Button>
+                                    <Button Style="{StaticResource HeaderButtonStyle}"
+                                            Click="CloseButton_Click"
+                                            ToolTip="Закрыть"
+                                            Margin="5,0">
+                                        <iconPacks:PackIconMaterial Kind="Close"
+                                                                    Width="20" Height="20"
+                                                                    Foreground="{DynamicResource ForegroundBrush}"/>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Панель поиска (изначально скрыта) -->
+                        <Border x:Name="SearchPanelBorder" Grid.Row="1" Background="{DynamicResource ButtonBackgroundBrush}" ClipToBounds="True" Visibility="Collapsed" CornerRadius="0,0,0,0">
+                            <Grid x:Name="SearchPanel" Margin="0,0,0,1" ClipToBounds="True">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                
+                                <!-- Строка поиска и кнопки навигации -->
+                                <Grid Grid.Row="0" Margin="15,10" ClipToBounds="True">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <!-- Поле ввода поискового запроса -->
+                                    <TextBox x:Name="SearchMessageTextBox" 
+                                             Grid.Column="0"
+                                             Style="{StaticResource SearchMessageInputStyle}" 
+                                             Height="40"
+                                             Margin="0,0,10,0"
+                                             TextChanged="SearchMessageTextBox_TextChanged"
+                                             KeyDown="SearchMessageTextBox_KeyDown"
+                                             FontSize="14"/>
+                                    
+                                    <!-- Количество результатов -->
+                                    <TextBlock x:Name="SearchResultsCountText" 
+                                               Grid.Column="1"
+                                               Text="0 из 0" 
+                                               VerticalAlignment="Center" 
+                                               Margin="0,0,10,0"
+                                               Foreground="{DynamicResource ForegroundBrush}"/>
+                                    
+                                    <!-- Кнопки навигации по результатам -->
+                                    <Button Grid.Column="2" 
+                                            Style="{StaticResource NavigationButtonStyle}"
+                                            Click="PreviousSearchResult_Click"
+                                            ToolTip="Предыдущий результат">
+                                        <iconPacks:PackIconMaterial Kind="ChevronUp"
+                                                                    Width="16" Height="16"
+                                                                    Foreground="{DynamicResource ForegroundBrush}"/>
+                                    </Button>
+                                    
+                                    <Button Grid.Column="3" 
+                                            Style="{StaticResource NavigationButtonStyle}"
+                                            Click="NextSearchResult_Click"
+                                            ToolTip="Следующий результат">
+                                        <iconPacks:PackIconMaterial Kind="ChevronDown"
+                                                                    Width="16" Height="16"
+                                                                    Foreground="{DynamicResource ForegroundBrush}"/>
+                                    </Button>
+                                </Grid>
+                                
+                                <!-- Список результатов поиска (опционально) -->
+                                <ListView x:Name="SearchResultsList" 
+                                          Grid.Row="1" 
+                                          MaxHeight="300"
+                                          Visibility="Collapsed"
+                                          Background="Transparent"
+                                          BorderThickness="0"
+                                          ItemTemplate="{StaticResource SearchResultTemplate}"
+                                          SelectionChanged="SearchResultsList_SelectionChanged">
+                                </ListView>
+                            </Grid>
+                        </Border>
 
                         <!-- Область сообщений -->
-                        <ScrollViewer Grid.Row="1" 
+                        <ScrollViewer Grid.Row="2" 
                                       x:Name="MessagesScrollViewer"
                                       VerticalScrollBarVisibility="Auto" 
                                       Padding="15,10"
@@ -552,12 +777,12 @@
 
                         <!-- Подсказки (предложенные сообщения) -->
                         <WrapPanel x:Name="SuggestedMessagesPanel"
-                                    Grid.Row="2"
+                                    Grid.Row="3"
                                     Margin="10,5,10,10"
                                     HorizontalAlignment="Center" />
 
                         <!-- Панель ввода сообщения -->
-                        <Grid Grid.Row="3" Margin="15,5,15,10">
+                        <Grid Grid.Row="4" Margin="15,5,15,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>

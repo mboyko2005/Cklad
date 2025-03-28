@@ -380,18 +380,26 @@ namespace УправлениеСкладом.Class
         }
         
         /// <summary>
-        /// Вспомогательный метод для поиска элемента Border в дереве элементов
+        /// Находит первый Border в визуальном дереве элемента
         /// </summary>
         public static Border FindFirstBorder(DependencyObject parent)
         {
+            if (parent == null)
+                return null;
+            
+            // Проверяем, является ли текущий элемент Border
             if (parent is Border border)
                 return border;
-                
-            int childCount = VisualTreeHelper.GetChildrenCount(parent);
-            for (int i = 0; i < childCount; i++)
+            
+            // Получаем количество дочерних элементов
+            int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
+            
+            // Рекурсивно ищем Border в дочерних элементах
+            for (int i = 0; i < childrenCount; i++)
             {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                var result = FindFirstBorder(child);
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                Border result = FindFirstBorder(child);
+                
                 if (result != null)
                     return result;
             }
@@ -400,18 +408,26 @@ namespace УправлениеСкладом.Class
         }
         
         /// <summary>
-        /// Вспомогательный метод для поиска элемента TextBlock в дереве элементов
+        /// Находит первый TextBlock в визуальном дереве элемента
         /// </summary>
         public static TextBlock FindTextBlock(DependencyObject parent)
         {
+            if (parent == null)
+                return null;
+            
+            // Проверяем, является ли текущий элемент TextBlock
             if (parent is TextBlock textBlock)
                 return textBlock;
-                
-            int childCount = VisualTreeHelper.GetChildrenCount(parent);
-            for (int i = 0; i < childCount; i++)
+            
+            // Получаем количество дочерних элементов
+            int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
+            
+            // Рекурсивно ищем TextBlock в дочерних элементах
+            for (int i = 0; i < childrenCount; i++)
             {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                var result = FindTextBlock(child);
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                TextBlock result = FindTextBlock(child);
+                
                 if (result != null)
                     return result;
             }
