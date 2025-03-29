@@ -100,6 +100,37 @@ namespace УправлениеСкладом.Class
             }
         }
         
+        // Добавление новых сообщений в список предложенных
+        public void AddSuggestedMessages(params string[] messages)
+        {
+            if (messages == null || messages.Length == 0)
+                return;
+                
+            foreach (var message in messages)
+            {
+                Button button = new Button
+                {
+                    Content = message,
+                    Style = (Style)parentWindow.FindResource("SuggestedMessageButtonStyle")
+                };
+                
+                button.Click += (s, e) =>
+                {
+                    messageTextBox.Text = message;
+                    messageTextBox.Focus();
+                    messageTextBox.SelectionStart = messageTextBox.Text.Length;
+                };
+                
+                suggestedMessagesPanel.Children.Add(button);
+            }
+        }
+        
+        // Очистка предложенных сообщений
+        public void ClearSuggestedMessages()
+        {
+            suggestedMessagesPanel.Children.Clear();
+        }
+        
         // Показать/скрыть панель поиска
         public void ToggleSearchPanel(bool show)
         {
@@ -202,143 +233,63 @@ namespace УправлениеСкладом.Class
             }
         }
         
-        // Анимация выделения найденного сообщения
-        public void AnimateSearchHighlight(FrameworkElement message)
+        // Анимация выделения результата поиска
+        public void AnimateSearchHighlight(FrameworkElement element)
         {
             try
             {
-                Border messageBubble = null;
-                TextBlock messageTextBlock = null;
-                
-                // Находим контейнеры сообщений и их содержимое в зависимости от типа
-                if (message is StackPanel outerPanel)
-                {
-                    // Для исходящих сообщений - находим непосредственно пузырек в StackPanel
-                    messageBubble = UIMessageFactory.FindFirstBorder(outerPanel);
-                    
-                    if (messageBubble != null && messageBubble.Child is StackPanel contentPanel)
-                    {
-                        messageTextBlock = UIMessageFactory.FindTextBlock(contentPanel);
-                    }
-                }
-                else if (message is Grid outerGrid)
-                {
-                    // Для входящих сообщений - более сложная структура
-                    // Нам нужно найти Grid внутри Grid, который содержит пузырек сообщения
-                    // Перебираем дочерние элементы и ищем нужный Border
-                    for (int i = 0; i < VisualTreeHelper.GetChildrenCount(outerGrid); i++)
-                    {
-                        var child = VisualTreeHelper.GetChild(outerGrid, i);
-                        
-                        // Если это Grid с сообщением
-                        if (child is Grid messageGrid)
-                        {
-                            messageBubble = UIMessageFactory.FindFirstBorder(messageGrid);
-                            if (messageBubble != null)
-                            {
-                                // Нашли пузырек сообщения
-                                if (messageBubble.Child is StackPanel contentPanel)
-                                {
-                                    messageTextBlock = UIMessageFactory.FindTextBlock(contentPanel);
-                                }
-                                break;
-                            }
-                        }
-                        // Проверяем, не нашли ли мы Border непосредственно
-                        else if (child is Border childBorder)
-                        {
-                            messageBubble = childBorder;
-                            if (messageBubble.Child is StackPanel contentPanel)
-                            {
-                                messageTextBlock = UIMessageFactory.FindTextBlock(contentPanel);
-                            }
-                            break;
-                        }
-                    }
-                }
-                
-                // Если нашли пузырек сообщения
+                // Находим основной Border сообщения
+                Border messageBubble = UIMessageFactory.FindFirstBorderExplicit(element);
                 if (messageBubble != null)
                 {
-                    // Запоминаем оригинальный фон
-                    Brush originalBackground = messageBubble.Background;
+                    // Сохраняем оригинальный цвет фона
+                    Brush originalBrush = messageBubble.Background;
                     
-                    // Цвет для выделения сообщения
-                    Color highlightColor = Color.FromRgb(255, 240, 70); // Яркий желтый
-                    
-                    // Анимация для фона сообщения
-                    if (originalBackground is SolidColorBrush backgroundBrush)
+                    // Создаем анимацию цвета для "вспышки" найденного сообщения
+                    ColorAnimation highlightAnimation = new ColorAnimation
                     {
-                        Color originalColor = backgroundBrush.Color;
-                        
-                        // Создаем анимацию фона
-                        var backgroundAnimation = new ColorAnimation
-                        {
-                            From = highlightColor,
-                            To = originalColor,
-                            Duration = TimeSpan.FromMilliseconds(2000),
-                            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-                        };
-                        
-                        // Применяем новый цвет с анимацией
-                        SolidColorBrush animationBrush = new SolidColorBrush(highlightColor);
-                        messageBubble.Background = animationBrush;
-                        animationBrush.BeginAnimation(SolidColorBrush.ColorProperty, backgroundAnimation);
-                    }
-                    
-                    // Если нашли текстовый блок, выделяем и его
-                    if (messageTextBlock != null)
-                    {
-                        // Запоминаем оригинальный цвет текста
-                        Brush originalTextForeground = messageTextBlock.Foreground;
-                        
-                        // Анимация для текста
-                        if (originalTextForeground is SolidColorBrush textBrush)
-                        {
-                            Color originalTextColor = textBrush.Color;
-                            Color highlightTextColor = Color.FromRgb(0, 0, 0); // Черный
-                            
-                            var textAnimation = new ColorAnimation
-                            {
-                                From = highlightTextColor,
-                                To = originalTextColor,
-                                Duration = TimeSpan.FromMilliseconds(2000),
-                                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-                            };
-                            
-                            // Применяем новый цвет с анимацией
-                            SolidColorBrush textAnimationBrush = new SolidColorBrush(highlightTextColor);
-                            messageTextBlock.Foreground = textAnimationBrush;
-                            textAnimationBrush.BeginAnimation(SolidColorBrush.ColorProperty, textAnimation);
-                        }
-                    }
-                    
-                    // Мигаем границей для привлечения внимания
-                    Brush originalBorderBrush = messageBubble.BorderBrush;
-                    double originalBorderThickness = messageBubble.BorderThickness.Left;
-                    
-                    // Устанавливаем более толстую и яркую границу
-                    messageBubble.BorderBrush = new SolidColorBrush(Color.FromRgb(255, 165, 0)); // Оранжевый
-                    messageBubble.BorderThickness = new Thickness(2);
-                    
-                    // Анимация возврата границы к исходной
-                    DispatcherTimer timer = new DispatcherTimer();
-                    timer.Interval = TimeSpan.FromMilliseconds(2000);
-                    timer.Tick += (s, e) => 
-                    {
-                        messageBubble.BorderBrush = originalBorderBrush;
-                        messageBubble.BorderThickness = new Thickness(originalBorderThickness);
-                        timer.Stop();
+                        From = Colors.Yellow,
+                        To = ((SolidColorBrush)originalBrush).Color,
+                        Duration = TimeSpan.FromMilliseconds(1500),
+                        AutoReverse = false,
+                        EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
                     };
-                    timer.Start();
+                    
+                    // Создаем новую кисть для анимации
+                    SolidColorBrush animationBrush = new SolidColorBrush(((SolidColorBrush)originalBrush).Color);
+                    messageBubble.Background = animationBrush;
+                    
+                    // Выполняем анимацию
+                    animationBrush.BeginAnimation(SolidColorBrush.ColorProperty, highlightAnimation);
+                    
+                    // Также слегка увеличим и вернем к исходному размеру
+                    ScaleTransform scaleTransform = new ScaleTransform(1, 1);
+                    messageBubble.RenderTransform = scaleTransform;
+                    
+                    // Анимация увеличения
+                    DoubleAnimation scaleXAnimation = new DoubleAnimation
+                    {
+                        From = 1.0,
+                        To = 1.05,
+                        Duration = TimeSpan.FromMilliseconds(200),
+                        AutoReverse = true
+                    };
+                    
+                    DoubleAnimation scaleYAnimation = new DoubleAnimation
+                    {
+                        From = 1.0,
+                        To = 1.05,
+                        Duration = TimeSpan.FromMilliseconds(200),
+                        AutoReverse = true
+                    };
+                    
+                    scaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, scaleXAnimation);
+                    scaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, scaleYAnimation);
                 }
-                
-                // Прокрутка к сообщению
-                ScrollToMessage(message);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Ошибка при выделении сообщения: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Ошибка при анимации выделения: {ex.Message}");
             }
         }
         
@@ -346,6 +297,63 @@ namespace УправлениеСкладом.Class
         public void StartSearchInactivityTimer()
         {
             searchInactivityTimer.Start();
+        }
+
+        // Метод для прокрутки к конкретному элементу в чате
+        public void ScrollToElement(FrameworkElement element)
+        {
+            if (element == null) return;
+            
+            try 
+            {
+                // Находим ScrollViewer, в котором находятся сообщения
+                ScrollViewer scrollViewer = FindParentScrollViewer(messagesPanel);
+                if (scrollViewer != null)
+                {
+                    // Прокручиваем максимально точно к найденному элементу
+                    
+                    // Вариант 1: используем BringIntoView для надежной прокрутки
+                    element.BringIntoView();
+                    
+                    // Для надежности добавляем небольшую задержку и вызываем BringIntoView еще раз
+                    // Это помогает в случаях, когда первый вызов не сработал из-за расчета макета
+                    DispatcherTimer timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+                    timer.Tick += (s, e) =>
+                    {
+                        timer.Stop();
+                        element.BringIntoView();
+                        
+                        // Определяем позицию элемента и устанавливаем скролл чуть выше него
+                        Point elementPosition = element.TranslatePoint(new Point(0, 0), scrollViewer);
+                        // Отступаем 50 пикселей вверх для лучшей видимости
+                        double targetOffset = scrollViewer.VerticalOffset + elementPosition.Y - 50;
+                        scrollViewer.ScrollToVerticalOffset(targetOffset);
+                    };
+                    timer.Start();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Ошибка при прокрутке к элементу: {ex.Message}");
+            }
+        }
+
+        // Метод для нахождения родительского ScrollViewer
+        private ScrollViewer FindParentScrollViewer(DependencyObject child)
+        {
+            // Проверяем сначала текущий элемент
+            if (child is ScrollViewer scrollViewer)
+                return scrollViewer;
+            
+            // Получаем родительский элемент
+            DependencyObject parent = VisualTreeHelper.GetParent(child);
+            
+            // Если родитель не найден, возвращаем null
+            if (parent == null)
+                return null;
+            
+            // Рекурсивно ищем ScrollViewer среди родителей
+            return FindParentScrollViewer(parent);
         }
     }
 } 

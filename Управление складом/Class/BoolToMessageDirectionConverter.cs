@@ -5,7 +5,7 @@ using System.Windows.Data;
 namespace УправлениеСкладом.Class
 {
     /// <summary>
-    /// Конвертер для преобразования булевого значения (IsOutgoing) в текстовое представление направления сообщения
+    /// Конвертер для преобразования булевого значения (isOutgoing) в текстовое представление направления сообщения
     /// </summary>
     public class BoolToMessageDirectionConverter : IValueConverter
     {
@@ -13,14 +13,14 @@ namespace УправлениеСкладом.Class
         {
             if (value is bool isOutgoing)
             {
-                return isOutgoing ? "Исходящее" : "Входящее";
+                return isOutgoing ? "Отправлено" : "Получено";
             }
             return "Неизвестно";
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return value?.ToString() == "Исходящее";
+            return value?.ToString() == "Отправлено";
         }
     }
 } 

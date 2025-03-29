@@ -119,8 +119,19 @@ namespace УправлениеСкладом.Class
             // Проверяем, отображается ли это сообщение
             if (messageElements.TryGetValue(messageId, out var element))
             {
-                // Выделяем сообщение
-                uiManager.AnimateSearchHighlight(element);
+                // Выделяем сообщение с небольшой задержкой, чтобы обеспечить прокрутку
+                // Сначала прокручиваем к найденному сообщению
+                uiManager.ScrollToElement(element);
+                
+                // Задержка перед анимацией для гарантированного отображения
+                DispatcherTimer timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+                timer.Tick += (s, e) =>
+                {
+                    timer.Stop();
+                    // Выделяем сообщение после прокрутки
+                    uiManager.AnimateSearchHighlight(element);
+                };
+                timer.Start();
                 
                 // Обновляем счетчик
                 uiManager.UpdateSearchResultsCount(currentSearchResultIndex, searchResults.Count);

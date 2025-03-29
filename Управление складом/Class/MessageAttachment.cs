@@ -1,6 +1,10 @@
 using System;
 using System.IO;
 using System.Windows.Media.Imaging;
+using System.Windows.Media;
+using System.Windows;
+using System.Windows.Controls;
+using MahApps.Metro.IconPacks;
 
 namespace УправлениеСкладом.Class
 {
@@ -43,6 +47,21 @@ namespace УправлениеСкладом.Class
         /// Миниатюра для изображений
         /// </summary>
         public byte[] Thumbnail { get; set; }
+
+        /// <summary>
+        /// Тип файла
+        /// </summary>
+        public string FileType { get; set; }
+
+        /// <summary>
+        /// Видимость предварительного просмотра
+        /// </summary>
+        public bool IsPreviewVisible { get; set; }
+
+        /// <summary>
+        /// Элемент предварительного просмотра
+        /// </summary>
+        public UIElement PreviewElement { get; set; }
 
         /// <summary>
         /// Получить размер файла в удобочитаемом формате (КБ, МБ и т.д.)
@@ -182,6 +201,182 @@ namespace УправлениеСкладом.Class
             {
                 System.Diagnostics.Debug.WriteLine($"Ошибка сохранения файла: {ex.Message}");
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Создать элемент предварительного просмотра
+        /// </summary>
+        public UIElement CreatePreviewElement()
+        {
+            // Создаем основной контейнер для предварительного просмотра
+            Border mainBorder = new Border
+            {
+                CornerRadius = new CornerRadius(8),
+                BorderThickness = new Thickness(1),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(200, 200, 200)),
+                Margin = new Thickness(5),
+                Padding = new Thickness(8),
+                Background = new SolidColorBrush(Color.FromRgb(240, 240, 240))
+            };
+
+            StackPanel mainPanel = new StackPanel
+            {
+                Margin = new Thickness(0)
+            };
+
+            mainBorder.Child = mainPanel;
+
+            // Заголовок с типом файла и размером
+            StackPanel headerPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Margin = new Thickness(0, 0, 0, 5)
+            };
+
+            PackIconMaterial typeIcon = new PackIconMaterial
+            {
+                Kind = GetFileIcon(),
+                Width = 16,
+                Height = 16,
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = new SolidColorBrush(Color.FromRgb(100, 100, 100)),
+                Margin = new Thickness(0, 0, 5, 0)
+            };
+
+            TextBlock typeText = new TextBlock
+            {
+                Text = GetAttachmentTypeText(),
+                FontSize = 11,
+                FontWeight = FontWeights.SemiBold,
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = new SolidColorBrush(Color.FromRgb(100, 100, 100))
+            };
+
+            TextBlock sizeText = new TextBlock
+            {
+                Text = FormattedFileSize,
+                FontSize = 10,
+                Foreground = new SolidColorBrush(Color.FromRgb(130, 130, 130)),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(5, 0, 0, 0)
+            };
+
+            headerPanel.Children.Add(typeIcon);
+            headerPanel.Children.Add(typeText);
+            headerPanel.Children.Add(sizeText);
+            mainPanel.Children.Add(headerPanel);
+
+            // Содержимое в зависимости от типа вложения
+            switch (Type)
+            {
+                case AttachmentType.Image:
+                    // Контейнер для изображения
+                    Border imageBorder = new Border
+                    {
+                        CornerRadius = new CornerRadius(4),
+                        ClipToBounds = true,
+                        MaxHeight = 300,
+                        MaxWidth = 300
+                    };
+
+                    Image image = new Image
+                    {
+                        Source = GetImagePreview(),
+                        Stretch = Stretch.Uniform,
+                        HorizontalAlignment = HorizontalAlignment.Center
+                    };
+
+                    imageBorder.Child = image;
+                    mainPanel.Children.Add(imageBorder);
+                    break;
+
+                default:
+                    // Для других типов файлов показываем имя файла
+                    Border fileInfoBorder = new Border
+                    {
+                        Background = new SolidColorBrush(Color.FromRgb(230, 230, 230)),
+                        CornerRadius = new CornerRadius(4),
+                        Padding = new Thickness(8),
+                        Margin = new Thickness(0, 5, 0, 0)
+                    };
+
+                    StackPanel fileInfoPanel = new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal
+                    };
+
+                    PackIconMaterial fileIcon = new PackIconMaterial
+                    {
+                        Kind = GetFileIcon(),
+                        Width = 24,
+                        Height = 24,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Foreground = new SolidColorBrush(Color.FromRgb(70, 70, 70)),
+                        Margin = new Thickness(0, 0, 10, 0)
+                    };
+
+                    TextBlock fileNameText = new TextBlock
+                    {
+                        Text = FileName,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        TextWrapping = TextWrapping.Wrap,
+                        Foreground = new SolidColorBrush(Color.FromRgb(50, 50, 50)),
+                        MaxWidth = 250
+                    };
+
+                    fileInfoPanel.Children.Add(fileIcon);
+                    fileInfoPanel.Children.Add(fileNameText);
+                    fileInfoBorder.Child = fileInfoPanel;
+                    mainPanel.Children.Add(fileInfoBorder);
+                    break;
+            }
+
+            return mainBorder;
+        }
+
+        private PackIconMaterialKind GetFileIcon()
+        {
+            string extension = GetFileExtension();
+            switch (extension)
+            {
+                case ".pdf":
+                    return PackIconMaterialKind.FileDocumentOutline;
+                case ".doc":
+                case ".docx":
+                    return PackIconMaterialKind.FileDocumentOutline;
+                case ".xls":
+                case ".xlsx":
+                    return PackIconMaterialKind.FileExcelOutline;
+                case ".zip":
+                case ".rar":
+                    return PackIconMaterialKind.FolderZipOutline;
+                case ".mp3":
+                case ".wav":
+                    return PackIconMaterialKind.FileMusic;
+                case ".mp4":
+                case ".avi":
+                    return PackIconMaterialKind.FileVideo;
+                default:
+                    return PackIconMaterialKind.File;
+            }
+        }
+
+        // Добавим метод для получения текстового представления типа вложения
+        private string GetAttachmentTypeText()
+        {
+            switch (Type)
+            {
+                case AttachmentType.Image:
+                    return "Изображение";
+                case AttachmentType.Document:
+                    return "Документ";
+                case AttachmentType.Audio:
+                    return "Аудио";
+                case AttachmentType.Video:
+                    return "Видео";
+                default:
+                    return "Файл";
             }
         }
     }

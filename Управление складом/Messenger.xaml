@@ -3,16 +3,22 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         xmlns:local="clr-namespace:УправлениеСкладом"
-        xmlns:cls="clr-namespace:УправлениеСкладом.Class"
+        xmlns:class="clr-namespace:УправлениеСкладом.Class"
         Title="Мессенджер" Height="650" Width="950"
         WindowStartupLocation="CenterScreen" 
         WindowStyle="None" 
         AllowsTransparency="True" 
         Background="Transparent"
         Opacity="0" 
-        MouseDown="Window_MouseDown">
+        MouseDown="Window_MouseDown"
+        ResizeMode="CanResize"
+        MinWidth="700"
+        MinHeight="500">
 
     <Window.Resources>
+        <!-- Эффект тени -->
+        <DropShadowEffect x:Key="ShadowEffect" BlurRadius="10" ShadowDepth="0" Opacity="0.2"/>
+
         <!-- Современный стиль кнопок с эффектом масштабирования -->
         <Style TargetType="Button" x:Key="ModernButtonStyle">
             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
@@ -61,6 +67,51 @@
             </Setter>
         </Style>
 
+        <!-- Стандартные кисти и цвета, которые будут заменяться динамически -->
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#2196F3"/>
+        <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F9F9F9"/>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="ForegroundBrush" Color="#333333"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#DDDDDD"/>
+        <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="ButtonBorderBrush" Color="#DDDDDD"/>
+        <SolidColorBrush x:Key="MahApps.Brushes.Control.Background" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="MahApps.Brushes.Control.Border" Color="#DDDDDD"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#333333"/>
+        <SolidColorBrush x:Key="MessageTextBrush" Color="#333333"/>
+        <SolidColorBrush x:Key="ContactNameBrush" Color="#333333"/>
+        
+        <!-- Ресурсы для светлой и темной темы -->
+        <ResourceDictionary x:Key="LightThemeDict">
+            <SolidColorBrush x:Key="PrimaryBrush" Color="#2196F3"/>
+            <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F9F9F9"/>
+            <SolidColorBrush x:Key="BackgroundBrush" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="ForegroundBrush" Color="#333333"/>
+            <SolidColorBrush x:Key="BorderBrush" Color="#DDDDDD"/>
+            <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#DDDDDD"/>
+            <SolidColorBrush x:Key="MahApps.Brushes.Control.Background" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="MahApps.Brushes.Control.Border" Color="#DDDDDD"/>
+            <SolidColorBrush x:Key="TextBrush" Color="#333333"/>
+            <SolidColorBrush x:Key="MessageTextBrush" Color="#333333"/>
+            <SolidColorBrush x:Key="ContactNameBrush" Color="#333333"/>
+        </ResourceDictionary>
+        
+        <ResourceDictionary x:Key="DarkThemeDict">
+            <SolidColorBrush x:Key="PrimaryBrush" Color="#2196F3"/>
+            <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#202020"/>
+            <SolidColorBrush x:Key="BackgroundBrush" Color="#2D2D2D"/>
+            <SolidColorBrush x:Key="ForegroundBrush" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="BorderBrush" Color="#444444"/>
+            <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="#2D2D2D"/>
+            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#444444"/>
+            <SolidColorBrush x:Key="MahApps.Brushes.Control.Background" Color="#2D2D2D"/>
+            <SolidColorBrush x:Key="MahApps.Brushes.Control.Border" Color="#444444"/>
+            <SolidColorBrush x:Key="TextBrush" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="MessageTextBrush" Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="ContactNameBrush" Color="#64B5F6"/>
+        </ResourceDictionary>
+
         <!-- Стиль для иконок-кнопок -->
         <Style x:Key="IconButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
             <Setter Property="Width" Value="40"/>
@@ -68,6 +119,32 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <!-- Заменяем недостающий MahApps.Styles.Button.Square -->
+        <Style x:Key="MahApps.Styles.Button.Square" TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center" 
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F0F0F0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Стиль для TextBox со скругленными углами и иконкой -->
@@ -110,6 +187,7 @@
             <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
             <Setter Property="Padding" Value="10"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -140,6 +218,7 @@
             <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="AcceptsReturn" Value="True"/>
@@ -236,7 +315,7 @@
         </Style>
 
         <!-- Шаблон для списка контактов -->
-        <DataTemplate x:Key="ContactItemTemplate" DataType="{x:Type cls:ContactInfo}">
+        <DataTemplate x:Key="ContactItemTemplate" DataType="{x:Type class:ContactInfo}">
             <Grid Margin="5,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -256,6 +335,7 @@
                                FontWeight="SemiBold"
                                VerticalAlignment="Center"
                                FontFamily="Segoe UI"
+                               Foreground="{DynamicResource ContactNameBrush}"
                                Margin="0,0,0,2"/>
                     <TextBlock Text="{Binding Role}"
                                FontSize="11"
@@ -381,6 +461,7 @@
             <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
             <Setter Property="Padding" Value="10"/>
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -416,13 +497,11 @@
                     <TextBlock Grid.Row="1" 
                                Text="{Binding Text}" 
                                TextWrapping="Wrap" 
+                               Foreground="{DynamicResource MessageTextBrush}"
                                MaxWidth="300"/>
                 </Grid>
             </Border>
         </DataTemplate>
-
-        <!-- Конвертер для отображения направления сообщения -->
-        <cls:BoolToMessageDirectionConverter x:Key="BoolToDirectionConverter"/>
 
         <!-- Стиль для иконок навигации в результатах поиска -->
         <Style x:Key="NavigationButtonStyle" TargetType="Button" BasedOn="{StaticResource IconButtonStyle}">
@@ -436,6 +515,12 @@
             <Setter Property="ClipToBounds" Value="True"/>
             <Setter Property="UseLayoutRounding" Value="True"/>
         </Style>
+
+        <!-- Конвертер для отображения направления сообщения -->
+        <class:BoolToMessageDirectionConverter x:Key="BoolToDirectionConverter"/>
+
+        <!-- Конвертер для обратного видимости -->
+        <class:InverseVisibilityConverter x:Key="InverseVisibilityConverter"/>
     </Window.Resources>
 
     <Window.Triggers>
@@ -580,7 +665,7 @@
                                     Margin="5,0">
                                 <iconPacks:PackIconMaterial Kind="CogOutline"
                                                             Width="22" Height="22"
-                                                            Foreground="{DynamicResource ForegroundBrush}"/>
+                                                            Foreground="{DynamicResource PrimaryBrush}"/>
                             </Button>
                             <Button Style="{StaticResource IconButtonStyle}" 
                                     Click="DeleteChat_Click"
@@ -588,7 +673,7 @@
                                     Margin="5,0">
                                 <iconPacks:PackIconMaterial Kind="DeleteOutline"
                                                             Width="22" Height="22"
-                                                            Foreground="{DynamicResource ForegroundBrush}"/>
+                                                            Foreground="{DynamicResource PrimaryBrush}"/>
                             </Button>
                             <Button Style="{StaticResource IconButtonStyle}" 
                                     Click="ToggleTheme_Click"
@@ -597,7 +682,7 @@
                                 <iconPacks:PackIconMaterial x:Name="ThemeIcon"
                                                             Kind="WeatherSunny"
                                                             Width="22" Height="22"
-                                                            Foreground="{DynamicResource ForegroundBrush}"/>
+                                                            Foreground="{DynamicResource PrimaryBrush}"/>
                             </Button>
                         </StackPanel>
                     </Grid>
@@ -618,9 +703,7 @@
                             <RowDefinition Height="Auto"/>
                             <!-- Область сообщений -->
                             <RowDefinition Height="*"/>
-                            <!-- Подсказки (предложенные сообщения) -->
-                            <RowDefinition Height="Auto"/>
-                            <!-- Панель ввода сообщения -->
+                            <!-- Панель инструментов сообщений (нижняя панель) -->
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
@@ -654,7 +737,7 @@
                                                Text="Выберите контакт"
                                                FontSize="16"
                                                FontWeight="Bold"
-                                               Foreground="{DynamicResource ForegroundBrush}"
+                                               Foreground="{DynamicResource ContactNameBrush}"
                                                FontFamily="Segoe UI"/>
                                     <TextBlock x:Name="ChatUserLogin"
                                                Text=""
@@ -674,7 +757,7 @@
                                             Margin="5,0">
                                         <iconPacks:PackIconMaterial Kind="Magnify"
                                                                     Width="20" Height="20"
-                                                                    Foreground="{DynamicResource ForegroundBrush}"/>
+                                                                    Foreground="{DynamicResource PrimaryBrush}"/>
                                     </Button>
                                     <Button Style="{StaticResource HeaderButtonStyle}"
                                             Click="Info_Click"
@@ -682,7 +765,7 @@
                                             Margin="5,0">
                                         <iconPacks:PackIconMaterial Kind="InformationOutline"
                                                                     Width="20" Height="20"
-                                                                    Foreground="{DynamicResource ForegroundBrush}"/>
+                                                                    Foreground="{DynamicResource PrimaryBrush}"/>
                                     </Button>
                                     <Button Style="{StaticResource HeaderButtonStyle}"
                                             Click="CloseButton_Click"
@@ -690,7 +773,7 @@
                                             Margin="5,0">
                                         <iconPacks:PackIconMaterial Kind="Close"
                                                                     Width="20" Height="20"
-                                                                    Foreground="{DynamicResource ForegroundBrush}"/>
+                                                                    Foreground="{DynamicResource PrimaryBrush}"/>
                                     </Button>
                                 </StackPanel>
                             </Grid>
@@ -738,7 +821,7 @@
                                             ToolTip="Предыдущий результат">
                                         <iconPacks:PackIconMaterial Kind="ChevronUp"
                                                                     Width="16" Height="16"
-                                                                    Foreground="{DynamicResource ForegroundBrush}"/>
+                                                                    Foreground="{DynamicResource PrimaryBrush}"/>
                                     </Button>
                                     
                                     <Button Grid.Column="3" 
@@ -747,7 +830,7 @@
                                             ToolTip="Следующий результат">
                                         <iconPacks:PackIconMaterial Kind="ChevronDown"
                                                                     Width="16" Height="16"
-                                                                    Foreground="{DynamicResource ForegroundBrush}"/>
+                                                                    Foreground="{DynamicResource PrimaryBrush}"/>
                                     </Button>
                                 </Grid>
                                 
@@ -775,65 +858,127 @@
                             </StackPanel>
                         </ScrollViewer>
 
-                        <!-- Подсказки (предложенные сообщения) -->
-                        <WrapPanel x:Name="SuggestedMessagesPanel"
-                                    Grid.Row="3"
-                                    Margin="10,5,10,10"
-                                    HorizontalAlignment="Center" />
+                        <!-- Панель инструментов сообщений (нижняя панель) -->
+                        <Grid Grid.Row="3" Margin="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                        <!-- Панель ввода сообщения -->
-                        <Grid Grid.Row="4" Margin="15,5,15,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                            <!-- Панель предложенных сообщений -->
+                            <WrapPanel x:Name="SuggestedMessagesPanel"
+                                       Grid.Row="0"
+                                       Margin="0,0,0,10"
+                                       Visibility="Visible"
+                                       HorizontalAlignment="Left"/>
 
-                            <!-- Кнопка для прикрепления файлов -->
-                            <Button Grid.Column="0"
-                                    Style="{StaticResource IconButtonStyle}"
-                                    Click="AttachButton_Click"
-                                    Margin="0,0,10,0"
-                                    ToolTip="Прикрепить файл">
-                                <iconPacks:PackIconMaterial Kind="Paperclip"
-                                                            Width="22" Height="22"
-                                                            Foreground="{DynamicResource ForegroundBrush}"/>
-                            </Button>
+                            <!-- Панель предпросмотра вложений -->
+                            <Grid x:Name="AttachmentPreviewPanel" 
+                                  Grid.Row="1" 
+                                  Margin="0,0,0,5"
+                                  Visibility="Collapsed"
+                                  Tag="AttachmentPreview">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                
+                                <Border Background="{DynamicResource BackgroundBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="6,6,6,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Контент предпросмотра (компактный) -->
+                                        <ContentPresenter x:Name="AttachmentPreviewContent"
+                                                          HorizontalAlignment="Left"
+                                                          VerticalAlignment="Center"
+                                                          Grid.Column="0"/>
+                                        
+                                        <!-- Кнопка удаления вложения (маленький крестик в верхнем правом углу) -->
+                                        <Button Grid.Column="1"
+                                                Click="RemoveAttachment_Click"
+                                                ToolTip="Удалить вложение"
+                                                Width="20" 
+                                                Height="20"
+                                                VerticalAlignment="Top"
+                                                HorizontalAlignment="Right"
+                                                Margin="4,0,0,0"
+                                                Style="{StaticResource IconButtonStyle}">
+                                            <Border Background="#FFEEEEEE"
+                                                    CornerRadius="10"
+                                                    Width="18" 
+                                                    Height="18">
+                                                <iconPacks:PackIconMaterial Kind="Close"
+                                                                          Width="10" Height="10"
+                                                                          Foreground="#E53935"
+                                                                          HorizontalAlignment="Center"
+                                                                          VerticalAlignment="Center"/>
+                                            </Border>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </Grid>
 
-                            <!-- Поле ввода сообщения -->
-                            <TextBox x:Name="MessageTextBox"
-                                     Grid.Column="1"
-                                     Style="{StaticResource MessageInputStyle}"
-                                     Margin="0,0,10,0"
-                                     MinHeight="40"
-                                     MaxHeight="120"
-                                     FontSize="14"
-                                     VerticalAlignment="Center"
-                                     VerticalContentAlignment="Center"
-                                     TextChanged="MessageTextBox_TextChanged"
-                                     KeyDown="MessageTextBox_KeyDown"/>
+                            <!-- Панель ввода сообщения -->
+                            <Grid Grid.Row="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                            <!-- Кнопка для смайликов -->
-                            <Button Grid.Column="2"
-                                    Style="{StaticResource IconButtonStyle}"
-                                    Click="Emoji_Click"
-                                    Margin="0,0,10,0"
-                                    ToolTip="Эмодзи">
-                                <iconPacks:PackIconMaterial Kind="EmoticonOutline"
-                                                            Width="22" Height="22"
-                                                            Foreground="{DynamicResource ForegroundBrush}"/>
-                            </Button>
+                                <!-- Кнопка для прикрепления файлов -->
+                                <Button Grid.Column="0"
+                                        Style="{StaticResource IconButtonStyle}"
+                                        Click="AttachButton_Click"
+                                        Margin="0,0,10,0"
+                                        ToolTip="Прикрепить файл">
+                                    <iconPacks:PackIconMaterial Kind="Paperclip"
+                                                                Width="22" Height="22"
+                                                                Foreground="{DynamicResource PrimaryBrush}"/>
+                                </Button>
 
-                            <!-- Кнопка отправки сообщения -->
-                            <Button Grid.Column="3"
-                                    Style="{StaticResource GradientButtonStyle}"
-                                    Click="SendMessage_Click"
-                                    ToolTip="Отправить сообщение">
-                                <iconPacks:PackIconMaterial Kind="Send"
-                                                            Width="18" Height="18"
-                                                            Foreground="White"/>
-                            </Button>
+                                <!-- Поле ввода сообщения -->
+                                <TextBox x:Name="MessageTextBox"
+                                         Grid.Column="1"
+                                         Style="{StaticResource MessageInputStyle}"
+                                         Margin="0,0,10,0"
+                                         MinHeight="40"
+                                         MaxHeight="120"
+                                         FontSize="14"
+                                         VerticalAlignment="Center"
+                                         VerticalContentAlignment="Center"
+                                         TextChanged="MessageTextBox_TextChanged"
+                                         KeyDown="MessageTextBox_KeyDown"/>
+
+                                <!-- Кнопка для смайликов -->
+                                <Button Grid.Column="2"
+                                        Style="{StaticResource IconButtonStyle}"
+                                        Click="Emoji_Click"
+                                        Margin="0,0,10,0"
+                                        ToolTip="Эмодзи">
+                                    <iconPacks:PackIconMaterial Kind="EmoticonOutline"
+                                                                Width="22" Height="22"
+                                                                Foreground="{DynamicResource PrimaryBrush}"/>
+                                </Button>
+
+                                <!-- Кнопка отправки сообщения -->
+                                <Button Grid.Column="3"
+                                        Style="{StaticResource GradientButtonStyle}"
+                                        Click="SendMessage_Click"
+                                        ToolTip="Отправить сообщение">
+                                    <iconPacks:PackIconMaterial Kind="Send"
+                                                                Width="18" Height="18"
+                                                                Foreground="White"/>
+                                </Button>
+                            </Grid>
                         </Grid>
                     </Grid>
                 </Border>

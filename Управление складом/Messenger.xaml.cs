@@ -58,13 +58,16 @@ namespace УправлениеСкладом
 		private SearchService searchService;
 		private UserManager userManager;
 		private ClipboardManager clipboardManager;
+		private SearchUIManager searchUIManager;
 		
-		// Переменные для поиска сообщений
-		private List<SearchResult> searchResults = new List<SearchResult>();
-		private int currentSearchResultIndex = -1;
-		private string currentSearchQuery = "";
-		private bool isSearchActive = false;
-		private DispatcherTimer searchInactivityTimer; // Таймер для скрытия панели поиска
+		// Переменная для текущего вложения
+		private MessageAttachment currentAttachment;
+
+		// Менеджер удаления сообщений
+		private MessageDeleteManager messageDeleteManager;
+		
+		// Менеджер превью вложений
+		private AttachmentPreviewManager attachmentPreviewManager;
 		
 		// Событие изменения свойства
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -78,19 +81,25 @@ namespace УправлениеСкладом
 		{
 			InitializeComponent();
 			
+			// Сохраняем ID пользователя
 			currentUserId = userId;
 			
-			// Инициализируем менеджер пользователей
-			userManager = new UserManager(connectionString, currentUserId);
+			// Устанавливаем значения по умолчанию
+			ChatTitle.Text = "Выберите контакт";
 			
-			// Получаем имя текущего пользователя
-			currentUserName = userManager.CurrentUserName;
+			// Загружаем информацию о текущем пользователе
+			LoadCurrentUserInfo();
 			
 			// Инициализируем менеджеры
 			messageManager = new MessageManager(connectionString, currentUserId, currentUserName);
 			contactManager = new ContactManager(connectionString, currentUserId, ContactsListBox);
 			conversationManager = new ConversationManager(connectionString, currentUserId, MessagesPanel, messageElements);
 			searchManager = new SearchManager(connectionString, currentUserId);
+			messageDeleteManager = new MessageDeleteManager(messageManager, messageElements, MessagesPanel);
+			attachmentPreviewManager = new AttachmentPreviewManager(AttachmentPreviewContent, AttachmentPreviewPanel);
+			
+			// Инициализируем менеджер пользователей
+			userManager = new UserManager(connectionString, currentUserId);
 			
 			// Инициализируем UI менеджер
 			uiManager = new MessengerUIManager(
@@ -109,6 +118,17 @@ namespace УправлениеСкладом
 			
 			// Инициализируем сервис поиска
 			searchService = new SearchService(searchManager, uiManager, messageElements);
+			
+			// Инициализируем менеджер поиска UI
+			searchUIManager = new SearchUIManager(
+				this,
+				searchService,
+				SearchMessageTextBox,
+				SearchPanelBorder,
+				SearchResultsCountText,
+				SearchResultsList,
+				uiManager
+			);
 			
 			// Инициализируем менеджер буфера обмена
 			clipboardManager = new ClipboardManager(messageManager, MessageTextBox);
@@ -131,13 +151,14 @@ namespace УправлениеСкладом
 			// Настраиваем автоматическое обновление
 			SetupAutoUpdate();
 			
-			// Обновляем иконку темы
-			UpdateThemeIcon();
+			// Устанавливаем правильные ресурсы темы при загрузке
+			this.Loaded -= ThemeResourcesLoaded; // Удаляем, если уже был добавлен
+			this.Loaded += ThemeResourcesLoaded;
 			
 			// Обновляем элементы интерфейса в зависимости от темы
 			ApplyTheme();
 			
-			// Устанавливаем заглушки предложенных сообщений
+			// Настраиваем предложенные сообщения
 			uiManager.SetupSuggestedMessages();
 			
 			// Настраиваем таймер автоудаления старых сообщений
@@ -148,27 +169,8 @@ namespace УправлениеСкладом
 			
 			// Настройка горячих клавиш для поиска
 			this.KeyDown += MessengerWindow_KeyDown;
-			
-			// Инициализируем таймер неактивности поиска
-			InitializeSearchInactivityTimer();
 		}
 		
-		// Инициализация таймера неактивности поиска
-		private void InitializeSearchInactivityTimer()
-		{
-			searchInactivityTimer = new DispatcherTimer();
-			searchInactivityTimer.Interval = TimeSpan.FromSeconds(5);
-			searchInactivityTimer.Tick += (s, e) =>
-			{
-				// Если поисковое поле пустое, скрываем панель
-				if (string.IsNullOrWhiteSpace(SearchMessageTextBox.Text))
-				{
-					uiManager.ToggleSearchPanel(false);
-					searchInactivityTimer.Stop();
-				}
-			};
-		}
-
 		// Обработчик горячих клавиш
 		private void MessengerWindow_KeyDown(object sender, KeyEventArgs e)
 		{
@@ -347,19 +349,21 @@ namespace УправлениеСкладом
 		// Обновление иконки темы
 		public void UpdateThemeIcon()
 		{
-			try
+			if (ThemeIcon != null)
 			{
-				if (ThemeIcon != null)
+				// Устанавливаем иконку в зависимости от текущей темы
+				ThemeIcon.Kind = ThemeManager.IsDarkTheme ? 
+					PackIconMaterialKind.WeatherNight : 
+					PackIconMaterialKind.WeatherSunny;
+				
+				// Обновляем подсказку
+				var themeButton = ThemeIcon.Parent as FrameworkElement;
+				if (themeButton != null)
 				{
-					ThemeIcon.Kind = ThemeManager.IsDarkTheme 
-						? PackIconMaterialKind.WeatherNight
-						: PackIconMaterialKind.WeatherSunny;
+					themeButton.ToolTip = ThemeManager.IsDarkTheme ? 
+						"Переключить на светлую тему" : 
+						"Переключить на темную тему";
 				}
-			}
-			catch (Exception ex)
-			{
-				// Игнорируем ошибку, если элемент не найден
-				Console.WriteLine("Ошибка при обновлении иконки темы: " + ex.Message);
 			}
 		}
 
@@ -392,351 +396,235 @@ namespace УправлениеСкладом
 				return;
 			}
 
-			string messageText = MessageTextBox.Text.Trim();
-			if (string.IsNullOrEmpty(messageText))
+			string messageText = MessageTextBox?.Text.Trim() ?? string.Empty;
+			
+			// Проверяем, что сообщение не пустое, если нет вложения
+			MessageAttachment attachmentToSend = attachmentPreviewManager.GetCurrentAttachment();
+			if (string.IsNullOrWhiteSpace(messageText) && attachmentToSend == null)
 			{
-				return;
+				return; // Не отправляем пустое сообщение без вложений
 			}
-
+			
 			try
 			{
-				int messageId;
+				// Кнопка отправки и текстовое поле могут быть временно недоступны
+				bool sendButtonWasEnabled = false;
 				
+				// Находим кнопку отправки
+				Button sendButton = null;
+				foreach (var element in GetLogicalChildrenByType<Button>(this))
+				{
+					if (element.ToolTip?.ToString() == "Отправить сообщение")
+					{
+						sendButton = element;
+						sendButtonWasEnabled = sendButton.IsEnabled;
+						sendButton.IsEnabled = false; // Блокируем кнопку на время отправки
+						break;
+					}
+				}
+				
+				// Сохраняем текст сообщения
+				string textToSend = messageText;
+				
+				// Очищаем текстовое поле
+				if (MessageTextBox != null)
+				{
+					MessageTextBox.Clear();
+					MessageTextBox.IsEnabled = false; // Блокируем поле на время отправки
+				}
+				
+				// Сохраняем ссылку на вложение
+				var attachmentForSending = attachmentToSend;
+				
+				// Скрываем предпросмотр вложения
+				if (attachmentToSend != null)
+				{
+					attachmentPreviewManager.HidePreview();
+					currentAttachment = null;
+				}
+				
+				// Сохраняем флаги редактирования
+				bool isEditMode = isEditingMessage;
+				int editingId = editingMessageId;
+				
+				// Сбрасываем флаги редактирования и ответа
 				if (isEditingMessage)
 				{
-					// Редактируем существующее сообщение
-					bool success = await messageManager.EditMessageAsync(editingMessageId, messageText);
-					if (success)
+					isEditingMessage = false;
+					editingMessageId = 0;
+				}
+				
+				replyToMessageId = 0;
+				replyToMessageText = "";
+				replyToSenderId = 0;
+				
+				int messageId = 0;
+				
+				try
+				{
+					if (isEditMode)
 					{
-						// Обновляем сообщение в интерфейсе
-						if (messageElements.TryGetValue(editingMessageId, out var element))
+						// Режим редактирования
+						bool success = await messageManager.EditMessageAsync(editingId, textToSend);
+						if (success)
 						{
-							if (element is StackPanel panel)
+							// Обновляем сообщение в интерфейсе
+							if (messageElements.TryGetValue(editingId, out var element))
 							{
-								FrameworkElement messageBubble = UIMessageFactory.FindFirstBorder(panel);
-								if (messageBubble is Border border && border.Child is StackPanel contentPanel)
+								if (element is StackPanel panel)
 								{
-									TextBlock messageBlock = UIMessageFactory.FindTextBlock(contentPanel);
-									if (messageBlock != null)
+									Border messageBubble = UIMessageFactory.FindFirstBorderExplicit(panel);
+									if (messageBubble != null && messageBubble.Child is StackPanel contentPanel)
 									{
-										messageBlock.Text = messageText;
-										
-										// Анимация обновления сообщения
-										uiManager.AnimateMessageUpdate(messageBubble);
+										TextBlock messageBlock = UIMessageFactory.FindTextBlock(contentPanel);
+										if (messageBlock != null)
+										{
+											messageBlock.Text = textToSend;
+											uiManager.AnimateMessageUpdate(messageBubble);
+										}
 									}
 								}
 							}
 						}
 					}
-					
-					// Сбрасываем состояние редактирования
-					isEditingMessage = false;
-					editingMessageId = 0;
-					
-					// Очищаем поле ввода
-					MessageTextBox.Clear();
-				}
-				else
-				{
-					// Отправляем новое сообщение
-					messageId = await messageManager.SendTextMessageAsync(selectedContactId, messageText);
-					
-					if (messageId > 0)
+					else
 					{
-						// Создаем и добавляем новое сообщение в интерфейс
-						DateTime now = DateTime.Now;
-						StackPanel messageBubble = UIMessageFactory.CreateMessageBubble(messageId, currentUserId, messageText, now, true, false, false, false, currentUserId);
-						MessagesPanel.Children.Add(messageBubble);
-						messageElements[messageId] = messageBubble;
+						// Режим отправки нового сообщения
+						if (attachmentForSending != null)
+						{
+							// Отправляем сообщение с вложением
+							messageId = await messageManager.SendMessageWithAttachmentAsync(selectedContactId, textToSend, attachmentForSending);
+						}
+						else
+						{
+							// Отправляем текстовое сообщение
+							messageId = await messageManager.SendTextMessageAsync(selectedContactId, textToSend);
+						}
 						
-						// Прокручиваем к новому сообщению
-						uiManager.ScrollToBottom();
-						
-						// Очищаем поле ввода и сбрасываем ответ
-						MessageTextBox.Clear();
-						replyToMessageId = 0;
-						replyToMessageText = "";
-						replyToSenderId = 0;
+						// Если сообщение успешно отправлено, обновляем чат
+						if (messageId > 0)
+						{
+							// Обновляем переписку через менеджер без полной перезагрузки
+							conversationManager.LoadConversationWithoutAnimation(selectedContactId);
+						}
+					}
+				}
+				finally
+				{
+					// Восстанавливаем доступность кнопки и поля ввода
+					if (sendButton != null)
+					{
+						sendButton.IsEnabled = sendButtonWasEnabled;
+					}
+					
+					if (MessageTextBox != null)
+					{
+						MessageTextBox.IsEnabled = true;
+						MessageTextBox.Focus();
 					}
 				}
 			}
 			catch (Exception ex)
 			{
 				MessageBox.Show($"Ошибка при отправке сообщения: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-			}
-		}
-		
-		// Анимация обновления сообщения
-		private void AnimateMessageUpdate(FrameworkElement message)
-		{
-			// Сохраняем начальный цвет фона
-			Brush originalBackground = null;
-			if (message is Border border)
-			{
-				originalBackground = border.Background;
-			}
-			
-			// Создаем анимацию фона
-			ColorAnimation colorAnimation = null;
-			if (originalBackground is SolidColorBrush brush)
-			{
-				// Светло-желтый цвет для подсветки изменения
-				Color highlightColor = Color.FromRgb(255, 255, 200);
-				Color originalColor = brush.Color;
 				
-				colorAnimation = new ColorAnimation
+				// Восстанавливаем текст в поле ввода в случае ошибки
+				if (MessageTextBox != null && !string.IsNullOrEmpty(messageText))
 				{
-					From = highlightColor,
-					To = originalColor,
-					Duration = TimeSpan.FromMilliseconds(1500),
-					EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-				};
-				
-				// Создаем кисть для анимации
-				SolidColorBrush animationBrush = new SolidColorBrush(highlightColor);
-				if (message is Border borderElement)
-				{
-					borderElement.Background = animationBrush;
+					MessageTextBox.Text = messageText;
+					MessageTextBox.SelectionStart = MessageTextBox.Text.Length;
+					MessageTextBox.IsEnabled = true;
 				}
-				
-				// Запускаем анимацию цвета
-				animationBrush.BeginAnimation(SolidColorBrush.ColorProperty, colorAnimation);
 			}
 		}
 
 		// Отправка медиафайла
-		private async void AttachButton_Click(object sender, RoutedEventArgs e)
+		private void AttachButton_Click(object sender, RoutedEventArgs e)
 		{
 			if (selectedContactId == 0)
 			{
 				MessageBox.Show("Сначала выберите контакт.");
 				return;
 			}
+
 			OpenFileDialog ofd = new OpenFileDialog();
-			ofd.Filter = "Image and Video Files|*.jpg;*.jpeg;*.png;*.bmp;*.mp4;*.avi";
+			ofd.Filter = "Все поддерживаемые файлы|*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.mp4;*.avi;*.mp3;*.wav;*.pdf;*.doc;*.docx;*.xls;*.xlsx;*.zip;*.rar|" +
+						"Изображения|*.jpg;*.jpeg;*.png;*.bmp;*.gif|" +
+						"Видео|*.mp4;*.avi|" +
+						"Аудио|*.mp3;*.wav|" +
+						"Документы|*.pdf;*.doc;*.docx;*.xls;*.xlsx|" +
+						"Архивы|*.zip;*.rar";
+
 			if (ofd.ShowDialog() == true)
 			{
-				byte[] fileBytes = File.ReadAllBytes(ofd.FileName);
-				string ext = System.IO.Path.GetExtension(ofd.FileName).ToLower();
-				string fileType = (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp") ? "Фото"
-								  : (ext == ".mp4" || ext == ".avi") ? "Видео" : "Файл";
+				try
+				{
+					byte[] fileBytes = File.ReadAllBytes(ofd.FileName);
+					string ext = Path.GetExtension(ofd.FileName).ToLower();
+					
+					// Определяем тип файла
+					AttachmentType attachmentType;
+					if (new[] { ".jpg", ".jpeg", ".png", ".bmp", ".gif" }.Contains(ext))
+						attachmentType = AttachmentType.Image;
+					else if (new[] { ".mp4", ".avi" }.Contains(ext))
+						attachmentType = AttachmentType.Video;
+					else if (new[] { ".mp3", ".wav" }.Contains(ext))
+						attachmentType = AttachmentType.Audio;
+					else if (new[] { ".pdf", ".doc", ".docx", ".xls", ".xlsx" }.Contains(ext))
+						attachmentType = AttachmentType.Document;
+					else
+						attachmentType = AttachmentType.Other;
 
-				try
-				{
 					// Создаем объект вложения
-					MessageAttachment attachment = new MessageAttachment
+					currentAttachment = new MessageAttachment
 					{
-						Type = (fileType == "Фото") ? AttachmentType.Image : AttachmentType.Video,
-						FileName = System.IO.Path.GetFileName(ofd.FileName),
+						Type = attachmentType,
+						FileName = Path.GetFileName(ofd.FileName),
 						FileSize = fileBytes.Length,
-						Content = fileBytes
+						Content = fileBytes,
+						FileType = ext
 					};
-					
-					// Отправляем сообщение с вложением через MessageManager
-					int messageId = await messageManager.SendMessageWithAttachmentAsync(selectedContactId, "", attachment);
-					
-					if (messageId > 0)
+
+					// Создаем миниатюру для изображений
+					if (attachmentType == AttachmentType.Image)
 					{
-						// Обновляем переписку
-						conversationManager.LoadConversation(selectedContactId);
+						currentAttachment.CreateThumbnail();
 					}
+
+					// Показываем превью с помощью менеджера
+					ShowAttachmentPreview();
 				}
 				catch (Exception ex)
 				{
-					MessageBox.Show("Ошибка отправки файла: " + ex.Message);
+					MessageBox.Show($"Ошибка при загрузке файла: {ex.Message}");
 				}
 			}
 		}
-		
-		// Удаление сообщения только для текущего пользователя
-		private async void DeleteMessageForMe_Click(object sender, RoutedEventArgs e)
+
+		// Метод для показа превью вложения
+		private void ShowAttachmentPreview()
 		{
-			if (sender is MenuItem menuItem && menuItem.Parent is ContextMenu contextMenu &&
-				contextMenu.PlacementTarget is FrameworkElement element && element.Tag is int messageId)
+			if (currentAttachment != null)
 			{
-				try
-				{
-					// Определяем, является ли сообщение исходящим
-					bool isOutgoing = false;
-					using (SqlConnection connection = new SqlConnection(connectionString))
-					{
-						connection.Open();
-						string checkSql = "SELECT ОтправительID FROM Сообщения WHERE СообщениеID = @messageId";
-						using (SqlCommand checkCmd = new SqlCommand(checkSql, connection))
-						{
-							checkCmd.Parameters.AddWithValue("@messageId", messageId);
-							var senderId = checkCmd.ExecuteScalar();
-							isOutgoing = senderId != null && Convert.ToInt32(senderId) == currentUserId;
-						}
-					}
-					
-					// Используем MessageManager для удаления сообщения
-					bool success = await messageManager.DeleteMessageForMeAsync(messageId);
-					
-					if (success)
-					{
-						// Анимируем удаление сообщения
-						AnimationHelper.MessageRemoveAnimation(messageElements[messageId], isOutgoing, true);
-						messageElements.Remove(messageId);
-					}
-				}
-				catch (Exception ex)
-				{
-					MessageBox.Show("Ошибка при удалении сообщения: " + ex.Message);
-				}
+				attachmentPreviewManager.ShowPreview(currentAttachment);
+				
+				// Скрываем панель предложенных сообщений когда есть вложение
+				if (SuggestedMessagesPanel != null)
+					SuggestedMessagesPanel.Visibility = Visibility.Collapsed;
 			}
 		}
-		
-		// Удаление сообщения для всех
-		private async void DeleteMessageForAll_Click(object sender, RoutedEventArgs e)
+
+		// Метод для удаления вложения
+		private void RemoveAttachment_Click(object sender, RoutedEventArgs e)
 		{
-			if (sender is MenuItem menuItem && menuItem.Parent is ContextMenu contextMenu &&
-				contextMenu.PlacementTarget is FrameworkElement element && element.Tag is int messageId)
-			{
-				MessageBoxResult result = MessageBox.Show(
-					"Вы уверены, что хотите удалить это сообщение для всех участников?",
-					"Удаление сообщения",
-					MessageBoxButton.YesNo,
-					MessageBoxImage.Question);
-					
-				if (result == MessageBoxResult.Yes)
-				{
-					try
-					{
-						// Определяем, является ли сообщение исходящим
-						bool isOutgoing = false;
-						using (SqlConnection connection = new SqlConnection(connectionString))
-						{
-							connection.Open();
-							string checkSql = "SELECT ОтправительID FROM Сообщения WHERE СообщениеID = @messageId";
-							using (SqlCommand checkCmd = new SqlCommand(checkSql, connection))
-							{
-								checkCmd.Parameters.AddWithValue("@messageId", messageId);
-								var senderId = checkCmd.ExecuteScalar();
-								isOutgoing = senderId != null && Convert.ToInt32(senderId) == currentUserId;
-							}
-						}
-						
-						// Используем MessageManager для удаления сообщения для всех
-						bool success = await messageManager.DeleteMessageForAllAsync(messageId);
-						
-						if (success)
-						{
-							// Анимируем удаление сообщения
-							AnimationHelper.MessageRemoveAnimation(messageElements[messageId], isOutgoing, true);
-							messageElements.Remove(messageId);
-						}
-					}
-					catch (Exception ex)
-					{
-						MessageBox.Show("Ошибка при удалении сообщения: " + ex.Message);
-					}
-				}
-			}
+			currentAttachment = null;
+			attachmentPreviewManager.HidePreview();
+			
+			// Показываем панель предложенных сообщений когда нет вложения
+			if (SuggestedMessagesPanel != null)
+				SuggestedMessagesPanel.Visibility = Visibility.Visible;
 		}
-		
-		// Копирование текста сообщения
-		private void CopyMessage_Click(object sender, RoutedEventArgs e)
-		{
-			if (sender is MenuItem menuItem && menuItem.Parent is ContextMenu contextMenu &&
-				contextMenu.PlacementTarget is FrameworkElement element && element.Tag is int messageId)
-			{
-				try
-				{
-					using (SqlConnection connection = new SqlConnection(connectionString))
-					{
-						connection.Open();
-						string sql = @"
-                            SELECT Текст FROM Сообщения WHERE СообщениеID = @messageId";
-						using (SqlCommand command = new SqlCommand(sql, connection))
-						{
-							command.Parameters.AddWithValue("@messageId", messageId);
-							
-							byte[] encryptedBytes = (byte[])command.ExecuteScalar();
-							string encryptedBase64 = Convert.ToBase64String(encryptedBytes);
-							string decryptedText = EncryptionHelper.DecryptString(encryptedBase64);
-							
-							// Копируем в буфер обмена
-							Clipboard.SetText(decryptedText);
-						}
-					}
-				}
-				catch (Exception ex)
-				{
-					MessageBox.Show("Ошибка при копировании сообщения: " + ex.Message);
-				}
-			}
-		}
-		
-		// Редактирование сообщения
-		private void EditMessage_Click(object sender, RoutedEventArgs e)
-		{
-			if (sender is MenuItem menuItem && menuItem.Parent is ContextMenu contextMenu &&
-				contextMenu.PlacementTarget is FrameworkElement element && element.Tag is int messageId)
-			{
-				try
-				{
-					using (SqlConnection connection = new SqlConnection(connectionString))
-					{
-						connection.Open();
-						
-						// Проверяем, является ли пользователь отправителем
-						string checkSql = @"
-                            SELECT ОтправительID, Текст FROM Сообщения 
-                            WHERE СообщениеID = @messageId";
-						using (SqlCommand command = new SqlCommand(checkSql, connection))
-						{
-							command.Parameters.AddWithValue("@messageId", messageId);
-							
-							using (SqlDataReader reader = command.ExecuteReader())
-							{
-								if (reader.Read())
-								{
-									int senderId = reader.GetInt32(0);
-									
-									// Если это не наше сообщение, выходим
-									if (senderId != currentUserId)
-									{
-										MessageBox.Show("Вы можете редактировать только свои сообщения.");
-										return;
-									}
-									
-									// Получаем текст сообщения
-									byte[] encryptedBytes = (byte[])reader["Текст"];
-									string encryptedBase64 = Convert.ToBase64String(encryptedBytes);
-									string decryptedText = EncryptionHelper.DecryptString(encryptedBase64);
-									
-									// Заполняем поле ввода текстом сообщения
-									MessageTextBox.Text = decryptedText;
-									MessageTextBox.SelectAll();
-									MessageTextBox.Focus();
-									
-									// Устанавливаем флаг редактирования
-									isEditingMessage = true;
-									editingMessageId = messageId;
-								}
-							}
-						}
-					}
-				}
-				catch (Exception ex)
-				{
-					MessageBox.Show("Ошибка при редактировании сообщения: " + ex.Message);
-				}
-			}
-		}
-		
-		// Ответ на сообщение
-		private void ReplyMessage_Click(object sender, RoutedEventArgs e)
-		{
-			if (sender is MenuItem menuItem && menuItem.Parent is ContextMenu contextMenu &&
-				contextMenu.PlacementTarget is FrameworkElement element && element.Tag is int messageId)
-			{
-				// TODO: Реализовать функционал ответа на сообщение
-				MessageBox.Show("Функция ответа на сообщение будет реализована в следующей версии.");
-			}
-		}
-		
+
 		// Обработчик клика по чипу (подсказке)
 		private void Suggestion_Click(object sender, MouseButtonEventArgs e)
 		{
@@ -779,8 +667,57 @@ namespace УправлениеСкладом
 		// Переключение темы
 		private void ToggleTheme_Click(object sender, RoutedEventArgs e)
 		{
-			ThemeManager.ToggleTheme();
-			UpdateThemeIcon();
+			try
+			{
+				// Переключаем тему через стандартный менеджер
+				ThemeManager.ToggleTheme();
+				
+				// Обновляем иконку темы
+				UpdateThemeIcon();
+				
+				// Определяем текущую тему
+				bool isDarkTheme = ThemeManager.IsDarkTheme;
+				
+				// Получаем словарь нужной темы
+				var themeDictKey = isDarkTheme ? "DarkThemeDict" : "LightThemeDict";
+				var themeDict = Resources[themeDictKey] as ResourceDictionary;
+				
+				if (themeDict != null)
+				{
+					// Обновляем все ключевые ресурсы в текущем словаре
+					foreach (var key in themeDict.Keys)
+					{
+						if (Resources.Contains(key))
+						{
+							Resources[key] = themeDict[key];
+						}
+					}
+				}
+				
+				// Применяем тему ко всем элементам интерфейса
+				ApplyTheme();
+				
+				// Принудительно перерисовываем UI
+				InvalidateVisual();
+				UpdateLayout();
+				
+				// Обновляем все сообщения в переписке для корректного применения темы
+				if (selectedContactId > 0)
+				{
+					// Сохраняем позицию прокрутки
+					double scrollPosition = MessagesScrollViewer.VerticalOffset;
+					
+					// Перезагружаем переписку без анимации для обновления стилей
+					conversationManager.LoadConversationWithoutAnimation(selectedContactId);
+					
+					// Восстанавливаем позицию прокрутки
+					MessagesScrollViewer.ScrollToVerticalOffset(scrollPosition);
+				}
+			}
+			catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine($"Ошибка при переключении темы: {ex.Message}");
+			}
 		}
 		
 		// Новый чат (заглушка)
@@ -804,62 +741,37 @@ namespace УправлениеСкладом
 		// Обработчик изменения текста в поисковом поле
 		private void SearchMessageTextBox_TextChanged(object sender, TextChangedEventArgs e)
 		{
-			searchService.HandleSearchTextChanged(
-				SearchMessageTextBox.Text,
-				() => uiManager.StartSearchInactivityTimer()
-			);
+			searchUIManager.HandleSearchTextChanged(SearchMessageTextBox.Text);
 		}
 		
 		// Обработчик нажатия Enter в поисковом поле
 		private void SearchMessageTextBox_KeyDown(object sender, KeyEventArgs e)
 		{
-			if (e.Key == Key.Enter)
-			{
-				e.Handled = true;
-				
-				// Если уже есть результаты, перейдем к следующему
-				var results = searchService.GetSearchResults();
-				if (results.Count > 0)
-				{
-					searchService.NavigateToNextResult();
-				}
-				// Иначе выполним новый поиск
-				else
-				{
-					searchService.PerformSearch(SearchMessageTextBox.Text.Trim());
-				}
-			}
-			else if (e.Key == Key.Escape)
-			{
-				e.Handled = true;
-				uiManager.ToggleSearchPanel(false);
-			}
+			searchUIManager.HandleSearchKeyDown(e);
 		}
 		
 		// Очистка текста поиска
 		private void ClearSearchText_Click(object sender, RoutedEventArgs e)
 		{
-			SearchMessageTextBox.Clear();
-			searchService.ClearSearchResults();
-			SearchMessageTextBox.Focus();
+			searchUIManager.ClearSearchText();
 		}
 		
 		// Переход к предыдущему результату поиска
 		private void PreviousSearchResult_Click(object sender, RoutedEventArgs e)
 		{
-			searchService.NavigateToPreviousResult();
+			searchUIManager.NavigateToPreviousResult();
 		}
 		
 	// Переход к следующему результату поиска
 		private void NextSearchResult_Click(object sender, RoutedEventArgs e)
 		{
-			searchService.NavigateToNextResult();
+			searchUIManager.NavigateToNextResult();
 		}
 		
 		// Выбор элемента в списке результатов
 		private void SearchResultsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			searchService.HandleSearchResultSelection(SearchResultsList.SelectedIndex);
+			searchUIManager.HandleSearchResultSelection(SearchResultsList.SelectedIndex);
 		}
 		
 		// Информация о контакте (заглушка)
@@ -1063,74 +975,129 @@ namespace УправлениеСкладом
 			emojiPicker.Child = border;
 		}
 
-		// Прокрутка к последнему сообщению
-		private void ScrollToBottom()
+		// Обработчик события загрузки окна для применения темы
+		private void ThemeResourcesLoaded(object sender, RoutedEventArgs e)
 		{
-			try
+			// Определяем текущую тему
+			bool isDarkTheme = ThemeManager.IsDarkTheme;
+			
+			// Получаем словарь нужной темы
+			var themeDictKey = isDarkTheme ? "DarkThemeDict" : "LightThemeDict";
+			var themeDict = Resources[themeDictKey] as ResourceDictionary;
+			
+			if (themeDict != null)
 			{
-				if (MessagesScrollViewer != null)
-					MessagesScrollViewer.ScrollToEnd();
+				// Обновляем все ключевые ресурсы в текущем словаре
+				foreach (var key in themeDict.Keys)
+				{
+					if (Resources.Contains(key))
+					{
+						Resources[key] = themeDict[key];
+					}
+				}
 			}
-			catch (Exception ex)
-			{
-				// Игнорируем ошибку, если элемент не найден
-				Console.WriteLine("Ошибка при прокрутке: " + ex.Message);
-			}
+			
+			// Обновляем иконку темы
+			UpdateThemeIcon();
+			
+			// Применяем тему ко всем элементам интерфейса
+			ApplyTheme();
 		}
 
 		// Применение выбранной темы к элементам интерфейса
 		public void ApplyTheme()
 		{
-			// Определяем текущую тему
-			bool isDarkTheme = Application.Current.Resources.MergedDictionaries.Any(d =>
-				d.Source != null && d.Source.ToString().Contains("DarkTheme.xaml"));
-
-			// Получаем цвета в зависимости от темы
-			var backgroundColor = isDarkTheme ? 
-				new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2B2B2B")) : 
-				new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F0F0F0"));
-			
-			var foregroundColor = isDarkTheme ? 
-				new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFFFFF")) : 
-				new SolidColorBrush((Color)ColorConverter.ConvertFromString("#000000"));
-			
-			// Применяем цвета к элементам
-			this.Background = backgroundColor;
-		}
-
-		// Настройка предложенных сообщений
-		private void SetupSuggestedMessages()
-		{
-			// Примеры предложенных сообщений
-			var suggestedMessages = new List<string>
+			try
 			{
-				"Добрый день!",
-				"Как обстоят дела с заказом?",
-				"Спасибо за информацию",
-				"Подтверждаю получение",
-				"Требуется дополнительная информация"
-			};
-			
-			// Очищаем панель предложенных сообщений
-			SuggestedMessagesPanel.Children.Clear();
-			
-			// Добавляем предложенные сообщения в панель
-			foreach (var message in suggestedMessages)
+				// Определяем текущую тему
+				bool isDarkTheme = ThemeManager.IsDarkTheme;
+				
+				// Получаем словарь нужной темы
+				var themeDictKey = isDarkTheme ? "DarkThemeDict" : "LightThemeDict";
+				var themeDict = Resources[themeDictKey] as ResourceDictionary;
+				
+				if (themeDict != null)
+				{
+					// Обновляем все ключевые ресурсы в текущем словаре
+					foreach (var key in themeDict.Keys)
+					{
+						if (Resources.Contains(key))
+						{
+							Resources[key] = themeDict[key];
+						}
+					}
+				}
+				
+				// Обновляем все сообщения в переписке для корректного применения темы
+				foreach (var messageElement in messageElements.Values)
+				{
+					if (messageElement is StackPanel messagePanel)
+					{
+						foreach (var child in UIMessageFactory.FindAllChildren<Border>(messagePanel))
+						{
+							if (child.Name == "MessageBubble" || child.Name == "AttachmentBubble")
+							{
+								// Определяем, входящее или исходящее сообщение
+								bool isOutgoing = messagePanel.HorizontalAlignment == HorizontalAlignment.Right;
+								
+								// Применяем цвет фона в зависимости от типа сообщения и темы
+								if (isOutgoing)
+								{
+									child.Background = isDarkTheme ? 
+										new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2A9D8F")) : 
+										new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DCF8C6"));
+								}
+								else
+								{
+									child.Background = isDarkTheme ? 
+										new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3A3A3A")) : 
+										new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFFFFF"));
+								}
+								
+								// Обновляем цвет текста
+								foreach (var textBlock in UIMessageFactory.FindAllChildren<TextBlock>(child))
+								{
+									textBlock.Foreground = isDarkTheme ? 
+										new SolidColorBrush(Colors.LightGray) : 
+										new SolidColorBrush(Colors.Black);
+								}
+							}
+						}
+					}
+				}
+				
+				// Обновляем стиль для разделителей дат
+				foreach (UIElement element in MessagesPanel.Children)
+				{
+					if (element is Border border && border.Tag != null && border.Tag is string tagString)
+					{
+						if (tagString.Contains("yyyy-MM-dd"))
+						{
+							// Обновляем стиль разделителя даты
+							border.Background = new SolidColorBrush(Color.FromArgb(
+								80, 
+								isDarkTheme ? (byte)150 : (byte)200, 
+								isDarkTheme ? (byte)150 : (byte)200, 
+								isDarkTheme ? (byte)150 : (byte)200));
+							
+							// Обновляем цвет текста в разделителе
+							if (border.Child is TextBlock dateText)
+							{
+								dateText.Foreground = isDarkTheme ? 
+									new SolidColorBrush(Colors.LightGray) : 
+									new SolidColorBrush(Colors.Black);
+							}
+						}
+					}
+				}
+				
+				// Принудительно перерисовываем UI
+				InvalidateVisual();
+				UpdateLayout();
+			}
+			catch (Exception ex)
 			{
-				Button button = new Button
-				{
-					Content = message,
-					Style = (Style)FindResource("SuggestedMessageButtonStyle")
-				};
-				
-				button.Click += (s, e) =>
-				{
-					MessageTextBox.Text = message;
-					MessageTextBox.Focus();
-					MessageTextBox.SelectionStart = MessageTextBox.Text.Length;
-				};
-				
-				SuggestedMessagesPanel.Children.Add(button);
+				System.Diagnostics.Debug.WriteLine($"Ошибка при применении темы: {ex.Message}");
 			}
 		}
 
@@ -1141,6 +1108,213 @@ namespace УправлениеСкладом
 			{
 				e.Handled = true; // Предотвращаем стандартное поведение
 				clipboardManager.HandlePaste();
+			}
+		}
+
+		// Публичные методы для работы с контекстным меню сообщений
+		
+		// Метод для копирования сообщения
+		public void CopyMessage(int messageId)
+		{
+			try
+			{
+				string messageText = "";
+				
+				// Получаем текст сообщения из БД
+				using (SqlConnection connection = new SqlConnection(connectionString))
+				{
+					connection.Open();
+					string query = "SELECT Текст FROM Сообщения WHERE СообщениеID = @messageId";
+					using (SqlCommand command = new SqlCommand(query, connection))
+					{
+						command.Parameters.AddWithValue("@messageId", messageId);
+						var result = command.ExecuteScalar();
+						if (result != null && result != DBNull.Value)
+						{
+							byte[] encryptedBytes = (byte[])result;
+							string encryptedBase64 = Convert.ToBase64String(encryptedBytes);
+							messageText = EncryptionHelper.DecryptString(encryptedBase64);
+						}
+					}
+				}
+				
+				if (!string.IsNullOrEmpty(messageText))
+				{
+					Clipboard.SetText(messageText);
+					// Можно добавить уведомление о копировании
+				}
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("Ошибка при копировании сообщения: " + ex.Message);
+			}
+		}
+		
+		// Метод для редактирования сообщения
+		public void EditMessage(int messageId)
+		{
+			try
+			{
+				// Получаем текст сообщения из базы
+				string messageText = "";
+				
+				// Получаем текст сообщения из БД
+				using (SqlConnection connection = new SqlConnection(connectionString))
+				{
+					connection.Open();
+					string query = "SELECT Текст FROM Сообщения WHERE СообщениеID = @messageId";
+					using (SqlCommand command = new SqlCommand(query, connection))
+					{
+						command.Parameters.AddWithValue("@messageId", messageId);
+						var result = command.ExecuteScalar();
+						if (result != null && result != DBNull.Value)
+						{
+							byte[] encryptedBytes = (byte[])result;
+							string encryptedBase64 = Convert.ToBase64String(encryptedBytes);
+							messageText = EncryptionHelper.DecryptString(encryptedBase64);
+						}
+					}
+				}
+				
+				if (!string.IsNullOrEmpty(messageText))
+				{
+					// Устанавливаем текст в поле ввода
+					MessageTextBox.Text = messageText;
+					
+					// Устанавливаем флаг редактирования и ID редактируемого сообщения
+					isEditingMessage = true;
+					editingMessageId = messageId;
+					
+					// Фокусируемся на поле ввода
+					MessageTextBox.Focus();
+					MessageTextBox.SelectionStart = MessageTextBox.Text.Length;
+					
+					// Меняем иконку на кнопке отправки (находим кнопку с иконкой Send)
+					foreach (var element in GetLogicalChildrenByType<Button>(this))
+					{
+						if (element.ToolTip?.ToString() == "Отправить сообщение")
+						{
+							if (element.Content is PackIconMaterial iconMaterial)
+							{
+								iconMaterial.Kind = PackIconMaterialKind.PencilOutline;
+								break;
+							}
+						}
+					}
+					
+					// Показываем уведомление о редактировании
+					ShowNotification("Редактирование сообщения");
+				}
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("Ошибка при редактировании сообщения: " + ex.Message);
+			}
+		}
+		
+		// Метод для удаления сообщения только для текущего пользователя
+		public async void DeleteMessageForMe(int messageId)
+		{
+			await messageDeleteManager.DeleteMessageForMeAsync(messageId);
+		}
+		
+		// Метод для удаления сообщения для всех участников
+		public async void DeleteMessageForAll(int messageId)
+		{
+			await messageDeleteManager.DeleteMessageForAllAsync(messageId);
+		}
+		
+		// Вспомогательный метод для отображения временного уведомления
+		private void ShowNotification(string message)
+		{
+			// Создаем уведомление в стиле всплывающего окна
+			var notificationPanel = new Border
+			{
+				Background = new SolidColorBrush(Color.FromArgb(230, 60, 60, 60)),
+				CornerRadius = new CornerRadius(8),
+				Padding = new Thickness(15, 10, 15, 10),
+				HorizontalAlignment = HorizontalAlignment.Center,
+				VerticalAlignment = VerticalAlignment.Bottom,
+				Margin = new Thickness(0, 0, 0, 20),
+				Effect = new System.Windows.Media.Effects.DropShadowEffect
+				{
+					BlurRadius = 10,
+					ShadowDepth = 0,
+					Opacity = 0.3
+				}
+			};
+			
+			// Текст уведомления
+			var textBlock = new TextBlock
+			{
+				Text = message,
+				Foreground = Brushes.White,
+				FontFamily = new FontFamily("Segoe UI"),
+				FontSize = 14,
+				TextWrapping = TextWrapping.Wrap
+			};
+			
+			notificationPanel.Child = textBlock;
+			
+			// Добавляем уведомление в Grid чата
+			var grid = MessagesScrollViewer.Parent as Grid;
+			if (grid != null)
+			{
+				grid.Children.Add(notificationPanel);
+				
+				// Настраиваем анимацию для уведомления
+				var animation = new DoubleAnimation
+				{
+					From = 0,
+					To = 1,
+					Duration = TimeSpan.FromSeconds(0.3),
+					EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+				};
+				
+				notificationPanel.Opacity = 0;
+				notificationPanel.BeginAnimation(UIElement.OpacityProperty, animation);
+				
+				// Таймер для автоматического скрытия уведомления
+				var timer = new DispatcherTimer();
+				timer.Interval = TimeSpan.FromSeconds(3);
+				timer.Tick += (s, e) =>
+				{
+					var fadeOut = new DoubleAnimation
+					{
+						From = 1,
+						To = 0,
+						Duration = TimeSpan.FromSeconds(0.5),
+						EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
+					};
+					
+					fadeOut.Completed += (s2, e2) =>
+					{
+						grid.Children.Remove(notificationPanel);
+					};
+					
+					notificationPanel.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+					timer.Stop();
+				};
+				timer.Start();
+			}
+		}
+
+		// Получение логических дочерних элементов определенного типа
+		private IEnumerable<T> GetLogicalChildrenByType<T>(DependencyObject parent) where T : DependencyObject
+		{
+			var count = VisualTreeHelper.GetChildrenCount(parent);
+			for (int i = 0; i < count; i++)
+			{
+				var child = VisualTreeHelper.GetChild(parent, i);
+				if (child is T t)
+				{
+					yield return t;
+				}
+				
+				foreach (var grandChild in GetLogicalChildrenByType<T>(child))
+				{
+					yield return grandChild;
+				}
 			}
 		}
 	}

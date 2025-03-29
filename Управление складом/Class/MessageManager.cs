@@ -85,6 +85,20 @@ namespace УправлениеСкладом.Class
         {
             try
             {
+                // Проверяем, что вложение не null
+                if (attachment == null)
+                {
+                    MessageBox.Show("Ошибка: вложение отсутствует");
+                    return -1;
+                }
+
+                // Проверяем корректность имени файла
+                if (string.IsNullOrEmpty(attachment.FileName))
+                {
+                    MessageBox.Show("Ошибка: не указано имя файла вложения");
+                    return -1;
+                }
+
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
                     await connection.OpenAsync();
@@ -96,10 +110,32 @@ namespace УправлениеСкладом.Class
                         {
                             // Сначала добавляем сообщение
                             int messageId;
-                            string encryptedBase64 = EncryptionHelper.EncryptString(messageText);
+                            // Если текст сообщения пустой, добавляем описание типа файла как текст сообщения
+                            if (string.IsNullOrEmpty(messageText))
+                            {
+                                switch (attachment.Type)
+                                {
+                                    case AttachmentType.Image:
+                                        messageText = "Изображение";
+                                        break;
+                                    case AttachmentType.Document:
+                                        messageText = "Документ";
+                                        break;
+                                    case AttachmentType.Audio:
+                                        messageText = "Аудио";
+                                        break;
+                                    case AttachmentType.Video:
+                                        messageText = "Видео";
+                                        break;
+                                    default:
+                                        messageText = "Файл";
+                                        break;
+                                }
+                            }
+                            
+                            string encryptedBase64 = EncryptionHelper.EncryptString(messageText ?? string.Empty);
                             byte[] encryptedBytes = Convert.FromBase64String(encryptedBase64);
                             
-                            // Удаляем ссылку на поле Редактировано
                             string sql = @"
                                 INSERT INTO Сообщения (ОтправительID, ПолучательID, Текст, ДатаОтправки, Прочитано, СкрытоОтправителем, СкрытоПолучателем)
                                 VALUES (@senderId, @recipientId, @messageText, @sendDate, 0, 0, 0);
@@ -116,23 +152,37 @@ namespace УправлениеСкладом.Class
                                 messageId = Convert.ToInt32(result);
                             }
 
-                            // Добавляем вложение
-                            string attachmentSql = @"
-                                INSERT INTO Вложения (СообщениеID, ТипВложения, ИмяФайла, РазмерФайла, Содержимое, Миниатюра)
-                                VALUES (@messageId, @attachmentType, @fileName, @fileSize, @content, @thumbnail);
+                            // Проверяем существование таблицы МедиаФайлы и создаем, если не существует
+                            string checkTableSql = @"
+                                IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'МедиаФайлы')
+                                BEGIN
+                                    CREATE TABLE МедиаФайлы (
+                                        ФайлID INT PRIMARY KEY IDENTITY(1,1),
+                                        СообщениеID INT NOT NULL,
+                                        Тип NVARCHAR(50) NOT NULL,
+                                        Файл VARBINARY(MAX) NOT NULL,
+                                        FOREIGN KEY (СообщениеID) REFERENCES Сообщения(СообщениеID) ON DELETE CASCADE
+                                    )
+                                END";
+
+                            using (SqlCommand checkTableCommand = new SqlCommand(checkTableSql, connection, transaction))
+                            {
+                                await checkTableCommand.ExecuteNonQueryAsync();
+                            }
+
+                            // Добавляем медиафайл
+                            string mediaFileSql = @"
+                                INSERT INTO МедиаФайлы (СообщениеID, Тип, Файл)
+                                VALUES (@messageId, @fileType, @content);
                                 SELECT SCOPE_IDENTITY();";
 
-                            using (SqlCommand attachmentCommand = new SqlCommand(attachmentSql, connection, transaction))
+                            using (SqlCommand mediaFileCommand = new SqlCommand(mediaFileSql, connection, transaction))
                             {
-                                attachmentCommand.Parameters.AddWithValue("@messageId", messageId);
-                                attachmentCommand.Parameters.AddWithValue("@attachmentType", attachment.Type.ToString());
-                                attachmentCommand.Parameters.AddWithValue("@fileName", attachment.FileName);
-                                attachmentCommand.Parameters.AddWithValue("@fileSize", attachment.FileSize);
-                                attachmentCommand.Parameters.AddWithValue("@content", attachment.Content);
-                                attachmentCommand.Parameters.Add("@thumbnail", SqlDbType.VarBinary).Value = 
-                                    (attachment.Thumbnail != null) ? (object)attachment.Thumbnail : DBNull.Value;
+                                mediaFileCommand.Parameters.AddWithValue("@messageId", messageId);
+                                mediaFileCommand.Parameters.AddWithValue("@fileType", attachment.Type.ToString());
+                                mediaFileCommand.Parameters.AddWithValue("@content", attachment.Content ?? new byte[0]);
 
-                                await attachmentCommand.ExecuteNonQueryAsync();
+                                await mediaFileCommand.ExecuteNonQueryAsync();
                             }
 
                             // Фиксируем транзакцию
@@ -350,7 +400,7 @@ namespace УправлениеСкладом.Class
         }
         
         /// <summary>
-        /// Удалить все сообщения в диалоге для текущего пользователя
+        /// Удалить все сообщения в диалоге для всех участников
         /// </summary>
         /// <param name="contactId">ID контакта</param>
         /// <returns>Количество удаленных сообщений</returns>
@@ -361,22 +411,38 @@ namespace УправлениеСкладом.Class
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
                     await connection.OpenAsync();
-                    string sql = @"
-                        UPDATE Сообщения
-                        SET СкрытоОтправителем = 1
-                        WHERE ОтправительID = @currentUserId AND ПолучательID = @contactId;
+                    
+                    // Удаляем связанные файлы из переписки
+                    string deleteFilesSQL = @"
+                        DELETE FROM МедиаФайлы 
+                        WHERE СообщениеID IN (
+                            SELECT СообщениеID 
+                            FROM Сообщения 
+                            WHERE (ОтправительID = @currentUserId AND ПолучательID = @contactId) 
+                                OR (ОтправительID = @contactId AND ПолучательID = @currentUserId)
+                        )";
                         
-                        UPDATE Сообщения
-                        SET СкрытоПолучателем = 1
-                        WHERE ОтправительID = @contactId AND ПолучательID = @currentUserId;";
+                        using (SqlCommand fileCommand = new SqlCommand(deleteFilesSQL, connection))
+                        {
+                            fileCommand.Parameters.AddWithValue("@currentUserId", currentUserId);
+                            fileCommand.Parameters.AddWithValue("@contactId", contactId);
+                            
+                            await fileCommand.ExecuteNonQueryAsync();
+                        }
+                        
+                        // Удаляем все сообщения в переписке для всех участников
+                        string sql = @"
+                            DELETE FROM Сообщения
+                            WHERE (ОтправительID = @currentUserId AND ПолучательID = @contactId)
+                               OR (ОтправительID = @contactId AND ПолучательID = @currentUserId)";
 
-                    using (SqlCommand command = new SqlCommand(sql, connection))
-                    {
-                        command.Parameters.AddWithValue("@currentUserId", currentUserId);
-                        command.Parameters.AddWithValue("@contactId", contactId);
+                        using (SqlCommand command = new SqlCommand(sql, connection))
+                        {
+                            command.Parameters.AddWithValue("@currentUserId", currentUserId);
+                            command.Parameters.AddWithValue("@contactId", contactId);
 
-                        return await command.ExecuteNonQueryAsync();
-                    }
+                            return await command.ExecuteNonQueryAsync();
+                        }
                 }
             }
             catch (Exception ex)
@@ -399,8 +465,8 @@ namespace УправлениеСкладом.Class
                 {
                     await connection.OpenAsync();
                     string sql = @"
-                        SELECT ВложениеID, ТипВложения, ИмяФайла, РазмерФайла, Содержимое, Миниатюра
-                        FROM Вложения
+                        SELECT ФайлID, Тип, Файл
+                        FROM МедиаФайлы
                         WHERE СообщениеID = @messageId";
                     
                     using (SqlCommand command = new SqlCommand(sql, connection))
@@ -416,14 +482,15 @@ namespace УправлениеСкладом.Class
                                     AttachmentId = reader.GetInt32(0),
                                     MessageId = messageId,
                                     Type = ParseAttachmentType(reader.GetString(1)),
-                                    FileName = reader.GetString(2),
-                                    FileSize = reader.GetInt64(3),
-                                    Content = (byte[])reader.GetValue(4)
+                                    FileName = "file_" + messageId + GetFileExtensionByType(ParseAttachmentType(reader.GetString(1))),
+                                    FileSize = ((byte[])reader.GetValue(2)).Length,
+                                    Content = (byte[])reader.GetValue(2)
                                 };
                                 
-                                if (!reader.IsDBNull(5))
+                                // Для изображений создаем миниатюру
+                                if (attachment.Type == AttachmentType.Image)
                                 {
-                                    attachment.Thumbnail = (byte[])reader.GetValue(5);
+                                    attachment.CreateThumbnail();
                                 }
                                 
                                 return attachment;
@@ -438,6 +505,26 @@ namespace УправлениеСкладом.Class
             {
                 MessageBox.Show($"Ошибка при получении вложения: {ex.Message}");
                 return null;
+            }
+        }
+        
+        /// <summary>
+        /// Возвращает расширение файла в зависимости от типа
+        /// </summary>
+        private string GetFileExtensionByType(AttachmentType type)
+        {
+            switch (type)
+            {
+                case AttachmentType.Image:
+                    return ".jpg";
+                case AttachmentType.Document:
+                    return ".pdf";
+                case AttachmentType.Audio:
+                    return ".mp3";
+                case AttachmentType.Video:
+                    return ".mp4";
+                default:
+                    return ".bin";
             }
         }
         
@@ -513,6 +600,39 @@ namespace УправлениеСкладом.Class
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка при обновлении статуса сообщений: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Получить текст сообщения по его идентификатору
+        /// </summary>
+        public string GetMessageText(int messageId)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string query = "SELECT Текст FROM Сообщения WHERE СообщениеID = @messageId";
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@messageId", messageId);
+                        var result = command.ExecuteScalar();
+                        if (result != null && result != DBNull.Value)
+                        {
+                            byte[] encryptedBytes = (byte[])result;
+                            string encryptedBase64 = Convert.ToBase64String(encryptedBytes);
+                            return EncryptionHelper.DecryptString(encryptedBase64);
+                        }
+                    }
+                }
+                
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при получении текста сообщения: {ex.Message}");
+                return string.Empty;
             }
         }
     }
