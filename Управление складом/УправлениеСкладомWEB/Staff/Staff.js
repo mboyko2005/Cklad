@@ -1,16 +1,62 @@
 document.addEventListener("DOMContentLoaded", () => {
   checkAuthorization();
   initializeEventListeners();
-
-  // Применяем тему при первой загрузке
   applyTheme();
-
-  // Загрузка данных о товарах и ожидаемых поставках
-  loadInventoryData();
-  loadExpectedDeliveriesData();
-  // Загрузка отсутствующих товаров для меню уведомлений
-  loadMissingProductsList();
+  
+  // Show loading indicators
+  showLoadingIndicators();
+  
+  // Load all data in parallel with caching
+  Promise.all([
+    loadInventoryData(),
+    loadExpectedDeliveriesData(),
+    loadMissingProductsList()
+  ]).finally(() => {
+    hideLoadingIndicators();
+  });
 });
+
+// Cache for API responses
+const apiCache = {
+  data: {},
+  timestamps: {},
+  maxAge: 5 * 60 * 1000, // 5 minutes
+};
+
+// Show loading indicators
+function showLoadingIndicators() {
+  const counters = document.querySelectorAll('.analytic-value');
+  counters.forEach(counter => {
+    counter.textContent = '...';
+  });
+}
+
+// Hide loading indicators
+function hideLoadingIndicators() {
+  const loadingElements = document.querySelectorAll('.loading');
+  loadingElements.forEach(el => el.remove());
+}
+
+// Optimized theme polling with requestAnimationFrame
+let lastThemeCheck = 0;
+function checkThemeChange(timestamp) {
+  if (timestamp - lastThemeCheck >= 1000) { // Check every second instead of 500ms
+    const username = localStorage.getItem("username") || "";
+    const themeKey = `appTheme-${username}`;
+    const newTheme = localStorage.getItem(themeKey) || "light";
+    const currentTheme = document.documentElement.getAttribute("data-theme");
+    
+    if (newTheme !== currentTheme) {
+      document.documentElement.setAttribute("data-theme", newTheme);
+    }
+    
+    lastThemeCheck = timestamp;
+  }
+  requestAnimationFrame(checkThemeChange);
+}
+
+// Start theme polling
+requestAnimationFrame(checkThemeChange);
 
 // При возвращении на страницу (например, через bfcache) повторно применяем тему
 window.addEventListener("pageshow", () => {
@@ -25,20 +71,6 @@ window.addEventListener("storage", (event) => {
     document.documentElement.setAttribute("data-theme", event.newValue);
   }
 });
-
-// Fallback-механизм: опрос localStorage каждые 500 мс для проверки изменений темы
-(function pollThemeChange() {
-  const username = localStorage.getItem("username") || "";
-  const themeKey = `appTheme-${username}`;
-  let currentTheme = localStorage.getItem(themeKey) || "light";
-  setInterval(() => {
-    const newTheme = localStorage.getItem(themeKey) || "light";
-    if (newTheme !== currentTheme) {
-      currentTheme = newTheme;
-      document.documentElement.setAttribute("data-theme", newTheme);
-    }
-  }, 500);
-})();
 
 // Функция установки темы из localStorage для текущего пользователя
 function applyTheme() {
@@ -155,81 +187,125 @@ function handleExit() {
 
 /** Загрузка данных о товарах (общее количество) из API */
 async function loadInventoryData() {
+  const cacheKey = 'inventory';
+  const cachedData = getCachedData(cacheKey);
+  
+  if (cachedData) {
+    updateInventoryDisplay(cachedData);
+    return;
+  }
+
   try {
     const response = await fetch("/api/manageinventory/totalquantity");
     if (!response.ok) {
       throw new Error("Ошибка сети или API недоступен");
     }
     const data = await response.json();
-    const totalGoods = data.totalQuantity || 0;
-    const goodsCounter = document.querySelector(".analytic-item:nth-child(1) .analytic-value");
-    if (goodsCounter) {
-      goodsCounter.textContent = totalGoods.toLocaleString();
-    }
+    cacheData(cacheKey, data);
+    updateInventoryDisplay(data);
   } catch (error) {
     console.error("Ошибка загрузки данных о товарах:", error);
-    const goodsCounter = document.querySelector(".analytic-item:nth-child(1) .analytic-value");
-    if (goodsCounter) {
-      goodsCounter.textContent = "Ошибка";
-    }
+    updateInventoryDisplay({ totalQuantity: 0 }, true);
   }
 }
 
-/** Загрузка данных об ожидаемых поставках (количество отсутствующих товаров) */
+/** Загрузка данных об ожидаемых поставках */
 async function loadExpectedDeliveriesData() {
+  const cacheKey = 'deliveries';
+  const cachedData = getCachedData(cacheKey);
+  
+  if (cachedData) {
+    updateDeliveriesDisplay(cachedData);
+    return;
+  }
+
   try {
     const response = await fetch("/api/manageinventory/missing");
     if (!response.ok) {
       throw new Error("Ошибка сети или API недоступен");
     }
     const data = await response.json();
-    const missingCounter = document.querySelector(".analytic-item:nth-child(2) .analytic-value");
-    if (missingCounter) {
-      missingCounter.textContent = data.missingCount.toLocaleString();
-    }
+    cacheData(cacheKey, data);
+    updateDeliveriesDisplay(data);
   } catch (error) {
     console.error("Ошибка загрузки данных по отсутствующим товарам:", error);
-    const missingCounter = document.querySelector(".analytic-item:nth-child(2) .analytic-value");
-    if (missingCounter) {
-      missingCounter.textContent = "Ошибка";
-    }
+    updateDeliveriesDisplay({ missingCount: 0 }, true);
   }
 }
 
-/** Загрузка списка отсутствующих товаров для выпадающего меню уведомлений */
+/** Загрузка списка отсутствующих товаров */
 async function loadMissingProductsList() {
+  const cacheKey = 'missingProducts';
+  const cachedData = getCachedData(cacheKey);
+  
+  if (cachedData) {
+    updateMissingProductsDisplay(cachedData);
+    return;
+  }
+
   try {
     const response = await fetch("/api/manageinventory/missingproducts");
     if (!response.ok) {
       throw new Error("Ошибка сети или API недоступен");
     }
-    const missingList = await response.json();
-
-    // Устанавливаем количество в badge
-    const notificationsBadge = document.querySelector(".notifications .badge");
-    if (notificationsBadge) {
-      notificationsBadge.textContent = missingList.length.toString();
-    }
-
-    // Формируем список в выпадающем меню
-    const notificationsListEl = document.querySelector(".notifications-list");
-    if (!notificationsListEl) return;
-
-    if (missingList.length === 0) {
-      notificationsListEl.innerHTML = "<div class='notification-item'>Все товары в наличии</div>";
-    } else {
-      const itemsHtml = missingList.map(item => {
-        const name = item.productName || "Без названия";
-        return `<div class="notification-item">${name}</div>`;
-      }).join("");
-      notificationsListEl.innerHTML = itemsHtml;
-    }
+    const data = await response.json();
+    cacheData(cacheKey, data);
+    updateMissingProductsDisplay(data);
   } catch (error) {
     console.error("Ошибка загрузки списка отсутствующих товаров:", error);
-    // На случай ошибки можно вывести сообщение
-    const notificationsListEl = document.querySelector(".notifications-list");
-    if (notificationsListEl) {
-      notificationsListEl.innerHTML = "<div class='notification-item'>Ошибка загрузки</div>";
-    }
+    updateMissingProductsDisplay([], true);
+  }
+}
+
+// Cache management functions
+function getCachedData(key) {
+  const cached = apiCache.data[key];
+  const timestamp = apiCache.timestamps[key];
+  
+  if (cached && timestamp && Date.now() - timestamp < apiCache.maxAge) {
+    return cached;
+  }
+  return null;
+}
+
+function cacheData(key, data) {
+  apiCache.data[key] = data;
+  apiCache.timestamps[key] = Date.now();
+}
+
+// Display update functions
+function updateInventoryDisplay(data, isError = false) {
+  const goodsCounter = document.querySelector(".analytic-item:nth-child(1) .analytic-value");
+  if (goodsCounter) {
+    goodsCounter.textContent = isError ? "Ошибка" : data.totalQuantity.toLocaleString();
+  }
+}
+
+function updateDeliveriesDisplay(data, isError = false) {
+  const missingCounter = document.querySelector(".analytic-item:nth-child(2) .analytic-value");
+  if (missingCounter) {
+    missingCounter.textContent = isError ? "Ошибка" : data.missingCount.toLocaleString();
+  }
+}
+
+function updateMissingProductsDisplay(missingList, isError = false) {
+  const notificationsBadge = document.querySelector(".notifications .badge");
+  if (notificationsBadge) {
+    notificationsBadge.textContent = isError ? "!" : missingList.length.toString();
+  }
+
+  const notificationsListEl = document.querySelector(".notifications-list");
+  if (!notificationsListEl) return;
+
+  if (isError) {
+    notificationsListEl.innerHTML = "<div class='notification-item'>Ошибка загрузки</div>";
+  } else if (missingList.length === 0) {
+    notificationsListEl.innerHTML = "<div class='notification-item'>Все товары в наличии</div>";
+  } else {
+    const itemsHtml = missingList.map(item => {
+      const name = item.productName || "Без названия";
+      return `<div class="notification-item">${name}</div>`;
+    }).join("");
+    notificationsListEl.innerHTML = itemsHtml;
   }
 }
