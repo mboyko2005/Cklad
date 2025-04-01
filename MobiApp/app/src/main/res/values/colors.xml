@@ -21,4 +21,8 @@
     <color name="gradient_end">#3F51B5</color>
     <color name="error_background">#14B00020</color>
     <color name="glow_color">#802196F3</color>
+    
+    <!-- Bottom Navigation Colors -->
+    <color name="bottom_nav_selected">#2196F3</color>
+    <color name="bottom_nav_unselected">#757575</color>
 </resources>

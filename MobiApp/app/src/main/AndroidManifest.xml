@@ -53,6 +53,12 @@
             android:name=".StaffActivity"
             android:exported="false"
             android:theme="@style/Theme.УправлениеСкладомApk" />
+            
+        <!-- Активность управления пользователями -->
+        <activity
+            android:name=".admin.ManageUsersActivity"
+            android:exported="false"
+            android:theme="@style/Theme.УправлениеСкладомApk" />
     </application>
 
 </manifest>

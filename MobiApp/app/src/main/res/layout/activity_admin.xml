@@ -7,33 +7,41 @@
     android:background="@color/background_light"
     tools:context=".AdminActivity">
 
-    <!-- Верхняя панель (Toolbar) -->
+    <!-- Верхняя панель (Toolbar) в стиле Telegram -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/primary"
-        android:elevation="4dp">
+        android:elevation="0dp">
 
         <TextView
-            android:id="@+id/usernameTitleTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="Склад Админ"
             android:textColor="@color/white"
             android:textSize="18sp"
-            android:textStyle="bold"
-            tools:text="Здравствуйте, Admin!" />
+            android:textStyle="bold" />
 
     </androidx.appcompat.widget.Toolbar>
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:text="Панель администратора"
-        android:textSize="24sp"
-        android:textColor="@color/text_primary"/>
+    <!-- Контейнер для фрагментов -->
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/bottom_navigation"
+        android:layout_below="@id/toolbar" />
 
-    <!-- Здесь будет содержимое экрана администратора -->
+    <!-- Нижняя навигация (в стиле Telegram) -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="@color/white"
+        app:itemIconTint="@color/bottom_nav_item_color"
+        app:itemTextColor="@color/bottom_nav_item_color"
+        app:menu="@menu/bottom_navigation_menu" />
 
 </RelativeLayout> 
