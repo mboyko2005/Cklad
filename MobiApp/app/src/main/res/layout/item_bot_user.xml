@@ -3,47 +3,21 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-<<<<<<< HEAD
     android:layout_marginBottom="8dp"
     app:cardBackgroundColor="@color/white"
     app:cardCornerRadius="8dp"
     app:cardElevation="2dp">
-=======
-    android:layout_marginHorizontal="8dp"
-    android:layout_marginBottom="8dp"
-    app:cardBackgroundColor="@color/white"
-    app:cardCornerRadius="10dp"
-    app:cardElevation="1dp">
->>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-<<<<<<< HEAD
         android:padding="12dp">
-=======
-        android:padding="16dp">
-
-        <!-- Аватар пользователя Telegram -->
-        <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="center_vertical"
-            android:background="@drawable/circle_primary_background"
-            android:padding="8dp"
-            android:src="@drawable/ic_person"
-            app:tint="@color/white" />
->>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 
         <!-- Информация о пользователе -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-<<<<<<< HEAD
-=======
-            android:layout_marginStart="16dp"
->>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -51,41 +25,19 @@
                 android:id="@+id/telegramIdTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-<<<<<<< HEAD
                 android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:text="Telegram ID: 123456789" />
-=======
-                android:drawableStart="@drawable/ic_telegram"
-                android:drawablePadding="8dp"
-                android:drawableTint="@color/primary"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="ID: 123456789"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
->>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 
             <TextView
                 android:id="@+id/roleTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-<<<<<<< HEAD
                 android:layout_marginTop="4dp"
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 android:text="Роль: Администратор" />
-=======
-                android:layout_marginTop="8dp"
-                android:drawableStart="@drawable/ic_assignment_ind"
-                android:drawablePadding="8dp"
-                android:drawableTint="@color/text_secondary"
-                android:text="Роль: Администратор"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
->>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
         </LinearLayout>
 
         <!-- Кнопки действий -->
@@ -95,7 +47,6 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-<<<<<<< HEAD
             <ImageButton
                 android:id="@+id/editButton"
                 android:layout_width="40dp"
@@ -113,152 +64,6 @@
                 android:contentDescription="Удалить"
                 android:src="@drawable/ic_delete"
                 app:tint="@color/error" />
-=======
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/editButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="8dp"
-                app:cornerRadius="20dp"
-                android:contentDescription="Редактировать"
-                android:insetLeft="0dp"
-                android:insetTop="0dp"
-                android:insetRight="0dp"
-                android:insetBottom="0dp"
-                app:iconGravity="textStart"
-                app:icon="@drawable/ic_edit"
-                app:iconPadding="0dp"
-                app:iconSize="20dp"
-                app:iconTint="@color/white"
-                app:backgroundTint="@color/primary"
-                style="@style/Widget.MaterialComponents.Button.Icon" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/deleteButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                app:cornerRadius="20dp"
-                android:contentDescription="Удалить"
-                android:insetLeft="0dp"
-                android:insetTop="0dp"
-                android:insetRight="0dp"
-                android:insetBottom="0dp"
-                app:iconGravity="textStart"
-                app:icon="@drawable/ic_delete"
-                app:iconPadding="0dp"
-                app:iconSize="20dp"
-                app:iconTint="@color/white"
-                app:backgroundTint="@color/error"
-                style="@style/Widget.MaterialComponents.Button.Icon" />
-        </LinearLayout>
-    </LinearLayout>
-</androidx.cardview.widget.CardView> 
- 
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginHorizontal="8dp"
-    android:layout_marginBottom="8dp"
-    app:cardBackgroundColor="@color/white"
-    app:cardCornerRadius="10dp"
-    app:cardElevation="1dp">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp">
-
-        <!-- Аватар пользователя Telegram -->
-        <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="center_vertical"
-            android:background="@drawable/circle_primary_background"
-            android:padding="8dp"
-            android:src="@drawable/ic_person"
-            app:tint="@color/white" />
-
-        <!-- Информация о пользователе -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/telegramIdTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:drawableStart="@drawable/ic_telegram"
-                android:drawablePadding="8dp"
-                android:drawableTint="@color/primary"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="ID: 123456789"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/roleTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:drawableStart="@drawable/ic_assignment_ind"
-                android:drawablePadding="8dp"
-                android:drawableTint="@color/text_secondary"
-                android:text="Роль: Администратор"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <!-- Кнопки действий -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/editButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="8dp"
-                app:cornerRadius="20dp"
-                android:contentDescription="Редактировать"
-                android:insetLeft="0dp"
-                android:insetTop="0dp"
-                android:insetRight="0dp"
-                android:insetBottom="0dp"
-                app:iconGravity="textStart"
-                app:icon="@drawable/ic_edit"
-                app:iconPadding="0dp"
-                app:iconSize="20dp"
-                app:iconTint="@color/white"
-                app:backgroundTint="@color/primary"
-                style="@style/Widget.MaterialComponents.Button.Icon" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/deleteButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                app:cornerRadius="20dp"
-                android:contentDescription="Удалить"
-                android:insetLeft="0dp"
-                android:insetTop="0dp"
-                android:insetRight="0dp"
-                android:insetBottom="0dp"
-                app:iconGravity="textStart"
-                app:icon="@drawable/ic_delete"
-                app:iconPadding="0dp"
-                app:iconSize="20dp"
-                app:iconTint="@color/white"
-                app:backgroundTint="@color/error"
-                style="@style/Widget.MaterialComponents.Button.Icon" />
->>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView> 
