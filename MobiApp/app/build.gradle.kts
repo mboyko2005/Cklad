@@ -55,6 +55,41 @@ dependencies {
     // MPAndroidChart для визуализации диаграмм и графиков
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     
+<<<<<<< HEAD
+=======
+    // Библиотеки для тестирования
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+}
+    // MPAndroidChart для визуализации диаграмм и графиков
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    
+    // Библиотеки для тестирования
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+}
+    // MPAndroidChart для визуализации диаграмм и графиков
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    
+    // Библиотеки для тестирования
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+}
+    // MPAndroidChart для визуализации диаграмм и графиков
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    
+    // Библиотеки для тестирования
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+}
+    // MPAndroidChart для визуализации диаграмм и графиков
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
     // Библиотеки для тестирования
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

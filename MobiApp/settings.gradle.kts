@@ -22,3 +22,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "УправлениеСкладомApk"
 include(":app")
+
+
+
+

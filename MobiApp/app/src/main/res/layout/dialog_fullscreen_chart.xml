@@ -65,4 +65,75 @@
         android:layout_weight="1"
         android:padding="8dp"/>
 
+<<<<<<< HEAD
+=======
+</LinearLayout> 
+ 
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white">
+
+    <!-- Заголовок и кнопки управления -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="8dp"
+        android:background="@color/primary">
+
+        <!-- Заголовок графика -->
+        <TextView
+            android:id="@+id/dialogChartTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Отчёт"
+            android:textSize="18sp"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:gravity="center"/>
+
+        <!-- Кнопки управления в правой части -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- Кнопка изменения типа графика -->
+            <ImageButton
+                android:id="@+id/dialogChartTypeButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_chart_type"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="@color/white"
+                android:contentDescription="Изменить тип диаграммы"
+                android:padding="8dp"/>
+                
+            <!-- Кнопка закрытия -->
+            <ImageButton
+                android:id="@+id/dialogChartCloseButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_close"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="@color/white"
+                android:contentDescription="Закрыть"
+                android:padding="8dp"
+                android:layout_marginStart="8dp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Контейнер для графика, занимает все оставшееся пространство -->
+    <FrameLayout
+        android:id="@+id/dialogChartContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp"/>
+
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 </LinearLayout> 
