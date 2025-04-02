@@ -56,7 +56,10 @@ dependencies {
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
     // Библиотеки для тестирования
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -89,6 +92,9 @@ dependencies {
     // MPAndroidChart для визуализации диаграмм и графиков
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     
+<<<<<<< HEAD
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
+=======
 >>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
     // Библиотеки для тестирования
     testImplementation("junit:junit:4.13.2")

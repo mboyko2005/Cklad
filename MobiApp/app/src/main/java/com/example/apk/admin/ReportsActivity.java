@@ -961,7 +961,10 @@ public class ReportsActivity extends AppCompatActivity {
         }
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 } 
  
 
@@ -1925,5 +1928,8 @@ public class ReportsActivity extends AppCompatActivity {
             }
         }
     }
+<<<<<<< HEAD
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
+=======
 >>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 } 

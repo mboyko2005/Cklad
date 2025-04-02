@@ -85,6 +85,11 @@ public class InventoryRequest {
 } 
  
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+ 
+ 
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 =======
  
  

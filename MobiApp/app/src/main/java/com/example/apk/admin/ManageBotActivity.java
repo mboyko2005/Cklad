@@ -9,6 +9,10 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import android.content.Intent;
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 =======
 import android.content.Intent;
 >>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
@@ -78,15 +82,21 @@ public class ManageBotActivity extends AppCompatActivity implements BotUserAdapt
         // Настраиваем слушатели событий
         setupListeners();
 <<<<<<< HEAD
+<<<<<<< HEAD
 
         // Загружаем данные
 =======
+=======
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
     }
     
     @Override
     protected void onResume() {
         super.onResume();
         // Загружаем данные после того, как активность полностью восстановлена
+<<<<<<< HEAD
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
+=======
 >>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
         loadBotUsers();
     }
@@ -142,6 +152,7 @@ public class ManageBotActivity extends AppCompatActivity implements BotUserAdapt
     }
 
     private void loadBotUsers() {
+<<<<<<< HEAD
 <<<<<<< HEAD
         showLoading(true);
         
@@ -281,6 +292,8 @@ public class ManageBotActivity extends AppCompatActivity implements BotUserAdapt
             }
         });
 =======
+=======
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
         try {
             showLoading(true);
             setUiEnabled(false);
@@ -502,6 +515,9 @@ public class ManageBotActivity extends AppCompatActivity implements BotUserAdapt
                     "Произошла ошибка: " + e.getMessage(), 
                     Toast.LENGTH_SHORT).show();
         }
+<<<<<<< HEAD
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
+=======
 >>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
     }
 
@@ -539,8 +555,11 @@ public class ManageBotActivity extends AppCompatActivity implements BotUserAdapt
     private void showLoading(boolean isLoading) {
         loadingProgressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
 <<<<<<< HEAD
+<<<<<<< HEAD
         swipeRefreshLayout.setRefreshing(isLoading);
 =======
+=======
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
         swipeRefreshLayout.setRefreshing(isLoading && swipeRefreshLayout.isRefreshing());
     }
     
@@ -982,6 +1001,9 @@ public class ManageBotActivity extends AppCompatActivity implements BotUserAdapt
         telegramIdEditText.setEnabled(enabled);
         roleSpinner.setEnabled(enabled);
         backButton.setEnabled(enabled);
+<<<<<<< HEAD
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
+=======
 >>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
     }
 

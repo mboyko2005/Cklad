@@ -70,7 +70,10 @@ public class BotUserAdapter extends RecyclerView.Adapter<BotUserAdapter.BotUserV
         void onDeleteClick(BotUserResponse botUser);
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 } 
  
 
@@ -143,5 +146,8 @@ public class BotUserAdapter extends RecyclerView.Adapter<BotUserAdapter.BotUserV
         void onEditClick(BotUserResponse botUser);
         void onDeleteClick(BotUserResponse botUser);
     }
+<<<<<<< HEAD
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
+=======
 >>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 } 

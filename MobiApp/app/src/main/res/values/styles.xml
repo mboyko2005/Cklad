@@ -18,7 +18,10 @@
         <item name="android:windowCloseOnTouchOutside">false</item>
     </style>
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 </resources> 
     <!-- Стиль для полноэкранного диалога с графиком -->
     <style name="FullScreenDialogTheme" parent="Theme.AppCompat.Light.Dialog">
@@ -63,5 +66,8 @@
         <item name="android:windowIsTranslucent">false</item>
         <item name="android:windowCloseOnTouchOutside">false</item>
     </style>
+<<<<<<< HEAD
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
+=======
 >>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 </resources> 

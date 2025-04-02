@@ -46,7 +46,10 @@ public class BotUserResponse {
         this.role = role;
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 } 
  
 
@@ -95,5 +98,8 @@ public class BotUserResponse {
     public void setRole(String role) {
         this.role = role;
     }
+<<<<<<< HEAD
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
+=======
 >>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
 } 
