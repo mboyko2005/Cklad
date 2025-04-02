@@ -51,4 +51,82 @@ public interface ApiService {
      */
     @DELETE("api/manageusers/{userId}")
     Call<Void> deleteUser(@Header("Authorization") String token, @Path("userId") int userId);
+    
+    /**
+     * Получение списка всех складских позиций
+     */
+    @GET("api/manageinventory")
+    Call<List<InventoryResponse>> getInventory(@Header("Authorization") String token);
+    
+    /**
+     * Получение списка складов
+     */
+    @GET("api/manageinventory/warehouses")
+    Call<List<WarehouseResponse>> getWarehouses(@Header("Authorization") String token);
+    
+    /**
+     * Создание новой складской позиции
+     */
+    @POST("api/manageinventory")
+    Call<InventoryResponse> createInventoryItem(@Header("Authorization") String token, @Body InventoryRequest request);
+    
+    /**
+     * Обновление складской позиции
+     */
+    @PUT("api/manageinventory/{id}")
+    Call<InventoryResponse> updateInventoryItem(@Header("Authorization") String token, @Path("id") int positionId, @Body InventoryRequest request);
+    
+    /**
+     * Удаление складской позиции
+     */
+    @DELETE("api/manageinventory/{id}")
+    Call<Void> deleteInventoryItem(@Header("Authorization") String token, @Path("id") int positionId);
+    
+    /**
+     * Получение отчета по самым продаваемым товарам
+     */
+    @GET("api/reports/mostSoldProducts")
+    Call<ReportResponse> getMostSoldProducts(@Header("Authorization") String token);
+    
+    /**
+     * Получение отчета по пользователям системы
+     */
+    @GET("api/reports/systemUsers")
+    Call<ReportResponse> getSystemUsers(@Header("Authorization") String token);
+    
+    /**
+     * Получение отчета по общей стоимости товаров
+     */
+    @GET("api/reports/totalCost")
+    Call<ReportResponse> getTotalCost(@Header("Authorization") String token);
+    
+    /**
+     * Получение отчета по текущим складским позициям
+     */
+    @GET("api/reports/currentStock")
+    Call<ReportResponse> getCurrentStock(@Header("Authorization") String token);
+    
+    /**
+     * Получение пользователей бота Telegram
+     */
+    @GET("api/managebot")
+    Call<List<BotUserResponse>> getBotUsers(@Header("Authorization") String token);
+    
+    /**
+     * Создание нового пользователя бота
+     */
+    @POST("api/managebot")
+    Call<BotUserResponse> createBotUser(@Header("Authorization") String token, @Body BotUserRequest request);
+    
+    /**
+     * Обновление пользователя бота
+     */
+    @PUT("api/managebot/{id}")
+    Call<BotUserResponse> updateBotUser(@Header("Authorization") String token, @Path("id") long id, @Body BotUserRequest request);
+    
+    /**
+     * Удаление пользователя бота
+     */
+    @DELETE("api/managebot/{id}")
+    Call<Void> deleteBotUser(@Header("Authorization") String token, @Path("id") long id);
 }

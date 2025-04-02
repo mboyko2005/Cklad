@@ -16,6 +16,8 @@ import androidx.fragment.app.Fragment;
 import com.example.apk.LoginActivity;
 import com.example.apk.R;
 import com.example.apk.admin.ManageUsersActivity;
+import com.example.apk.admin.ManageInventoryActivity;
+import com.example.apk.admin.ReportsActivity;
 import com.example.apk.utils.SessionManager;
 
 /**
@@ -89,12 +91,16 @@ public class SettingsFragment extends Fragment {
         
         // Управление складом
         manageInventoryOption.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Управление складом (в разработке)", Toast.LENGTH_SHORT).show();
+            // Открываем экран управления складом
+            Intent intent = new Intent(requireContext(), ManageInventoryActivity.class);
+            startActivity(intent);
         });
         
         // Аналитика и отчеты
         reportsOption.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Аналитика и отчеты (в разработке)", Toast.LENGTH_SHORT).show();
+            // Открываем экран аналитики и отчетов
+            Intent intent = new Intent(requireContext(), ReportsActivity.class);
+            startActivity(intent);
         });
         
         // Настройки системы
@@ -104,7 +110,9 @@ public class SettingsFragment extends Fragment {
         
         // Управление ботом
         botOption.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Управление ботом (в разработке)", Toast.LENGTH_SHORT).show();
+            // Открываем экран управления ботом
+            Intent intent = new Intent(requireContext(), com.example.apk.admin.ManageBotActivity.class);
+            startActivity(intent);
         });
         
         // Выход из аккаунта

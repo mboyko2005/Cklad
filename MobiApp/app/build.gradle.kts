@@ -26,6 +26,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+    
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.add("-Xlint:-options")
+    }
 }
 
 dependencies {
@@ -33,6 +37,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     
     // Retrofit и OkHttp для работы с API
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
@@ -46,6 +51,9 @@ dependencies {
     // Glide для загрузки изображений
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+    
+    // MPAndroidChart для визуализации диаграмм и графиков
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     
     // Библиотеки для тестирования
     testImplementation("junit:junit:4.13.2")

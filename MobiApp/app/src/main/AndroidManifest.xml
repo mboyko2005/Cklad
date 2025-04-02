@@ -59,6 +59,21 @@
             android:name=".admin.ManageUsersActivity"
             android:exported="false"
             android:theme="@style/Theme.УправлениеСкладомApk" />
+            
+        <!-- Активность управления складскими позициями -->
+        <activity
+            android:name=".admin.ManageInventoryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.УправлениеСкладомApk" />
+            
+        <!-- Активность аналитики и отчетов -->
+        <activity
+            android:name=".admin.ReportsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.УправлениеСкладомApk" />
+        <activity
+            android:name=".admin.ManageBotActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
