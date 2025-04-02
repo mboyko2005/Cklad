@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Разрешения -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.УправлениеСкладомApk"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
+        
+        <!-- Основная активность - сплэш-экран -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.УправлениеСкладомApk">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+        <!-- Активность авторизации -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:theme="@style/Theme.УправлениеСкладомApk"
+            android:windowSoftInputMode="adjustResize" />
+            
+        <!-- Активность администратора -->
+        <activity
+            android:name=".AdminActivity"
+            android:exported="false"
+            android:theme="@style/Theme.УправлениеСкладомApk" />
+            
+        <!-- Активность менеджера -->
+        <activity
+            android:name=".ManagerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.УправлениеСкладомApk" />
+            
+        <!-- Активность сотрудника склада -->
+        <activity
+            android:name=".StaffActivity"
+            android:exported="false"
+            android:theme="@style/Theme.УправлениеСкладомApk" />
+            
+        <!-- Активность управления пользователями -->
+        <activity
+            android:name=".admin.ManageUsersActivity"
+            android:exported="false"
+            android:theme="@style/Theme.УправлениеСкладомApk" />
+            
+        <!-- Активность управления складскими позициями -->
+        <activity
+            android:name=".admin.ManageInventoryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.УправлениеСкладомApk" />
+            
+        <!-- Активность аналитики и отчетов -->
+        <activity
+            android:name=".admin.ReportsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.УправлениеСкладомApk" />
+        <activity
+            android:name=".admin.ManageBotActivity"
+            android:exported="false" />
+    </application>
+
+</manifest>

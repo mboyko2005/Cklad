@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Общие размеры -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    
+    <!-- Размеры для карточек отчетов -->
+    <dimen name="card_height">220dp</dimen>
+    <dimen name="card_height_zoomed">500dp</dimen>
+    <dimen name="card_height_fullscreen">600dp</dimen>
+    <dimen name="card_margin">8dp</dimen>
+    <dimen name="card_corner_radius">8dp</dimen>
+    
+    <!-- Размеры текста -->
+    <dimen name="text_size_small">12sp</dimen>
+    <dimen name="text_size_medium">16sp</dimen>
+    <dimen name="text_size_large">20sp</dimen>
+    
+    <!-- Отступы -->
+    <dimen name="padding_small">4dp</dimen>
+    <dimen name="padding_medium">8dp</dimen>
+    <dimen name="padding_large">16dp</dimen>
+<<<<<<< HEAD
+=======
+</resources> 
+ 
+<resources>
+    <!-- Общие размеры -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    
+    <!-- Размеры для карточек отчетов -->
+    <dimen name="card_height">220dp</dimen>
+    <dimen name="card_height_zoomed">500dp</dimen>
+    <dimen name="card_height_fullscreen">600dp</dimen>
+    <dimen name="card_margin">8dp</dimen>
+    <dimen name="card_corner_radius">8dp</dimen>
+    
+    <!-- Размеры текста -->
+    <dimen name="text_size_small">12sp</dimen>
+    <dimen name="text_size_medium">16sp</dimen>
+    <dimen name="text_size_large">20sp</dimen>
+    
+    <!-- Отступы -->
+    <dimen name="padding_small">4dp</dimen>
+    <dimen name="padding_medium">8dp</dimen>
+    <dimen name="padding_large">16dp</dimen>
+>>>>>>> 1dea6d5621f4f889dffd0814aeeb98a9d2d0ba87
+</resources> 
