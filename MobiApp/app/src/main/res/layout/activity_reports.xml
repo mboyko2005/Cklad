@@ -4,48 +4,43 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_light"
+    android:background="?android:attr/colorBackground"
     tools:context=".admin.ReportsActivity">
 
-    <!-- Верхняя панель (Toolbar) -->
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <!-- Верхняя панель в стиле темной темы -->
+    <RelativeLayout
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/primary"
-        android:elevation="0dp">
+        android:layout_height="56dp"
+        android:background="?attr/colorSurface"
+        android:elevation="4dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Назад"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="?android:attr/textColorPrimary" />
 
-            <ImageButton
-                android:id="@+id/backButton"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:src="@drawable/ic_arrow_back"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Назад"
-                app:tint="@color/white" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Аналитика и отчеты"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginStart="16dp" />
-        </LinearLayout>
-    </androidx.appcompat.widget.Toolbar>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="Аналитика и отчеты"
+            android:textColor="@color/primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
 
     <!-- Контент с отчетами -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/toolbar"
+        android:layout_below="@id/topBar"
         android:clipToPadding="false"
         android:padding="16dp">
 
@@ -60,6 +55,7 @@
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="8dp"
                 app:cardElevation="2dp"
+                app:cardBackgroundColor="?attr/colorSurface"
                 android:layout_marginBottom="16dp">
 
                 <LinearLayout
@@ -72,7 +68,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Доступные отчеты"
-                        android:textColor="@color/text_primary"
+                        android:textColor="?android:attr/textColorPrimary"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:layout_marginBottom="8dp"/>
@@ -81,13 +77,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Выберите интересующий вас отчет из списка ниже. Данные обновляются в реальном времени."
-                        android:textColor="@color/text_secondary"
+                        android:textColor="?android:attr/textColorSecondary"
                         android:layout_marginBottom="16dp"/>
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="@color/border_color"/>
+                        android:background="@color/primary"/>
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -99,6 +95,7 @@
                 android:layout_height="@dimen/card_height"
                 app:cardCornerRadius="8dp"
                 app:cardElevation="2dp"
+                app:cardBackgroundColor="?attr/colorSurface"
                 android:layout_marginBottom="16dp"
                 android:foreground="?attr/selectableItemBackground"
                 android:clickable="true"
@@ -129,7 +126,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Самые продаваемые товары"
-                            android:textColor="@color/text_primary"
+                            android:textColor="?android:attr/textColorPrimary"
                             android:textSize="16sp"
                             android:textStyle="bold"/>
                             
@@ -166,7 +163,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Топ-10 товаров с наибольшим количеством продаж"
-                        android:textColor="@color/text_secondary"
+                        android:textColor="?android:attr/textColorSecondary"
                         android:layout_marginBottom="16dp"/>
 
                     <!-- Контейнер для графика -->
@@ -174,7 +171,7 @@
                         android:id="@+id/mostSoldProductsChartContainer"
                         android:layout_width="match_parent"
                         android:layout_height="180dp"
-                        android:background="@color/input_background"
+                        android:background="?attr/colorSurface"
                         android:visibility="visible"/>
 
                     <!-- Прогресс при загрузке -->
@@ -203,6 +200,7 @@
                 android:layout_height="@dimen/card_height"
                 app:cardCornerRadius="8dp"
                 app:cardElevation="2dp"
+                app:cardBackgroundColor="?attr/colorSurface"
                 android:layout_marginBottom="16dp"
                 android:foreground="?attr/selectableItemBackground"
                 android:clickable="true"
@@ -233,7 +231,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Пользователи системы"
-                            android:textColor="@color/text_primary"
+                            android:textColor="@color/white"
                             android:textSize="16sp"
                             android:textStyle="bold"/>
                             
@@ -269,8 +267,8 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Распределение пользователей по ролям"
-                        android:textColor="@color/text_secondary"
+                        android:text="Распределение активных пользователей по ролям"
+                        android:textColor="@color/white"
                         android:layout_marginBottom="16dp"/>
 
                     <!-- Контейнер для графика -->
@@ -278,7 +276,7 @@
                         android:id="@+id/systemUsersChartContainer"
                         android:layout_width="match_parent"
                         android:layout_height="180dp"
-                        android:background="@color/input_background"
+                        android:background="?attr/colorSurface"
                         android:visibility="visible"/>
 
                     <!-- Прогресс при загрузке -->
@@ -307,6 +305,7 @@
                 android:layout_height="@dimen/card_height"
                 app:cardCornerRadius="8dp"
                 app:cardElevation="2dp"
+                app:cardBackgroundColor="?attr/colorSurface"
                 android:layout_marginBottom="16dp"
                 android:foreground="?attr/selectableItemBackground"
                 android:clickable="true"
@@ -337,7 +336,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Общая стоимость товаров"
-                            android:textColor="@color/text_primary"
+                            android:textColor="@color/white"
                             android:textSize="16sp"
                             android:textStyle="bold"/>
                             
@@ -373,8 +372,8 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Стоимость товаров на всех складах"
-                        android:textColor="@color/text_secondary"
+                        android:text="Общая стоимость товаров по категориям"
+                        android:textColor="@color/white"
                         android:layout_marginBottom="16dp"/>
 
                     <!-- Контейнер для графика -->
@@ -382,7 +381,7 @@
                         android:id="@+id/totalCostChartContainer"
                         android:layout_width="match_parent"
                         android:layout_height="180dp"
-                        android:background="@color/input_background"
+                        android:background="?attr/colorSurface"
                         android:visibility="visible"/>
 
                     <!-- Прогресс при загрузке -->
@@ -411,6 +410,7 @@
                 android:layout_height="@dimen/card_height"
                 app:cardCornerRadius="8dp"
                 app:cardElevation="2dp"
+                app:cardBackgroundColor="?attr/colorSurface"
                 android:layout_marginBottom="16dp"
                 android:foreground="?attr/selectableItemBackground"
                 android:clickable="true"
@@ -441,7 +441,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Текущие складские позиции"
-                            android:textColor="@color/text_primary"
+                            android:textColor="@color/white"
                             android:textSize="16sp"
                             android:textStyle="bold"/>
                             
@@ -477,8 +477,8 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Количество всех товаров на складах"
-                        android:textColor="@color/text_secondary"
+                        android:text="Распределение товаров на складах"
+                        android:textColor="@color/white"
                         android:layout_marginBottom="16dp"/>
 
                     <!-- Контейнер для графика -->
@@ -486,7 +486,7 @@
                         android:id="@+id/currentStockChartContainer"
                         android:layout_width="match_parent"
                         android:layout_height="180dp"
-                        android:background="@color/input_background"
+                        android:background="?attr/colorSurface"
                         android:visibility="visible"/>
 
                     <!-- Прогресс при загрузке -->

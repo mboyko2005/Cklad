@@ -15,13 +15,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.example.apk.api.ApiClient;
 import com.example.apk.api.AuthRequest;
 import com.example.apk.api.AuthResponse;
 import com.example.apk.models.User;
+import com.example.apk.utils.BaseActivity;
 import com.example.apk.utils.SessionManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -35,7 +35,7 @@ import retrofit2.Response;
  * Активность авторизации пользователя.
  * Позволяет пользователю ввести логин и пароль для входа в систему.
  */
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends BaseActivity {
 
     private TextInputEditText usernameEditText;
     private TextInputEditText passwordEditText;

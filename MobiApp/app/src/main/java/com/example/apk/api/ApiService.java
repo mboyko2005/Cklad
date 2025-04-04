@@ -129,4 +129,16 @@ public interface ApiService {
      */
     @DELETE("api/managebot/{id}")
     Call<Void> deleteBotUser(@Header("Authorization") String token, @Path("id") long id);
+    
+    /**
+     * Изменение пароля пользователя
+     */
+    @POST("api/settings/changepassword")
+    Call<SettingsResponse> changePassword(@Header("Authorization") String token, @Body ChangePasswordRequest request);
+    
+    /**
+     * Сохранение темы пользователя
+     */
+    @POST("api/settings/theme")
+    Call<SettingsResponse> saveTheme(@Header("Authorization") String token, @Body ThemeRequest request);
 }

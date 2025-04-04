@@ -1,69 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardBackgroundColor="@color/white"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
     app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="?attr/colorSurface"
+    android:foreground="?attr/selectableItemBackground">
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:padding="12dp">
 
-        <!-- Информация о пользователе -->
+        <!-- Аватар пользователя бота с анимированным градиентным фоном -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/botAvatarContainer"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="3dp">
+
+            <ImageView
+                android:id="@+id/botAvatarBackground"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_gradient_avatar"
+                android:contentDescription="Фон аватара бота" />
+
+            <TextView
+                android:id="@+id/botAvatarText"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                tools:text="B" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Информация о пользователе бота -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="12dp"
+            android:layout_toEndOf="@id/botAvatarContainer"
+            android:layout_toStartOf="@+id/botUserActions"
             android:orientation="vertical">
 
+            <!-- Имя пользователя бота -->
             <TextView
-                android:id="@+id/telegramIdTextView"
-                android:layout_width="match_parent"
+                android:id="@+id/botUserName"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/text_primary"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:text="Telegram ID: 123456789" />
-
+                tools:text="12345" />
+            
+            <!-- Идентификатор пользователя бота -->
             <TextView
-                android:id="@+id/roleTextView"
-                android:layout_width="match_parent"
+                android:id="@+id/botUserId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textSize="14sp"
+                tools:text="ID: 67890" />
+            
+            <!-- Статус пользователя бота -->
+            <TextView
+                android:id="@+id/botUserStatus"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp"
-                android:text="Роль: Администратор" />
+                android:background="@drawable/bg_role_tag"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:textColor="@color/primary"
+                android:textSize="12sp"
+                tools:text="Активен" />
         </LinearLayout>
 
-        <!-- Кнопки действий -->
+        <!-- Кнопки действий скрыты по запросу пользователя -->
         <LinearLayout
+            android:id="@+id/botUserActions"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:orientation="vertical"
+            android:visibility="gone">
 
             <ImageButton
-                android:id="@+id/editButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:id="@+id/botUserEditButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Редактировать"
+                android:contentDescription="Редактировать пользователя бота"
                 android:src="@drawable/ic_edit"
-                app:tint="@color/primary" />
+                android:tint="?android:attr/textColorSecondary" />
 
             <ImageButton
-                android:id="@+id/deleteButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:id="@+id/botUserDeleteButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Удалить"
+                android:contentDescription="Удалить пользователя бота"
                 android:src="@drawable/ic_delete"
-                app:tint="@color/error" />
+                android:tint="?android:attr/textColorSecondary" />
         </LinearLayout>
-    </LinearLayout>
+    </RelativeLayout>
 </androidx.cardview.widget.CardView> 

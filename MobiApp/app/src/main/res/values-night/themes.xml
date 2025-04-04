@@ -1,13 +1,57 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Base night theme -->
     <style name="Base.Theme.УправлениеСкладомApk" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorPrimaryVariant">@color/primary_dark</item>
+        <!-- Основные цвета темы -->
+        <item name="colorPrimary">@color/primary_dark_theme</item>
+        <item name="colorPrimaryVariant">@color/primary_dark_theme</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/accent</item>
-        <item name="colorSecondaryVariant">@color/accent</item>
+        <item name="colorSecondary">@color/accent_dark_theme</item>
+        <item name="colorSecondaryVariant">@color/accent_dark_theme</item>
         <item name="colorOnSecondary">@color/white</item>
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/white</item>
+        <item name="colorSurface">@color/surface_dark</item>
+        <item name="colorOnSurface">@color/text_primary_dark</item>
+        <item name="android:colorBackground">@color/background_dark</item>
+        <item name="colorOnBackground">@color/text_primary_dark</item>
+        
+        <!-- Статус-бар и навигационная панель -->
         <item name="android:statusBarColor">@color/background_dark</item>
+        <item name="android:navigationBarColor">@color/background_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        
+        <!-- Основные цвета компонентов -->
+        <item name="android:windowBackground">@color/background_dark</item>
+        <item name="android:textColorPrimary">@color/text_primary_dark</item>
+        <item name="android:textColorSecondary">@color/text_secondary_dark</item>
+        <item name="android:textColorHint">@color/text_muted_dark</item>
+        <item name="android:editTextColor">@color/text_primary_dark</item>
+        <item name="android:textColorHighlight">@color/accent_dark_theme</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">false</item>
+        
+        <!-- Стиль полей ввода -->
+        <item name="textInputStyle">@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense</item>
+        <item name="editTextStyle">@style/Widget.MaterialComponents.TextInputEditText.OutlinedBox.Dense</item>
+        
+        <!-- Стиль карточек -->
+        <item name="cardViewStyle">@style/Widget.MaterialComponents.CardView</item>
+        <item name="cardBackgroundColor">@color/surface_dark</item>
+        
+        <!-- Стиль кнопок -->
+        <item name="buttonStyle">@style/Widget.MaterialComponents.Button</item>
+        <item name="materialButtonStyle">@style/Widget.MaterialComponents.Button</item>
+        
+        <!-- Ripple эффект -->
+        <item name="colorControlHighlight">@color/accent_dark_theme</item>
+    </style>
+    
+    <style name="Theme.УправлениеСкладомApk" parent="Base.Theme.УправлениеСкладомApk" />
+    
+    <!-- Стили для диалогов -->
+    <style name="ThemeOverlay.App.Dialog" parent="ThemeOverlay.MaterialComponents.Dialog">
+        <item name="android:windowBackground">@color/surface_dark</item>
+        <item name="android:textColorPrimary">@color/text_primary_dark</item>
+        <item name="android:textColorSecondary">@color/text_secondary_dark</item>
+        <item name="colorPrimary">@color/primary_dark_theme</item>
     </style>
 </resources>

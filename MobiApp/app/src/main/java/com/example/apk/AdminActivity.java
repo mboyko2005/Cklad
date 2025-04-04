@@ -2,19 +2,19 @@ package com.example.apk;
 
 import android.os.Bundle;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
 import com.example.apk.fragments.ChatsFragment;
 import com.example.apk.fragments.ContactsFragment;
 import com.example.apk.fragments.SettingsFragment;
+import com.example.apk.utils.BaseActivity;
 import com.example.apk.utils.SessionManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 /**
  * Активность для роли "Администратор"
  */
-public class AdminActivity extends AppCompatActivity {
+public class AdminActivity extends BaseActivity {
 
     private SessionManager sessionManager;
     private BottomNavigationView bottomNavigationView;

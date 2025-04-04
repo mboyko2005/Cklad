@@ -5,8 +5,10 @@
     <!-- Разрешения -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
+        android:name=".WarehouseApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -39,40 +41,41 @@
         <!-- Активность администратора -->
         <activity
             android:name=".AdminActivity"
-            android:exported="false"
-            android:theme="@style/Theme.УправлениеСкладомApk" />
+            android:exported="false" />
             
         <!-- Активность менеджера -->
         <activity
             android:name=".ManagerActivity"
-            android:exported="false"
-            android:theme="@style/Theme.УправлениеСкладомApk" />
+            android:exported="false" />
             
         <!-- Активность сотрудника склада -->
         <activity
             android:name=".StaffActivity"
-            android:exported="false"
-            android:theme="@style/Theme.УправлениеСкладомApk" />
+            android:exported="false" />
             
         <!-- Активность управления пользователями -->
         <activity
             android:name=".admin.ManageUsersActivity"
-            android:exported="false"
-            android:theme="@style/Theme.УправлениеСкладомApk" />
+            android:exported="false" />
             
         <!-- Активность управления складскими позициями -->
         <activity
             android:name=".admin.ManageInventoryActivity"
-            android:exported="false"
-            android:theme="@style/Theme.УправлениеСкладомApk" />
+            android:exported="false" />
             
         <!-- Активность аналитики и отчетов -->
         <activity
             android:name=".admin.ReportsActivity"
-            android:exported="false"
-            android:theme="@style/Theme.УправлениеСкладомApk" />
+            android:exported="false" />
+            
+        <!-- Активность управления ботом -->
         <activity
             android:name=".admin.ManageBotActivity"
+            android:exported="false" />
+            
+        <!-- Активность настроек системы -->
+        <activity
+            android:name=".admin.SystemSettingsActivity"
             android:exported="false" />
     </application>
 

@@ -15,7 +15,6 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -26,6 +25,7 @@ import com.example.apk.api.InventoryRequest;
 import com.example.apk.api.InventoryResponse;
 import com.example.apk.api.WarehouseResponse;
 import com.example.apk.models.InventoryItem;
+import com.example.apk.utils.BaseActivity;
 import com.example.apk.utils.SessionManager;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -39,7 +39,7 @@ import retrofit2.Response;
 /**
  * Активность для управления складскими позициями
  */
-public class ManageInventoryActivity extends AppCompatActivity {
+public class ManageInventoryActivity extends BaseActivity {
     private static final String TAG = "ManageInventoryActivity";
 
     private ApiService apiService;

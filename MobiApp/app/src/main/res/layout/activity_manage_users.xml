@@ -4,49 +4,44 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_light"
+    android:background="?android:attr/colorBackground"
     tools:context=".admin.ManageUsersActivity">
 
-    <!-- Верхняя панель (Toolbar) в стиле Telegram -->
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <!-- Верхняя панель в стиле темной темы -->
+    <RelativeLayout
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/primary"
-        android:elevation="0dp">
+        android:layout_height="56dp"
+        android:background="?attr/colorSurface"
+        android:elevation="4dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Назад"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="?android:attr/textColorPrimary" />
 
-            <ImageButton
-                android:id="@+id/backButton"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:src="@drawable/ic_arrow_back"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Назад"
-                app:tint="@color/white" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="Управление пользователями"
+            android:textColor="@color/primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Управление пользователями"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginStart="16dp" />
-        </LinearLayout>
-    </androidx.appcompat.widget.Toolbar>
-
-    <!-- Поиск в стиле Telegram -->
+    <!-- Поиск в стиле приложения -->
     <EditText
         android:id="@+id/searchInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/toolbar"
+        android:layout_below="@id/topBar"
         android:layout_marginTop="8dp"
         android:layout_marginHorizontal="16dp"
         android:background="@drawable/bg_search_input"
@@ -54,6 +49,8 @@
         android:padding="12dp"
         android:drawableStart="@drawable/ic_search"
         android:drawablePadding="8dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="?android:attr/textColorSecondary"
         android:textSize="14sp" />
 
     <!-- Список пользователей -->
@@ -65,7 +62,9 @@
         android:layout_above="@id/buttonsPanel"
         android:layout_marginTop="8dp"
         android:clipToPadding="false"
-        android:paddingBottom="8dp" />
+        android:paddingBottom="8dp"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        tools:listitem="@layout/item_user" />
 
     <!-- Панель с кнопками в стиле Telegram -->
     <LinearLayout
@@ -76,7 +75,7 @@
         android:orientation="horizontal"
         android:padding="12dp"
         android:gravity="center"
-        android:background="@drawable/bg_bottom_panel">
+        android:background="?attr/colorSurface">
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/addUserButton"

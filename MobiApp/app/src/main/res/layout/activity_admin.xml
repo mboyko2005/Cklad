@@ -4,26 +4,27 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_light"
+    android:background="?android:attr/colorBackground"
     tools:context=".AdminActivity">
 
-    <!-- Верхняя панель (Toolbar) в стиле Telegram -->
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <!-- Верхняя панель в стиле темной темы -->
+    <RelativeLayout
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/primary"
-        android:elevation="0dp">
+        android:layout_height="56dp"
+        android:background="?attr/colorSurface"
+        android:elevation="4dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
             android:text="Склад Админ"
-            android:textColor="@color/white"
+            android:textColor="@color/primary"
             android:textSize="18sp"
             android:textStyle="bold" />
 
-    </androidx.appcompat.widget.Toolbar>
+    </RelativeLayout>
 
     <!-- Контейнер для фрагментов -->
     <FrameLayout
@@ -31,7 +32,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@id/bottom_navigation"
-        android:layout_below="@id/toolbar" />
+        android:layout_below="@id/topBar" />
 
     <!-- Нижняя навигация (в стиле Telegram) -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
@@ -39,7 +40,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:background="@color/white"
+        android:background="?attr/colorSurface"
         app:itemIconTint="@color/bottom_nav_item_color"
         app:itemTextColor="@color/bottom_nav_item_color"
         app:menu="@menu/bottom_navigation_menu" />

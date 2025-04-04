@@ -10,6 +10,8 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.MotionEvent;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -27,6 +29,7 @@ import com.example.apk.api.ApiService;
 import com.example.apk.api.BotUserRequest;
 import com.example.apk.api.BotUserResponse;
 import com.example.apk.utils.SessionManager;
+import com.example.apk.utils.BaseActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +38,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class ManageBotActivity extends AppCompatActivity implements BotUserAdapter.BotUserItemClickListener {
+public class ManageBotActivity extends BaseActivity implements BotUserAdapter.BotUserItemClickListener {
 
     private ImageButton backButton;
     private CardView addBotUserCard;
@@ -73,6 +76,9 @@ public class ManageBotActivity extends AppCompatActivity implements BotUserAdapt
 
         // Настраиваем слушатели событий
         setupListeners();
+
+        // Настраиваем стиль спиннера
+        setupSpinnerAppearance();
 
         // Загружаем данные
         loadBotUsers();
@@ -126,6 +132,47 @@ public class ManageBotActivity extends AppCompatActivity implements BotUserAdapt
 
         // Кнопка очистки формы
         clearFormButton.setOnClickListener(v -> clearForm());
+    }
+
+    private void setupSpinnerAppearance() {
+        roleSpinner.setBackground(getResources().getDrawable(R.drawable.spinner_background));
+        
+        // Применяем кастомный стиль для выпадающего списка
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+            this, R.layout.spinner_item, roles) {
+            
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View view = super.getDropDownView(position, convertView, parent);
+                TextView textView = (TextView) view;
+                textView.setPadding(20, 16, 20, 16);
+                textView.setTextColor(getResources().getColor(R.color.text_primary));
+                
+                // Добавляем выделение для выбранного элемента
+                if (position == roleSpinner.getSelectedItemPosition()) {
+                    textView.setBackgroundColor(getResources().getColor(R.color.primary_light));
+                } else {
+                    textView.setBackgroundColor(
+                        getResources().getColor(android.R.color.transparent));
+                }
+                
+                return view;
+            }
+        };
+        
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        roleSpinner.setAdapter(adapter);
+        
+        // Добавляем отслеживание касания для анимации
+        roleSpinner.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                v.animate().alpha(0.7f).setDuration(200);
+            } else if (event.getAction() == MotionEvent.ACTION_UP || 
+                       event.getAction() == MotionEvent.ACTION_CANCEL) {
+                v.animate().alpha(1.0f).setDuration(200);
+            }
+            return false;
+        });
     }
 
     private void loadBotUsers() {

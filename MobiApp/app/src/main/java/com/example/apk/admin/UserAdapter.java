@@ -3,6 +3,8 @@ package com.example.apk.admin;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -92,25 +94,48 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
     public interface OnUserClickListener {
         void onUserClick(UserData user, int position);
+        void onUserEditClick(UserData user);
+        void onUserDeleteClick(UserData user);
     }
 
     public class UserViewHolder extends RecyclerView.ViewHolder {
         private TextView usernameTextView;
         private TextView userIdTextView;
         private TextView roleTextView;
-        private TextView initialTextView;
+        private TextView avatarTextView;
+        private ImageButton editButton;
+        private ImageButton deleteButton;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
-            usernameTextView = itemView.findViewById(R.id.usernameTextView);
-            userIdTextView = itemView.findViewById(R.id.userIdTextView);
-            roleTextView = itemView.findViewById(R.id.roleTextView);
-            initialTextView = itemView.findViewById(R.id.initialTextView);
+            usernameTextView = itemView.findViewById(R.id.userName);
+            userIdTextView = itemView.findViewById(R.id.userId);
+            roleTextView = itemView.findViewById(R.id.userRole);
+            avatarTextView = itemView.findViewById(R.id.avatarText);
+            editButton = itemView.findViewById(R.id.userEditButton);
+            deleteButton = itemView.findViewById(R.id.userDeleteButton);
 
+            // Клик на элемент целиком
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && listener != null) {
                     listener.onUserClick(filteredUsers.get(position), position);
+                }
+            });
+            
+            // Клик на кнопку редактирования
+            editButton.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && listener != null) {
+                    listener.onUserEditClick(filteredUsers.get(position));
+                }
+            });
+            
+            // Клик на кнопку удаления
+            deleteButton.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && listener != null) {
+                    listener.onUserDeleteClick(filteredUsers.get(position));
                 }
             });
         }
@@ -120,15 +145,23 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             userIdTextView.setText(String.format(Locale.getDefault(), "ID: %d", user.getUserId()));
             roleTextView.setText(user.getRoleName());
 
-            // Set initial letter
+            // Устанавливаем первую букву имени пользователя в аватар
             String username = user.getUsername();
             if (username != null && !username.isEmpty()) {
-                initialTextView.setText(username.substring(0, 1).toUpperCase());
+                avatarTextView.setText(username.substring(0, 1).toUpperCase());
             } else {
-                initialTextView.setText("?");
+                avatarTextView.setText("?");
             }
 
-            // Highlight if selected
+            // Запускаем анимацию градиента фона аватара
+            ImageView avatarBackground = itemView.findViewById(R.id.avatarBackground);
+            if (avatarBackground != null && avatarBackground.getBackground() instanceof android.graphics.drawable.AnimationDrawable) {
+                android.graphics.drawable.AnimationDrawable animationDrawable = 
+                    (android.graphics.drawable.AnimationDrawable) avatarBackground.getBackground();
+                animationDrawable.start();
+            }
+
+            // Выделяем текущего выбранного пользователя
             itemView.setSelected(user.equals(selectedUser));
         }
     }

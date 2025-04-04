@@ -105,7 +105,9 @@ public class SettingsFragment extends Fragment {
         
         // Настройки системы
         systemSettingsOption.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Настройки системы (в разработке)", Toast.LENGTH_SHORT).show();
+            // Открываем экран настроек системы
+            Intent intent = new Intent(requireContext(), com.example.apk.admin.SystemSettingsActivity.class);
+            startActivity(intent);
         });
         
         // Управление ботом

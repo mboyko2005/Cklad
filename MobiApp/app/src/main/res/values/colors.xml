@@ -2,32 +2,56 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="primary">#2196F3</color>
+    
+    <!-- Основные цвета -->
+    <color name="primary">#3a7bd5</color>
     <color name="primary_dark">#1976D2</color>
     <color name="primary_light">#BBDEFB</color>
-    <color name="accent">#FF4081</color>
+    <color name="accent">#00d2ff</color>
     <color name="error">#B00020</color>
     <color name="success">#4CAF50</color>
+    
+    <!-- Цвета для светлой темы -->
     <color name="text_primary">#333333</color>
-    <color name="text_secondary">#757575</color>
-    <color name="background_light">#F9F9F9</color>
-    <color name="background_dark">#202020</color>
+    <color name="text_secondary">#666666</color>
+    <color name="text_muted">#888888</color>
+    <color name="background_light">#f0f2f5</color>
+    <color name="surface_light">#FFFFFF</color>
+    <color name="window_background_light">#FFFFFF</color>
+    <color name="section_background_light">#f5f7fa</color>
     <color name="card_background">#FFFFFF</color>
     <color name="card_background_transparent">#F2FFFFFF</color>
     <color name="input_background">#F5F5F5</color>
     <color name="button_disabled">#CCCCCC</color>
     <color name="border_color">#DDDDDD</color>
-    <color name="gradient_start">#2196F3</color>
-    <color name="gradient_end">#3F51B5</color>
+    <color name="gradient_start">#3a7bd5</color>
+    <color name="gradient_end">#00d2ff</color>
     <color name="error_background">#14B00020</color>
-    <color name="glow_color">#802196F3</color>
+    <color name="glow_color">#803a7bd5</color>
+    
+    <!-- Цвета текста (специально для ReportsActivity) -->
+    <color name="text_primary_light">#333333</color>
+    
+    <!-- Цвета для темной темы -->
+    <color name="primary_dark_theme">#007aff</color>
+    <color name="accent_dark_theme">#00d2ff</color>
+    <color name="background_dark">#121212</color>
+    <color name="surface_dark">#1c1c1c</color>
+    <color name="window_background_dark">#1c1c1c</color>
+    <color name="section_background_dark">#1f1f1f</color>
+    <color name="card_background_dark">#252525</color>
+    <color name="text_primary_dark">#e0e0e0</color>
+    <color name="text_secondary_dark">#cccccc</color>
+    <color name="text_muted_dark">#aaaaaa</color>
+    <color name="input_background_dark">#252525</color>
+    <color name="border_color_dark">#444444</color>
     
     <!-- Bottom Navigation Colors -->
     <color name="bottom_nav_selected">#2196F3</color>
     <color name="bottom_nav_unselected">#757575</color>
     
     <!-- Required color names -->
-    <color name="colorPrimary">#2196F3</color>
+    <color name="colorPrimary">#3a7bd5</color>
     <color name="colorPrimaryDark">#1976D2</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="colorAccent">#00d2ff</color>
 </resources>

@@ -1,27 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Стиль для подсказок в TextInputLayout -->
+    <!-- Стиль для подсказок в TextInputLayout для темной темы -->
     <style name="HintTextAppearance" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">14sp</item>
-        <item name="android:textColor">@color/primary</item>
+        <item name="android:textColor">@color/primary_dark_theme</item>
         <item name="android:letterSpacing">0.05</item>
     </style>
 
-    <!-- Стиль для полноэкранного диалога с графиком (Светлая тема) -->
-    <style name="FullScreenDialogTheme" parent="Theme.AppCompat.Light.Dialog">
-        <item name="android:windowNoTitle">false</item>
-        <item name="android:windowFullscreen">true</item>
-        <item name="android:windowIsFloating">false</item>
-        <item name="android:windowBackground">@color/white</item>
-        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:windowIsTranslucent">false</item>
-        <item name="android:windowCloseOnTouchOutside">false</item>
-        <item name="android:statusBarColor">@color/primary_dark</item>
-        <item name="android:navigationBarColor">@color/white</item>
-    </style>
-    
     <!-- Стиль для полноэкранного диалога с графиком (Темная тема) -->
-    <style name="FullScreenDialogTheme.Dark" parent="Theme.AppCompat.Dialog">
+    <style name="FullScreenDialogTheme" parent="Theme.AppCompat.Dialog">
         <item name="android:windowNoTitle">false</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowIsFloating">false</item>
@@ -29,49 +16,51 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:windowIsTranslucent">false</item>
         <item name="android:windowCloseOnTouchOutside">false</item>
+        <item name="android:statusBarColor">@color/background_dark</item>
+        <item name="android:navigationBarColor">@color/background_dark</item>
     </style>
-
-    <!-- Стиль для кнопок в светлой теме -->
+    
+    <!-- Стиль для кнопок в темной теме -->
     <style name="Widget.App.Button" parent="Widget.MaterialComponents.Button">
-        <item name="backgroundTint">@color/primary</item>
+        <item name="backgroundTint">@color/primary_dark_theme</item>
         <item name="android:textColor">@color/white</item>
-        <item name="rippleColor">@color/accent</item>
+        <item name="rippleColor">@color/accent_dark_theme</item>
         <item name="android:textSize">14sp</item>
         <item name="android:letterSpacing">0.05</item>
         <item name="android:paddingStart">16dp</item>
         <item name="android:paddingEnd">16dp</item>
     </style>
     
-    <!-- Стиль для карточек в светлой теме -->
+    <!-- Стиль для карточек в темной теме -->
     <style name="Widget.App.CardView" parent="Widget.MaterialComponents.CardView">
-        <item name="cardBackgroundColor">@color/white</item>
+        <item name="cardBackgroundColor">@color/card_background_dark</item>
         <item name="cardElevation">4dp</item>
         <item name="contentPadding">16dp</item>
         <item name="cardCornerRadius">12dp</item>
-        <item name="rippleColor">@color/accent</item>
+        <item name="rippleColor">@color/accent_dark_theme</item>
     </style>
     
-    <!-- Стиль для TextInputLayout в светлой теме -->
+    <!-- Стиль для TextInputLayout в темной теме -->
     <style name="Widget.App.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
-        <item name="boxStrokeColor">@color/primary</item>
-        <item name="boxBackgroundColor">@color/white</item>
-        <item name="android:textColorHint">@color/text_muted</item>
-        <item name="hintTextColor">@color/primary</item>
+        <item name="boxStrokeColor">@color/primary_dark_theme</item>
+        <item name="boxBackgroundColor">@color/card_background_dark</item>
+        <item name="android:textColorHint">@color/text_muted_dark</item>
+        <item name="hintTextColor">@color/primary_dark_theme</item>
     </style>
     
-    <!-- Стиль для Switch в светлой теме -->
+    <!-- Стиль для Switch в темной теме -->
     <style name="Widget.App.Switch" parent="Widget.MaterialComponents.CompoundButton.Switch">
-        <item name="android:colorControlActivated">@color/primary</item>
-        <item name="colorControlActivated">@color/primary</item>
-        <item name="android:colorControlHighlight">@color/accent</item>
-        <item name="trackTint">@color/primary</item>
+        <item name="android:colorControlActivated">@color/primary_dark_theme</item>
+        <item name="colorControlActivated">@color/primary_dark_theme</item>
+        <item name="android:colorControlHighlight">@color/accent_dark_theme</item>
+        <item name="trackTint">@color/primary_dark_theme</item>
     </style>
     
-    <!-- Стиль для Spinner в светлой теме -->
+    <!-- Стиль для Spinner в темной теме -->
     <style name="Widget.App.Spinner" parent="Widget.AppCompat.Spinner">
         <item name="android:background">@drawable/spinner_background</item>
-        <item name="android:popupBackground">@color/white</item>
-        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:popupBackground">@color/card_background_dark</item>
+        <item name="android:textColor">@color/text_primary_dark</item>
         <item name="android:textSize">16sp</item>
         <item name="android:paddingStart">16dp</item>
         <item name="android:paddingEnd">16dp</item>
@@ -79,10 +68,10 @@
         <item name="android:paddingBottom">12dp</item>
     </style>
     
-    <!-- Стиль для выпадающего меню Spinner в светлой теме -->
+    <!-- Стиль для выпадающего меню Spinner в темной теме -->
     <style name="Widget.App.DropDownItem" parent="Widget.AppCompat.DropDownItem.Spinner">
-        <item name="android:textColor">@color/text_primary</item>
-        <item name="android:background">@color/white</item>
+        <item name="android:textColor">@color/text_primary_dark</item>
+        <item name="android:background">@color/card_background_dark</item>
         <item name="android:textSize">16sp</item>
         <item name="android:paddingStart">16dp</item>
         <item name="android:paddingEnd">16dp</item>

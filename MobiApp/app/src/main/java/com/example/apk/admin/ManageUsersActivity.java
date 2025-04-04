@@ -15,7 +15,6 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -27,6 +26,7 @@ import com.example.apk.api.UserRequest;
 import com.example.apk.api.UserResponse;
 import com.example.apk.models.Role;
 import com.example.apk.models.UserData;
+import com.example.apk.utils.BaseActivity;
 import com.example.apk.utils.SessionManager;
 
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ import retrofit2.Response;
 /**
  * Активность для управления пользователями (аналог ManageUsers в веб-версии)
  */
-public class ManageUsersActivity extends AppCompatActivity {
+public class ManageUsersActivity extends BaseActivity {
     private static final String TAG = "ManageUsersActivity";
 
     private ApiService apiService;
@@ -87,16 +87,7 @@ public class ManageUsersActivity extends AppCompatActivity {
         // Настройка RecyclerView
         usersRecyclerView = findViewById(R.id.usersRecyclerView);
         usersRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        userAdapter = new UserAdapter();
-        usersRecyclerView.setAdapter(userAdapter);
-        
-        // Настройка выбора пользователя
-        userAdapter.setOnUserClickListener((user, position) -> {
-            selectedUser = user;
-            userAdapter.setSelectedUser(user); // Обновляем выбранного пользователя в адаптере
-            editUserButton.setEnabled(true);
-            deleteUserButton.setEnabled(true);
-        });
+        setupUsersAdapter();
         
         // Поиск
         searchInput = findViewById(R.id.searchInput);
@@ -502,6 +493,48 @@ public class ManageUsersActivity extends AppCompatActivity {
                 String errorMessage = "Ошибка сети: " + t.getMessage();
                 Log.e(TAG, errorMessage, t);
                 Toast.makeText(ManageUsersActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    // Настройка адаптера пользователей
+    private void setupUsersAdapter() {
+        userAdapter = new UserAdapter();
+        usersRecyclerView.setAdapter(userAdapter);
+        
+        // Настройка выбора пользователя
+        userAdapter.setOnUserClickListener(new UserAdapter.OnUserClickListener() {
+            @Override
+            public void onUserClick(UserData user, int position) {
+                // Сохраняем выбранного пользователя
+                selectedUser = user;
+                userAdapter.setSelectedUser(user); // Обновляем выбранного пользователя в адаптере
+                editUserButton.setEnabled(true);
+                deleteUserButton.setEnabled(true);
+            }
+            
+            @Override
+            public void onUserEditClick(UserData user) {
+                // Выбираем пользователя
+                selectedUser = user;
+                userAdapter.setSelectedUser(user);
+                editUserButton.setEnabled(true);
+                deleteUserButton.setEnabled(true);
+                
+                // Вызываем диалог редактирования
+                showUserDialog(true);
+            }
+            
+            @Override
+            public void onUserDeleteClick(UserData user) {
+                // Выбираем пользователя
+                selectedUser = user;
+                userAdapter.setSelectedUser(user);
+                editUserButton.setEnabled(true);
+                deleteUserButton.setEnabled(true);
+                
+                // Вызываем диалог подтверждения удаления
+                showDeleteConfirmDialog();
             }
         });
     }

@@ -4,27 +4,28 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_light"
+    android:background="?android:attr/colorBackground"
     tools:context=".StaffActivity">
 
-    <!-- Верхняя панель (Toolbar) -->
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <!-- Верхняя панель в стиле темной темы -->
+    <RelativeLayout
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/primary"
+        android:layout_height="56dp"
+        android:background="?attr/colorSurface"
         android:elevation="4dp">
 
         <TextView
             android:id="@+id/usernameTitleTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/white"
+            android:layout_centerInParent="true"
+            android:textColor="@color/primary"
             android:textSize="18sp"
             android:textStyle="bold"
             tools:text="Здравствуйте, Staff!" />
 
-    </androidx.appcompat.widget.Toolbar>
+    </RelativeLayout>
 
     <TextView
         android:layout_width="wrap_content"
@@ -32,7 +33,7 @@
         android:layout_centerInParent="true"
         android:text="Панель сотрудника склада"
         android:textSize="24sp"
-        android:textColor="@color/text_primary"/>
+        android:textColor="?android:attr/textColorPrimary"/>
 
     <!-- Здесь будет содержимое экрана сотрудника склада -->
 

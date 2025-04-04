@@ -1,8 +1,5 @@
 package com.example.apk.api;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.FieldNamingPolicy;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -33,22 +30,13 @@ public class ApiClient {
             
             OkHttpClient client = new OkHttpClient.Builder()
                     .addInterceptor(interceptor)
-                    .connectTimeout(30, TimeUnit.SECONDS)
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(30, TimeUnit.SECONDS)
-                    .retryOnConnectionFailure(true)
+                    .connectTimeout(15, TimeUnit.SECONDS)
+                    .readTimeout(15, TimeUnit.SECONDS)
                     .build();
-            
-            // Настраиваем Gson для работы с ASP.NET контроллером
-            Gson gson = new GsonBuilder()
-                    .setLenient() // Позволяет обрабатывать некорректный JSON
-                    .serializeNulls() // Сериализует null-значения
-                    .setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE) // Для работы с ASP.NET стилем именования
-                    .create();
             
             retrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL)
-                    .addConverterFactory(GsonConverterFactory.create(gson))
+                    .addConverterFactory(GsonConverterFactory.create())
                     .client(client)
                     .build();
         }

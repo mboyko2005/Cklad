@@ -17,13 +17,13 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 
 import com.example.apk.R;
 import com.example.apk.api.ApiClient;
 import com.example.apk.api.ApiService;
 import com.example.apk.api.ReportResponse;
+import com.example.apk.utils.BaseActivity;
 import com.example.apk.utils.SessionManager;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.LineChart;
@@ -51,7 +51,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class ReportsActivity extends AppCompatActivity {
+public class ReportsActivity extends BaseActivity {
 
     private ApiService apiService;
     private String authToken;
@@ -482,6 +482,14 @@ public class ReportsActivity extends AppCompatActivity {
     
     // Метод для настройки столбчатой диаграммы
     private void configureBarChart(BarChart barChart, ReportResponse report, List<String> labels, List<Double> data, int color, boolean isFullscreen) {
+        // Получаем цвета темы в зависимости от текущей темы
+        int textColor;
+        if (isDarkTheme()) {
+            textColor = getResources().getColor(R.color.text_primary_dark);
+        } else {
+            textColor = getResources().getColor(R.color.text_primary_light);
+        }
+        
         // Создание наборов данных
         ArrayList<BarEntry> entries = new ArrayList<>();
         for (int i = 0; i < data.size(); i++) {
@@ -490,8 +498,8 @@ public class ReportsActivity extends AppCompatActivity {
         
         BarDataSet dataSet = new BarDataSet(entries, report.getTitle());
         dataSet.setColor(color);
-        dataSet.setValueTextColor(Color.BLACK);
-        dataSet.setValueTextSize(isFullscreen ? 14f : 12f); // Увеличиваем текст в полноэкранном режиме
+        dataSet.setValueTextColor(textColor);
+        dataSet.setValueTextSize(isFullscreen ? 14f : 12f);
         
         BarData barData = new BarData(dataSet);
         barData.setBarWidth(0.7f);
@@ -504,10 +512,12 @@ public class ReportsActivity extends AppCompatActivity {
         xAxis.setGranularity(1f);
         xAxis.setLabelRotationAngle(45f);
         xAxis.setTextSize(isFullscreen ? 13f : 11f);
+        xAxis.setTextColor(textColor);
         
         // Настройка осей Y
         YAxis leftAxis = barChart.getAxisLeft();
         leftAxis.setTextSize(isFullscreen ? 13f : 11f);
+        leftAxis.setTextColor(textColor);
         
         YAxis rightAxis = barChart.getAxisRight();
         rightAxis.setEnabled(false);
@@ -516,7 +526,11 @@ public class ReportsActivity extends AppCompatActivity {
         Description description = new Description();
         description.setText(report.getTitle());
         description.setTextSize(isFullscreen ? 16f : 14f);
+        description.setTextColor(textColor);
         barChart.setDescription(description);
+        
+        // Цвет легенды
+        barChart.getLegend().setTextColor(textColor);
         
         // Взаимодействие с графиком
         barChart.setPinchZoom(true);
@@ -567,6 +581,14 @@ public class ReportsActivity extends AppCompatActivity {
     
     // Метод для настройки линейной диаграммы
     private void configureLineChart(LineChart lineChart, ReportResponse report, List<String> labels, List<Double> data, int color, boolean isFullscreen) {
+        // Получаем цвета темы в зависимости от текущей темы
+        int textColor;
+        if (isDarkTheme()) {
+            textColor = getResources().getColor(R.color.text_primary_dark);
+        } else {
+            textColor = getResources().getColor(R.color.text_primary_light);
+        }
+        
         // Создание наборов данных
         ArrayList<Entry> entries = new ArrayList<>();
         for (int i = 0; i < data.size(); i++) {
@@ -575,7 +597,7 @@ public class ReportsActivity extends AppCompatActivity {
         
         LineDataSet dataSet = new LineDataSet(entries, report.getTitle());
         dataSet.setColor(color);
-        dataSet.setValueTextColor(Color.BLACK);
+        dataSet.setValueTextColor(textColor);
         dataSet.setValueTextSize(isFullscreen ? 14f : 12f);
         dataSet.setLineWidth(isFullscreen ? 3f : 2.5f);
         dataSet.setCircleColor(color);
@@ -595,10 +617,12 @@ public class ReportsActivity extends AppCompatActivity {
         xAxis.setGranularity(1f);
         xAxis.setLabelRotationAngle(45f);
         xAxis.setTextSize(isFullscreen ? 13f : 11f);
+        xAxis.setTextColor(textColor);
         
         // Настройка осей Y
         YAxis leftAxis = lineChart.getAxisLeft();
         leftAxis.setTextSize(isFullscreen ? 13f : 11f);
+        leftAxis.setTextColor(textColor);
         
         YAxis rightAxis = lineChart.getAxisRight();
         rightAxis.setEnabled(false);
@@ -607,7 +631,11 @@ public class ReportsActivity extends AppCompatActivity {
         Description description = new Description();
         description.setText(report.getTitle());
         description.setTextSize(isFullscreen ? 16f : 14f);
+        description.setTextColor(textColor);
         lineChart.setDescription(description);
+        
+        // Цвет легенды
+        lineChart.getLegend().setTextColor(textColor);
         
         // Взаимодействие с графиком
         lineChart.setPinchZoom(true);
@@ -656,6 +684,17 @@ public class ReportsActivity extends AppCompatActivity {
     
     // Метод для настройки круговой диаграммы
     private void configurePieChart(PieChart pieChart, ReportResponse report, List<String> labels, List<Double> data, int color, boolean isFullscreen) {
+        // Получаем цвета темы в зависимости от текущей темы
+        int textColor;
+        int backgroundColor;
+        if (isDarkTheme()) {
+            textColor = getResources().getColor(R.color.text_primary_dark);
+            backgroundColor = getResources().getColor(R.color.background_dark);
+        } else {
+            textColor = getResources().getColor(R.color.text_primary_light);
+            backgroundColor = getResources().getColor(R.color.background_light);
+        }
+        
         // Создание наборов данных
         ArrayList<PieEntry> entries = new ArrayList<>();
         for (int i = 0; i < data.size(); i++) {
@@ -675,7 +714,7 @@ public class ReportsActivity extends AppCompatActivity {
         dataSet.setColors(colors);
         
         // Настройка текста
-        dataSet.setValueTextColor(Color.WHITE);
+        dataSet.setValueTextColor(textColor);
         dataSet.setValueTextSize(isFullscreen ? 16f : 14f);
         dataSet.setXValuePosition(PieDataSet.ValuePosition.OUTSIDE_SLICE);
         dataSet.setYValuePosition(PieDataSet.ValuePosition.INSIDE_SLICE);
@@ -689,10 +728,14 @@ public class ReportsActivity extends AppCompatActivity {
         // Настройки диаграммы
         pieChart.setUsePercentValues(true);
         pieChart.setDrawHoleEnabled(true);
-        pieChart.setHoleColor(Color.WHITE);
+        pieChart.setHoleColor(backgroundColor);
         pieChart.setTransparentCircleRadius(61f);
         pieChart.setHoleRadius(isFullscreen ? 35f : 40f); // В полноэкранном режиме меньше дырка в центре
         pieChart.setTransparentCircleAlpha(110);
+        
+        // Цвета текста
+        pieChart.setEntryLabelColor(textColor);
+        pieChart.getLegend().setTextColor(textColor);
         
         // Настройки вращения и взаимодействия
         pieChart.setRotationEnabled(true);
@@ -705,12 +748,12 @@ public class ReportsActivity extends AppCompatActivity {
         Description description = new Description();
         description.setText(report.getTitle());
         description.setTextSize(isFullscreen ? 16f : 14f);
+        description.setTextColor(textColor);
         pieChart.setDescription(description);
         
         // Размещение легенды
         pieChart.setDrawEntryLabels(true);
         pieChart.setEntryLabelTextSize(isFullscreen ? 14f : 12f);
-        pieChart.setEntryLabelColor(Color.BLACK);
         
         // Отступы для лучшей видимости
         pieChart.setExtraBottomOffset(isFullscreen ? 15f : 10f);
@@ -959,5 +1002,11 @@ public class ReportsActivity extends AppCompatActivity {
                 fullscreenButton.setContentDescription("Открыть в полный экран");
             }
         }
+    }
+    
+    // Вспомогательный метод для проверки текущей темы
+    private boolean isDarkTheme() {
+        String currentTheme = sessionManager.getTheme();
+        return "Темная".equals(currentTheme);
     }
 } 

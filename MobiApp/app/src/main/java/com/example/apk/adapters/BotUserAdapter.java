@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -38,11 +39,32 @@ public class BotUserAdapter extends RecyclerView.Adapter<BotUserAdapter.BotUserV
     public void onBindViewHolder(@NonNull BotUserViewHolder holder, int position) {
         BotUserResponse botUser = botUsers.get(position);
         
-        holder.telegramIdTextView.setText(String.format("Telegram ID: %d", botUser.getTelegramId()));
-        holder.roleTextView.setText(String.format("Роль: %s", botUser.getRole()));
+        holder.botUserNameTextView.setText(String.format("%d", botUser.getTelegramId()));
+        holder.botUserIdTextView.setText(String.format("ID: %d", botUser.getTelegramId()));
+        holder.botUserStatusTextView.setText(botUser.getRole());
         
-        holder.editButton.setOnClickListener(v -> listener.onEditClick(botUser));
-        holder.deleteButton.setOnClickListener(v -> listener.onDeleteClick(botUser));
+        String idString = String.valueOf(botUser.getTelegramId());
+        String initial = idString.length() > 0 ? String.valueOf(idString.charAt(0)) : "Б";
+        holder.botAvatarTextView.setText(initial);
+        
+        if (holder.botAvatarBackground != null && 
+            holder.botAvatarBackground.getBackground() instanceof android.graphics.drawable.AnimationDrawable) {
+            android.graphics.drawable.AnimationDrawable animationDrawable = 
+                (android.graphics.drawable.AnimationDrawable) holder.botAvatarBackground.getBackground();
+            animationDrawable.start();
+        }
+        
+        holder.editButton.setOnClickListener(v -> {
+            listener.onEditClick(botUser);
+        });
+        
+        holder.deleteButton.setOnClickListener(v -> {
+            listener.onDeleteClick(botUser);
+        });
+        
+        holder.itemView.setOnClickListener(v -> {
+            listener.onEditClick(botUser);
+        });
     }
 
     @Override
@@ -51,17 +73,23 @@ public class BotUserAdapter extends RecyclerView.Adapter<BotUserAdapter.BotUserV
     }
 
     public static class BotUserViewHolder extends RecyclerView.ViewHolder {
-        TextView telegramIdTextView;
-        TextView roleTextView;
+        TextView botUserNameTextView;
+        TextView botUserIdTextView;
+        TextView botUserStatusTextView;
+        TextView botAvatarTextView;
+        ImageView botAvatarBackground;
         ImageButton editButton;
         ImageButton deleteButton;
 
         public BotUserViewHolder(@NonNull View itemView) {
             super(itemView);
-            telegramIdTextView = itemView.findViewById(R.id.telegramIdTextView);
-            roleTextView = itemView.findViewById(R.id.roleTextView);
-            editButton = itemView.findViewById(R.id.editButton);
-            deleteButton = itemView.findViewById(R.id.deleteButton);
+            botUserNameTextView = itemView.findViewById(R.id.botUserName);
+            botUserIdTextView = itemView.findViewById(R.id.botUserId);
+            botUserStatusTextView = itemView.findViewById(R.id.botUserStatus);
+            botAvatarTextView = itemView.findViewById(R.id.botAvatarText);
+            botAvatarBackground = itemView.findViewById(R.id.botAvatarBackground);
+            editButton = itemView.findViewById(R.id.botUserEditButton);
+            deleteButton = itemView.findViewById(R.id.botUserDeleteButton);
         }
     }
 

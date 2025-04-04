@@ -184,7 +184,7 @@ public class InventoryAdapter extends RecyclerView.Adapter<InventoryAdapter.Inve
             if (item.getQuantity() <= 0) {
                 quantityTextView.setTextColor(Color.RED);
             } else {
-                quantityTextView.setTextColor(Color.BLACK);
+                quantityTextView.setTextColor(Color.WHITE);
             }
         }
     }
