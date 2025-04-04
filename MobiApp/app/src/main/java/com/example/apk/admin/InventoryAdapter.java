@@ -180,11 +180,22 @@ public class InventoryAdapter extends RecyclerView.Adapter<InventoryAdapter.Inve
             // Выделяем элемент, если он выбран
             itemView.setSelected(item.equals(selectedItem));
             
-            // Если товар отсутствует на складе, выделяем это
+            // Если товар отсутствует на складе, выделяем это красным цветом
             if (item.getQuantity() <= 0) {
-                quantityTextView.setTextColor(Color.RED);
+                quantityTextView.setTextColor(itemView.getContext().getResources().getColor(R.color.error));
             } else {
-                quantityTextView.setTextColor(Color.WHITE);
+                // Определяем текущую тему и устанавливаем соответствующий цвет
+                int nightModeFlags = itemView.getContext().getResources().getConfiguration().uiMode & 
+                                    android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+                boolean isDarkTheme = nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+                
+                if (isDarkTheme) {
+                    // Для темной темы используем белый цвет
+                    quantityTextView.setTextColor(itemView.getContext().getResources().getColor(R.color.text_primary_dark));
+                } else {
+                    // Для светлой темы используем черный цвет
+                    quantityTextView.setTextColor(itemView.getContext().getResources().getColor(R.color.text_primary));
+                }
             }
         }
     }

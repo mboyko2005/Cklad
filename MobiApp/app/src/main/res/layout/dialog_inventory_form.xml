@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     app:cardCornerRadius="12dp"
     app:cardElevation="4dp"
-    app:cardBackgroundColor="@color/card_background_dark">
+    app:cardBackgroundColor="?attr/colorSurface">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -26,7 +26,7 @@
                 android:layout_height="wrap_content"
                 android:text="Добавить товар"
                 android:textAlignment="center"
-                android:textColor="@color/white"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="20sp"
                 android:textStyle="bold" />
                 
@@ -51,6 +51,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="text"
+                android:textColor="?android:attr/textColorPrimary"
                 android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -71,6 +72,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="text"
+                android:textColor="?android:attr/textColorPrimary"
                 android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -91,6 +93,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="text"
+                android:textColor="?android:attr/textColorPrimary"
                 android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -111,6 +114,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal"
+                android:textColor="?android:attr/textColorPrimary"
                 android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -124,13 +128,14 @@
             app:boxStrokeColor="@color/primary"
             app:hintTextColor="@color/primary"
             app:suffixText="шт."
-            app:suffixTextColor="@color/text_secondary">
+            app:suffixTextColor="?android:attr/textColorSecondary">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/quantityInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="number"
+                android:textColor="?android:attr/textColorPrimary"
                 android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
@@ -141,7 +146,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:text="Выберите склад:"
-            android:textColor="@color/white"
+            android:textColor="?android:attr/textColorPrimary"
             android:textStyle="bold" />
 
         <Spinner
@@ -166,7 +171,7 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:text="Отмена"
-                android:textColor="@color/white"
+                android:textColor="@color/primary"
                 app:strokeColor="@color/primary" />
 
             <Button
