@@ -53,6 +53,7 @@ function initializeEventListeners() {
   const reportsCard = document.getElementById("reportsCard");
   const settingsCard = document.getElementById("settingsCard");
   const botCard = document.getElementById("botCard");
+  const messengerCard = document.getElementById("messengerCard");
 
   // Переходы на нужные HTML-страницы:
   if (manageUsersCard) {
@@ -78,6 +79,11 @@ function initializeEventListeners() {
   if (botCard) {
     botCard.addEventListener("click", () => {
       window.location.href = "ManageBot/ManageBot.html";
+    });
+  }
+  if (messengerCard) {
+    messengerCard.addEventListener("click", () => {
+      window.location.href = "Messenger/Messenger.html";
     });
   }
 

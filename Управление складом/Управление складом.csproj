@@ -61,6 +61,42 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Controllers\AttachmentController.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Update="Controllers\AuthController.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Update="Controllers\ContactController.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Update="Controllers\ConversationController.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Update="Controllers\MessageController.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Update="Controllers\MessageStatusController.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Update="Controllers\MessengerController.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Update="Controllers\SearchController.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Update="Controllers\UserController.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Update="Controllers\UserManagerController.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Update="Controllers\UserStatusController.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="Models\EN\am\final.mdl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -278,6 +314,18 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="УправлениеСкладомWEB\Admin\ManageUsers\ManageUsers.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Admin\Messenger\Messenger.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Admin\Messenger\Messenger.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Admin\Messenger\Messenger.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Admin\Messenger\MessengerAPI.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="УправлениеСкладомWEB\Admin\Reports\Reports.css">
