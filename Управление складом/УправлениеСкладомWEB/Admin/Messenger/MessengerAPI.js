@@ -38,6 +38,18 @@ class BaseAPI {
  */
 class UserAPI extends BaseAPI {
     /**
+     * Получить ID текущего пользователя из localStorage
+     * @returns {string} - ID текущего пользователя
+     */
+    static getCurrentUserId() {
+        const userId = localStorage.getItem("userId");
+        if (!userId) {
+            console.error("ID пользователя не найден в localStorage");
+        }
+        return userId;
+    }
+
+    /**
      * Получить ID пользователя по логину
      * @param {string} login - Логин пользователя
      * @returns {Promise<number>} - ID пользователя
@@ -312,8 +324,17 @@ class MessageAPI extends BaseAPI {
                 throw new Error("ID сообщения не указан");
             }
 
+            // Получаем ID пользователя из localStorage для заголовка
+            const userId = localStorage.getItem("userId");
+            if (!userId) {
+                throw new Error("Ошибка авторизации. Пожалуйста, перезайдите в систему.");
+            }
+
             const response = await fetch(`/api/message/delete-for-me/${messageId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'UserId': userId
+                }
             });
 
             return this.checkResponse(response, "Ошибка при удалении сообщения");
@@ -333,8 +354,17 @@ class MessageAPI extends BaseAPI {
                 throw new Error("ID сообщения не указан");
             }
 
+            // Получаем ID пользователя из localStorage для заголовка
+            const userId = localStorage.getItem("userId");
+            if (!userId) {
+                throw new Error("Ошибка авторизации. Пожалуйста, перезайдите в систему.");
+            }
+
             const response = await fetch(`/api/message/delete-for-all/${messageId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'UserId': userId
+                }
             });
 
             return this.checkResponse(response, "Ошибка при удалении сообщения");
@@ -368,6 +398,392 @@ class MessageAPI extends BaseAPI {
             return this.checkResponse(response, "Ошибка при редактировании сообщения");
         } catch (error) {
             return this.handleError(error, "Ошибка при редактировании сообщения");
+        }
+    }
+}
+
+/**
+ * API для работы с медиафайлами
+ */
+class MediaFileAPI {
+    /**
+     * Получает информацию о медиафайлах для сообщения
+     * @param {number} messageId - ID сообщения
+     * @returns {Promise<Array>} - Информация о медиафайлах
+     */
+    static async getMessageMediaInfo(messageId) {
+        try {
+            if (!messageId) return [];
+            
+            const response = await fetch(`/api/message/media-info/${messageId}`);
+            
+            if (!response.ok) {
+                throw new Error(`Ошибка HTTP: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.success ? data.mediaFiles : [];
+        } catch (error) {
+            console.error('Ошибка при получении информации о медиафайлах:', error);
+            return [];
+        }
+    }
+    
+    /**
+     * Загружает медиафайл на сервер
+     * @param {File} file - Файл для загрузки
+     * @param {number} messageId - ID сообщения, к которому относится файл
+     * @returns {Promise<Object>} - Результат загрузки
+     */
+    static async uploadMedia(file, messageId) {
+        try {
+            if (!file || !messageId) {
+                throw new Error('Не указан файл или ID сообщения');
+            }
+            
+            // Проверка размера файла
+            const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB - согласно ограничению на сервере
+            const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks
+            
+            if (file.size > MAX_FILE_SIZE) {
+                throw new Error(`Размер файла не должен превышать ${MAX_FILE_SIZE / (1024 * 1024)} MB`);
+            }
+            
+            // Для файлов меньше 2MB используем обычную загрузку
+            if (file.size <= CHUNK_SIZE) {
+                return await this.uploadSmallMedia(file, messageId);
+            } else {
+                // Для больших файлов используем чанкированную загрузку
+                return await this.uploadLargeMedia(file, messageId);
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке медиафайла:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Загружает небольшой медиафайл на сервер
+     * @param {File} file - Файл для загрузки
+     * @param {number} messageId - ID сообщения
+     * @returns {Promise<Object>} - Результат загрузки
+     */
+    static async uploadSmallMedia(file, messageId) {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('messageId', messageId);
+            
+            // Добавляем заголовок UserId
+            const userId = UserAPI.getCurrentUserId();
+            
+            const response = await fetch('/api/message/upload-media', {
+                method: 'POST',
+                headers: {
+                    'UserId': userId
+                },
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Ошибка HTTP: ${response.status} - ${errorText}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Ошибка при загрузке небольшого медиафайла:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Загружает большой медиафайл на сервер частями
+     * @param {File} file - Файл для загрузки
+     * @param {number} messageId - ID сообщения
+     * @returns {Promise<Object>} - Результат загрузки
+     */
+    static async uploadLargeMedia(file, messageId) {
+        try {
+            const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks
+            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+            const fileId = this.generateFileId();
+            
+            // Отображаем прогресс загрузки
+            const progressCallback = (current, total) => {
+                const percent = Math.round((current / total) * 100);
+                
+                // Найти сообщение с этим ID и обновить индикатор загрузки
+                const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+                if (messageElement) {
+                    const loadingIndicator = messageElement.querySelector('.attachment-loading');
+                    if (loadingIndicator) {
+                        loadingIndicator.innerHTML = `<i class="ri-loader-4-line"></i> Загрузка: ${percent}%`;
+                    }
+                }
+            };
+            
+            // Добавляем заголовок UserId
+            const userId = UserAPI.getCurrentUserId();
+            
+            // Загрузка чанков
+            for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+                const start = chunkIndex * CHUNK_SIZE;
+                const end = Math.min(file.size, start + CHUNK_SIZE);
+                const chunk = file.slice(start, end);
+                
+                const formData = new FormData();
+                formData.append('file', chunk);
+                formData.append('messageId', messageId);
+                formData.append('chunkIndex', chunkIndex);
+                formData.append('totalChunks', totalChunks);
+                formData.append('fileId', fileId);
+                
+                const response = await fetch('/api/message/upload-media-chunk', {
+                    method: 'POST',
+                    headers: {
+                        'UserId': userId
+                    },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `Ошибка загрузки чанка ${chunkIndex}: ${response.status}`);
+                }
+                
+                const chunkResult = await response.json();
+                
+                // Проверяем, завершена ли загрузка
+                if (chunkResult.success && chunkIndex === totalChunks - 1) {
+                    return chunkResult;
+                }
+                
+                // Вызываем колбэк прогресса
+                progressCallback(chunkIndex + 1, totalChunks);
+            }
+            
+            // Проверяем статус загрузки
+            return await this.checkUploadStatus(fileId, userId);
+        } catch (error) {
+            console.error('Ошибка при загрузке большого медиафайла:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Проверяет статус загрузки чанков
+     * @param {string} fileId - ID файла
+     * @param {number} userId - ID пользователя
+     * @returns {Promise<Object>}
+     */
+    static async checkUploadStatus(fileId, userId) {
+        try {
+            const response = await fetch(`/api/message/check-upload-status?fileId=${fileId}&userId=${userId}`);
+            
+            if (!response.ok) {
+                throw new Error(`Ошибка получения статуса загрузки: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Ошибка при проверке статуса загрузки:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Отменяет загрузку файла
+     * @param {string} fileId - ID файла
+     * @returns {Promise<Object>}
+     */
+    static async cancelUpload(fileId) {
+        try {
+            const userId = UserAPI.getCurrentUserId();
+            
+            const response = await fetch(`/api/message/cancel-upload?fileId=${fileId}`, {
+                method: 'DELETE',
+                headers: {
+                    'UserId': userId
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Ошибка отмены загрузки: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Ошибка при отмене загрузки:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Генерирует уникальный идентификатор файла
+     * @returns {string}
+     */
+    static generateFileId() {
+        return 'file_' + Date.now() + '_' + Math.random().toString(36).substring(2);
+    }
+    
+    /**
+     * Получает URL для доступа к медиафайлу
+     * @param {number} messageId - ID сообщения
+     * @param {boolean} useStream - Использовать потоковую передачу для больших файлов
+     * @returns {string} - URL для доступа к медиафайлу
+     */
+    static getMediaUrl(messageId, useStream = false) {
+        // Убираем параметр timestamp для лучшего кеширования
+        if (useStream) {
+            return `/api/message/media/${messageId}/stream`;
+        }
+        return `/api/message/media/${messageId}`;
+    }
+    
+    /**
+     * Отправляет сообщение с вложением
+     * @param {number} senderId - ID отправителя
+     * @param {number} receiverId - ID получателя
+     * @param {string} text - Текст сообщения
+     * @param {File} file - Файл для отправки
+     * @returns {Promise<Object>} - Результат отправки
+     */
+    static async sendMessageWithAttachment(senderId, receiverId, text, file) {
+        try {
+            if (!senderId) {
+                throw new Error('Не указан ID отправителя');
+            }
+            
+            if (!receiverId) {
+                throw new Error('Не указан ID получателя');
+            }
+            
+            if (!file) {
+                throw new Error('Не выбран файл для отправки');
+            }
+            
+            // Проверка размера файла
+            const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB - согласно ограничению на сервере
+            
+            if (file.size > MAX_FILE_SIZE) {
+                throw new Error(`Размер файла не должен превышать ${MAX_FILE_SIZE / (1024 * 1024)} MB`);
+            }
+            
+            // Создаем предварительный URL для изображения, если это изображение
+            let previewUrl = null;
+            if (file.type.startsWith('image/')) {
+                previewUrl = URL.createObjectURL(file);
+            }
+            
+            console.log('Отправка сообщения с вложением:', file.name, file.type, file.size);
+            
+            // Отправляем текстовое сообщение
+            const messageData = {
+                senderId: senderId,
+                receiverId: receiverId,
+                text: text || ''
+            };
+            
+            const messageResponse = await fetch('/api/message/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'UserId': senderId
+                },
+                body: JSON.stringify(messageData)
+            });
+            
+            if (!messageResponse.ok) {
+                throw new Error(`Ошибка HTTP: ${messageResponse.status}`);
+            }
+            
+            const messageResult = await messageResponse.json();
+            
+            if (!messageResult.success) {
+                throw new Error(messageResult.message || 'Ошибка при отправке сообщения');
+            }
+            
+            const messageId = messageResult.message.messageId;
+            
+            // Обновляем UI с сообщением, показывая, что вложение загружается
+            const message = {
+                messageId: messageId,
+                senderId: senderId,
+                receiverId: receiverId,
+                text: text || '',
+                timestamp: new Date(),
+                isRead: false,
+                hasAttachment: true,
+                attachment: {
+                    name: file.name,
+                    type: file.type.startsWith('image/') ? 'image' : 'file',
+                    size: file.size,
+                    previewUrl: previewUrl // Используем созданный URL для предпросмотра
+                }
+            };
+            
+            // Запускаем асинхронную загрузку файла
+            this.uploadMedia(file, messageId)
+                .then(uploadResult => {
+                    console.log('Файл успешно загружен:', uploadResult);
+                    
+                    // После успешной загрузки обновляем URL в сообщении
+                    if (message.attachment && previewUrl) {
+                        URL.revokeObjectURL(previewUrl); // Освобождаем ресурсы
+                        message.attachment.previewUrl = null;
+                    }
+                    
+                    // Если пользователь смотрит сообщение, обновим его отображение
+                    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+                    if (messageElement) {
+                        const attachmentContainer = messageElement.querySelector('.message-content-attachment');
+                        if (attachmentContainer) {
+                            // Удаляем индикатор загрузки
+                            const loadingIndicator = attachmentContainer.querySelector('.attachment-loading');
+                            if (loadingIndicator) {
+                                attachmentContainer.removeChild(loadingIndicator);
+                            }
+                            
+                            // Загружаем вложение
+                            MessengerUI.loadMessageAttachment(messageId, attachmentContainer);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка при загрузке файла:', error);
+                    
+                    // Обновляем UI с ошибкой загрузки
+                    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+                    if (messageElement) {
+                        const attachmentContainer = messageElement.querySelector('.message-content-attachment');
+                        if (attachmentContainer) {
+                            // Удаляем индикатор загрузки
+                            const loadingIndicator = attachmentContainer.querySelector('.attachment-loading');
+                            if (loadingIndicator) {
+                                attachmentContainer.removeChild(loadingIndicator);
+                            }
+                            
+                            // Показываем ошибку
+                            const errorElement = document.createElement('div');
+                            errorElement.className = 'attachment-error';
+                            errorElement.innerHTML = '<i class="ri-error-warning-line"></i> Ошибка загрузки вложения';
+                            attachmentContainer.appendChild(errorElement);
+                        }
+                    }
+                    
+                    MessengerUI.showNotification('Ошибка при загрузке вложения: ' + error.message);
+                });
+            
+            return {
+                success: true,
+                message: 'Сообщение отправлено',
+                messageId: messageId,
+                messageData: message
+            };
+        } catch (error) {
+            console.error('Ошибка при отправке сообщения с вложением:', error);
+            throw error;
         }
     }
 }
@@ -453,50 +869,438 @@ class MessengerUI {
     }
 
     /**
-     * Создать элемент сообщения
-     * @param {Object} message - Информация о сообщении
-     * @param {boolean} isSender - Является ли отправителем текущий пользователь
-     * @returns {HTMLElement} Созданный элемент
+     * Создание элемента сообщения
+     * @param {Object} message - Объект сообщения
+     * @param {boolean} isSender - Является ли текущий пользователь отправителем сообщения
+     * @returns {HTMLElement} - Элемент сообщения
      */
     static createMessageElement(message, isSender) {
         const messageWrapper = document.createElement("div");
-        messageWrapper.className = `message-wrapper ${isSender ? "sent" : "received"}`;
+        messageWrapper.className = `message-wrapper ${isSender ? 'sent' : 'received'}`;
         messageWrapper.dataset.id = message.messageId;
         
+        // Создаем контейнер для сообщения
         const messageBubble = document.createElement("div");
         messageBubble.className = "message-bubble";
         
-        // Добавление содержимого сообщения
+        // Проверяем наличие вложений
+        if (message.hasAttachment) {
+            // Если есть previewUrl (для быстрого отображения изображений)
+            if (message.previewUrl && message.file && message.file.type.startsWith('image/')) {
+                // Создаем контейнер для изображения
+                const imageContainer = document.createElement("div");
+                imageContainer.className = "message-image-container";
+                
+                // Создаем элемент изображения с предпросмотром
+                const imageElement = document.createElement("img");
+                imageElement.className = "message-attachment";
+                imageElement.alt = "Изображение";
+                imageElement.src = message.previewUrl;
+                
+                // Добавляем обработчик клика для открытия изображения в новом окне
+                imageElement.addEventListener("click", () => {
+                    const mediaUrl = MediaFileAPI.getMediaUrl(message.messageId);
+                    window.open(mediaUrl, "_blank");
+                });
+                
+                // Добавляем обработчик ошибки загрузки
+                imageElement.onerror = function() {
+                    console.error(`Ошибка загрузки предпросмотра изображения для сообщения ID: ${message.messageId}`);
+                    // Заменяем изображение на иконку ошибки
+                    this.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIj48L2NpcmNsZT48bGluZSB4MT0iMTIiIHkxPSI4IiB4Mj0iMTIiIHkyPSIxMiI+PC9saW5lPjxsaW5lIHgxPSIxMiIgeTE9IjE2IiB4Mj0iMTIuMDEiIHkyPSIxNiI+PC9saW5lPjwvc3ZnPg==";
+                    this.style.padding = "10px";
+                    this.style.boxSizing = "border-box";
+                };
+                
+                imageContainer.appendChild(imageElement);
+                messageBubble.appendChild(imageContainer);
+            } else {
+                // Загружаем и отображаем вложение стандартным способом
+                this.loadMessageAttachment(message.messageId, messageBubble);
+            }
+        }
+        
+        // Добавляем текст сообщения
         const messageContent = document.createElement("div");
         messageContent.className = "message-content";
         messageContent.textContent = message.text;
+        messageBubble.appendChild(messageContent);
         
-        // Добавление информации о времени
+        // Добавляем время отправки
         const messageTime = document.createElement("div");
         messageTime.className = "message-time";
+        const messageDate = new Date(message.timestamp);
+        messageTime.textContent = this.formatTime(messageDate);
         
-        const date = new Date(message.timestamp);
-        messageTime.textContent = this.formatTime(date);
-        
-        // Показатель прочтения
-        if (isSender && message.isRead !== undefined) {
+        // Добавляем индикатор прочтения для исходящих сообщений
+        if (isSender) {
             const readStatus = document.createElement("span");
             readStatus.className = "read-status";
             readStatus.innerHTML = message.isRead ? "✓✓" : "✓";
             messageTime.appendChild(readStatus);
         }
         
-        messageBubble.appendChild(messageContent);
         messageBubble.appendChild(messageTime);
         messageWrapper.appendChild(messageBubble);
         
-        // Добавляем контекстное меню
-        messageWrapper.addEventListener("contextmenu", (e) => {
-            e.preventDefault();
-            window.showMessageContextMenu(e, message.messageId, message.text, isSender);
+        // Добавляем обработчик контекстного меню
+        messageWrapper.addEventListener('contextmenu', (e) => {
+            showMessageContextMenu(e, message.messageId, message.text, isSender);
         });
         
         return messageWrapper;
+    }
+    
+    /**
+     * Загрузка вложения сообщения
+     * @param {number} messageId - ID сообщения
+     * @param {HTMLElement} messageBubble - Контейнер сообщения
+     */
+    static async loadMessageAttachment(messageId, messageBubble) {
+        try {
+            // Проверяем параметры
+            if (!messageId || !messageBubble) {
+                console.error("Недостаточно параметров для загрузки вложения");
+                return;
+            }
+            
+            // Создаем индикатор загрузки
+            const loadingIndicator = document.createElement("div");
+            loadingIndicator.className = "attachment-loading";
+            loadingIndicator.innerHTML = '<i class="ri-loader-4-line"></i> Загрузка...';
+            messageBubble.insertBefore(loadingIndicator, messageBubble.firstChild);
+            
+            console.log(`Загрузка вложений для сообщения ID: ${messageId}`);
+            
+            // Получаем информацию о медиафайлах сообщения
+            const mediaFiles = await MediaFileAPI.getMessageMediaInfo(messageId);
+            
+            // Удаляем индикатор загрузки
+            if (loadingIndicator && loadingIndicator.parentNode) {
+                loadingIndicator.parentNode.removeChild(loadingIndicator);
+            }
+            
+            if (!mediaFiles || mediaFiles.length === 0) {
+                console.info(`Вложения для сообщения ${messageId} не найдены`);
+                return;
+            }
+            
+            console.log(`Найдено вложений: ${mediaFiles.length}`, mediaFiles);
+            
+            // Функция для определения, нужно ли использовать потоковую загрузку
+            const shouldUseStream = (fileSize) => {
+                return fileSize && fileSize > 2 * 1024 * 1024; // Файлы больше 2MB
+            };
+            
+            // Для каждого медиафайла создаем соответствующий элемент
+            mediaFiles.forEach(mediaFile => {
+                // Определяем, использовать ли потоковую загрузку для больших файлов
+                const useStream = shouldUseStream(mediaFile.size);
+                const mediaUrl = MediaFileAPI.getMediaUrl(messageId, useStream);
+                
+                if (mediaFile.type.toLowerCase() === "image") {
+                    // Создаем контейнер для изображения
+                    const imageContainer = document.createElement("div");
+                    imageContainer.className = "message-image-container";
+                    
+                    // Добавляем контейнер в начало сообщения
+                    messageBubble.insertBefore(imageContainer, messageBubble.firstChild);
+                    
+                    // Создаем элемент изображения с прогрессом загрузки
+                    const imageElement = document.createElement("img");
+                    imageElement.className = "message-attachment";
+                    imageElement.alt = "Изображение";
+                    imageElement.loading = "lazy"; // Ленивая загрузка для оптимизации
+                    
+                    // Создаем прогресс-индикатор для больших файлов
+                    let progressIndicator = null;
+                    if (useStream) {
+                        progressIndicator = document.createElement("div");
+                        progressIndicator.className = "image-load-progress";
+                        progressIndicator.innerHTML = '<div class="progress-bar"></div>';
+                        imageContainer.appendChild(progressIndicator);
+                    }
+                    
+                    // Устанавливаем источник изображения
+                    imageElement.src = mediaUrl;
+                    
+                    // Добавляем обработчик клика для открытия изображения в новом окне
+                    imageElement.addEventListener("click", () => {
+                        window.open(mediaUrl, "_blank");
+                    });
+                    
+                    // Добавляем обработчик для показа загруженного изображения
+                    imageElement.onload = function() {
+                        console.log(`Изображение для сообщения ${messageId} успешно загружено`);
+                        // Удаляем индикатор прогресса, если он существует
+                        if (progressIndicator) {
+                            imageContainer.removeChild(progressIndicator);
+                        }
+                    };
+                    
+                    // Добавляем обработчик ошибки загрузки
+                    imageElement.onerror = function() {
+                        console.error(`Ошибка загрузки изображения для сообщения ID: ${messageId}, URL: ${mediaUrl}`);
+                        
+                        // Удаляем индикатор прогресса, если он существует
+                        if (progressIndicator && progressIndicator.parentNode) {
+                            progressIndicator.parentNode.removeChild(progressIndicator);
+                        }
+                        
+                        // Заменяем изображение на иконку ошибки
+                        this.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIj48L2NpcmNsZT48bGluZSB4MT0iMTIiIHkxPSI4IiB4Mj0iMTIiIHkyPSIxMiI+PC9saW5lPjxsaW5lIHgxPSIxMiIgeTE9IjE2IiB4Mj0iMTIuMDEiIHkyPSIxNiI+PC9saW5lPjwvc3ZnPg==";
+                        this.style.padding = "10px";
+                        this.style.boxSizing = "border-box";
+                        
+                        // Добавляем текстовое сообщение об ошибке
+                        const errorMsg = document.createElement("div");
+                        errorMsg.className = "attachment-error-message";
+                        errorMsg.textContent = "Ошибка загрузки изображения";
+                        imageContainer.appendChild(errorMsg);
+                        
+                        // Кнопка для повторной попытки
+                        const retryButton = document.createElement("button");
+                        retryButton.className = "retry-button";
+                        retryButton.innerHTML = '<i class="ri-refresh-line"></i> Повторить';
+                        retryButton.onclick = () => {
+                            // Удаляем сообщение об ошибке
+                            if (errorMsg.parentNode) {
+                                errorMsg.parentNode.removeChild(errorMsg);
+                            }
+                            
+                            // Удаляем кнопку повтора
+                            retryButton.parentNode.removeChild(retryButton);
+                            
+                            // Создаем новый индикатор прогресса
+                            if (useStream) {
+                                progressIndicator = document.createElement("div");
+                                progressIndicator.className = "image-load-progress";
+                                progressIndicator.innerHTML = '<div class="progress-bar"></div>';
+                                imageContainer.appendChild(progressIndicator);
+                            }
+                            
+                            // Пробуем загрузить изображение еще раз
+                            const newSrc = mediaUrl + (mediaUrl.includes('?') ? '&' : '?') + "retry=" + new Date().getTime();
+                            this.src = newSrc;
+                        };
+                        imageContainer.appendChild(retryButton);
+                    };
+                    
+                    // Для больших изображений измеряем прогресс загрузки
+                    if (useStream && window.fetch && "onprogress" in new XMLHttpRequest()) {
+                        // Извлекаем URL для измерения прогресса загрузки
+                        this.loadImageWithProgress(mediaUrl, imageElement, progressIndicator);
+                    } else {
+                        // Для браузеров без поддержки, просто отображаем изображение
+                        imageContainer.appendChild(imageElement);
+                    }
+                } else if (mediaFile.type.toLowerCase() === "video") {
+                    // Создаем контейнер для видео
+                    const videoContainer = document.createElement("div");
+                    videoContainer.className = "message-video-container";
+                    
+                    // Добавляем контейнер в начало сообщения
+                    messageBubble.insertBefore(videoContainer, messageBubble.firstChild);
+                    
+                    // Создаем элемент видео с поддержкой потоковой передачи для больших файлов
+                    const videoElement = document.createElement("video");
+                    videoElement.className = "message-attachment";
+                    videoElement.controls = true;
+                    videoElement.preload = "metadata";
+                    
+                    // Для больших видео используем source с type для лучшей поддержки потоковой передачи
+                    if (useStream) {
+                        const source = document.createElement("source");
+                        source.src = mediaUrl;
+                        source.type = "video/mp4"; // Предполагаем, что большинство видео - MP4
+                        videoElement.appendChild(source);
+                    } else {
+                        videoElement.src = mediaUrl;
+                    }
+                    
+                    // Добавляем обработчик ошибки загрузки
+                    videoElement.onerror = function(e) {
+                        console.error(`Ошибка загрузки видео для сообщения ID: ${messageId}`, e);
+                        this.onerror = null;
+                        this.style.display = "none";
+                        
+                        const errorText = document.createElement("div");
+                        errorText.className = "attachment-error";
+                        errorText.innerHTML = '<i class="ri-error-warning-line"></i> Ошибка загрузки видео';
+                        
+                        // Кнопка для повторной попытки
+                        const retryButton = document.createElement("button");
+                        retryButton.className = "retry-button";
+                        retryButton.innerHTML = '<i class="ri-refresh-line"></i> Повторить';
+                        retryButton.onclick = () => {
+                            // Удаляем сообщение об ошибке
+                            if (errorText.parentNode) {
+                                videoContainer.removeChild(errorText);
+                            }
+                            
+                            // Удаляем кнопку повтора
+                            retryButton.parentNode.removeChild(retryButton);
+                            
+                            // Пробуем загрузить видео еще раз
+                            videoElement.style.display = "block";
+                            const newSrc = mediaUrl + (mediaUrl.includes('?') ? '&' : '?') + "retry=" + new Date().getTime();
+                            videoElement.src = newSrc;
+                            videoElement.load();
+                        };
+                        
+                        videoContainer.appendChild(errorText);
+                        videoContainer.appendChild(retryButton);
+                    };
+                    
+                    // Добавляем видео в контейнер
+                    videoContainer.appendChild(videoElement);
+                } else {
+                    // Для других типов файлов создаем ссылку
+                    const fileContainer = document.createElement("div");
+                    fileContainer.className = "message-file-container";
+                    
+                    const fileLink = document.createElement("a");
+                    fileLink.className = "message-file";
+                    fileLink.href = mediaUrl;
+                    fileLink.target = "_blank";
+                    fileLink.download = "";  // Для скачивания файла
+                    
+                    // Выбираем подходящую иконку в зависимости от типа файла
+                    let iconClass = "ri-file-line";
+                    let fileTypeName = "файл";
+                    
+                    if (mediaFile.type.toLowerCase() === "audio") {
+                        iconClass = "ri-file-music-line";
+                        fileTypeName = "аудио";
+                    } else if (mediaFile.type.toLowerCase() === "document") {
+                        iconClass = "ri-file-text-line";
+                        fileTypeName = "документ";
+                    } else if (mediaFile.type.toLowerCase() === "pdf") {
+                        iconClass = "ri-file-pdf-line";
+                        fileTypeName = "PDF";
+                    }
+                    
+                    fileLink.innerHTML = `<i class="${iconClass}"></i> Скачать ${fileTypeName}`;
+                    
+                    // Если у нас есть размер файла, добавим его
+                    if (mediaFile.size) {
+                        const sizeFormatted = this.formatFileSize(mediaFile.size);
+                        const fileSizeElement = document.createElement("div");
+                        fileSizeElement.className = "file-size";
+                        fileSizeElement.textContent = sizeFormatted;
+                        fileContainer.appendChild(fileSizeElement);
+                    }
+                    
+                    // Добавляем ссылку в контейнер
+                    fileContainer.appendChild(fileLink);
+                    
+                    // Добавляем контейнер в начало сообщения
+                    messageBubble.insertBefore(fileContainer, messageBubble.firstChild);
+                }
+            });
+        } catch (error) {
+            console.error(`Ошибка при загрузке вложений для сообщения ${messageId}:`, error);
+            
+            // Удаляем индикатор загрузки, если он существует
+            const loadingIndicator = messageBubble.querySelector('.attachment-loading');
+            if (loadingIndicator && loadingIndicator.parentNode) {
+                loadingIndicator.parentNode.removeChild(loadingIndicator);
+            }
+            
+            // Добавляем сообщение об ошибке
+            const errorElement = document.createElement("div");
+            errorElement.className = "attachment-error";
+            errorElement.innerHTML = '<i class="ri-error-warning-line"></i> Не удалось загрузить вложение';
+            
+            // Кнопка для повторной попытки
+            const retryButton = document.createElement("button");
+            retryButton.className = "retry-button";
+            retryButton.innerHTML = '<i class="ri-refresh-line"></i> Повторить';
+            retryButton.onclick = () => {
+                // Удаляем сообщение об ошибке
+                if (errorElement.parentNode) {
+                    errorElement.parentNode.removeChild(errorElement);
+                }
+                
+                // Удаляем кнопку повтора
+                retryButton.parentNode.removeChild(retryButton);
+                
+                // Пробуем загрузить вложение еще раз
+                this.loadMessageAttachment(messageId, messageBubble);
+            };
+            
+            messageBubble.insertBefore(errorElement, messageBubble.firstChild);
+            messageBubble.insertBefore(retryButton, messageBubble.firstChild.nextSibling);
+        }
+    }
+    
+    /**
+     * Загружает изображение с отслеживанием прогресса
+     * @param {string} url - URL изображения
+     * @param {HTMLImageElement} imageElement - Элемент изображения
+     * @param {HTMLElement} progressIndicator - Индикатор прогресса
+     */
+    static loadImageWithProgress(url, imageElement, progressIndicator) {
+        // Создаем запрос
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'blob';
+        
+        // Устанавливаем обработчик прогресса
+        xhr.onprogress = function(event) {
+            if (event.lengthComputable && progressIndicator) {
+                const percent = Math.round((event.loaded / event.total) * 100);
+                const progressBar = progressIndicator.querySelector('.progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = percent + '%';
+                }
+            }
+        };
+        
+        // Устанавливаем обработчик завершения
+        xhr.onload = function() {
+            if (this.status === 200) {
+                const blob = this.response;
+                const objectURL = URL.createObjectURL(blob);
+                
+                // Устанавливаем URL для изображения
+                imageElement.src = objectURL;
+                
+                // Освобождаем URL при выгрузке изображения
+                imageElement.onload = function() {
+                    // Удаляем индикатор прогресса
+                    if (progressIndicator && progressIndicator.parentNode) {
+                        progressIndicator.parentNode.removeChild(progressIndicator);
+                    }
+                };
+            } else {
+                // В случае ошибки устанавливаем обработчик ошибки изображения
+                imageElement.onerror();
+            }
+        };
+        
+        // Устанавливаем обработчик ошибки
+        xhr.onerror = function() {
+            imageElement.onerror();
+        };
+        
+        // Запускаем запрос
+        xhr.send();
+    }
+    
+    /**
+     * Форматирует размер файла в читаемый вид
+     * @param {number} bytes - Размер в байтах
+     * @returns {string} Отформатированный размер
+     */
+    static formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
     
     /**
@@ -510,8 +1314,292 @@ class MessengerUI {
     }
 }
 
+/**
+ * Класс для работы с медиафайлами и вложениями
+ */
+class MediaHandler {
+    /**
+     * Показывает предпросмотр выбранного файла
+     * @param {File} file - Файл для предпросмотра
+     * @param {HTMLElement} container - Контейнер для предпросмотра
+     */
+    static showFilePreview(file, container) {
+        if (!file || !container) return;
+        
+        // Очищаем контейнер
+        container.innerHTML = '';
+        
+        // Создаем элемент предпросмотра в зависимости от типа файла
+        if (file.type.startsWith('image/')) {
+            // Предпросмотр изображения
+            const img = document.createElement('img');
+            img.className = 'attachment-thumbnail';
+            img.file = file;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            container.appendChild(img);
+        } else {
+            // Предпросмотр для других типов файлов
+            const icon = document.createElement('i');
+            
+            if (file.type.startsWith('video/')) {
+                icon.className = 'ri-video-line';
+            } else if (file.type.startsWith('audio/')) {
+                icon.className = 'ri-file-music-line';
+            } else {
+                icon.className = 'ri-file-line';
+            }
+            
+            container.appendChild(icon);
+        }
+        
+        // Добавляем название файла
+        const fileName = document.createElement('div');
+        fileName.className = 'attachment-filename';
+        fileName.textContent = file.name;
+        container.appendChild(fileName);
+    }
+    
+    /**
+     * Создает медиаэлемент в зависимости от типа файла
+     * @param {Object} attachment - Информация о вложении
+     * @returns {HTMLElement} Медиаэлемент
+     */
+    static createMediaElement(attachment) {
+        if (!attachment || !attachment.mediaType) return null;
+        
+        const mediaUrl = MessageAPI.getMediaUrl(attachment.mediaId);
+        let mediaElement = null;
+        
+        if (attachment.mediaType.startsWith('image/')) {
+            mediaElement = document.createElement('img');
+            mediaElement.src = mediaUrl;
+            mediaElement.className = 'message-image';
+            mediaElement.onclick = function() {
+                window.open(mediaUrl, '_blank');
+            };
+        } else if (attachment.mediaType.startsWith('video/')) {
+            mediaElement = document.createElement('video');
+            mediaElement.src = mediaUrl;
+            mediaElement.className = 'message-video';
+            mediaElement.controls = true;
+        } else if (attachment.mediaType.startsWith('audio/')) {
+            mediaElement = document.createElement('audio');
+            mediaElement.src = mediaUrl;
+            mediaElement.className = 'message-audio';
+            mediaElement.controls = true;
+        } else {
+            // Для других типов файлов создаем ссылку для скачивания
+            mediaElement = document.createElement('a');
+            mediaElement.href = mediaUrl;
+            mediaElement.className = 'message-file';
+            mediaElement.target = '_blank';
+            
+            const icon = document.createElement('i');
+            icon.className = 'ri-file-line';
+            
+            const fileName = document.createElement('span');
+            fileName.textContent = attachment.fileName || 'Файл';
+            
+            mediaElement.appendChild(icon);
+            mediaElement.appendChild(fileName);
+        }
+        
+        return mediaElement;
+    }
+    
+    /**
+     * Загружает вложение сообщения
+     * @param {Object} attachment - Информация о вложении
+     * @param {HTMLElement} container - Контейнер для вложения
+     * @param {boolean} showLoader - Показывать ли индикатор загрузки
+     */
+    static loadMessageAttachment(attachment, container, showLoader = false) {
+        if (!attachment || !attachment.mediaId || !container) return;
+        
+        // Очищаем контейнер
+        container.innerHTML = '';
+        
+        // Показываем индикатор загрузки, если нужно
+        if (showLoader) {
+            const loader = document.createElement('div');
+            loader.className = 'message-attachment-loader';
+            loader.innerHTML = '<i class="ri-loader-line spinning"></i>';
+            container.appendChild(loader);
+        }
+        
+        try {
+            const mediaElement = this.createMediaElement(attachment);
+            if (mediaElement) {
+                // Убираем индикатор загрузки
+                if (showLoader) container.innerHTML = '';
+                
+                // Добавляем медиаэлемент
+                container.appendChild(mediaElement);
+                
+                // Для изображений добавляем обработчик ошибок
+                if (mediaElement.tagName === 'IMG') {
+                    mediaElement.onerror = function() {
+                        // При ошибке загрузки показываем сообщение об ошибке
+                        container.innerHTML = '';
+                        const errorMsg = document.createElement('div');
+                        errorMsg.className = 'message-attachment-error';
+                        errorMsg.innerHTML = '<i class="ri-error-warning-line"></i> Не удалось загрузить изображение';
+                        container.appendChild(errorMsg);
+                    };
+                }
+            }
+        } catch (error) {
+            console.error('Error loading attachment:', error);
+            container.innerHTML = '';
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'message-attachment-error';
+            errorMsg.innerHTML = '<i class="ri-error-warning-line"></i> Ошибка загрузки вложения';
+            container.appendChild(errorMsg);
+        }
+    }
+    
+    /**
+     * Повторяет загрузку медиафайла
+     * @param {number} mediaId - ID медиафайла
+     * @param {HTMLElement} container - Контейнер для вложения
+     * @param {Object} attachment - Информация о вложении
+     */
+    static retryMediaLoad(mediaId, container, attachment) {
+        if (!mediaId || !container || !attachment) return;
+        
+        // Показываем индикатор загрузки
+        container.innerHTML = '<div class="message-attachment-loader"><i class="ri-loader-line spinning"></i></div>';
+        
+        // Пытаемся загрузить медиафайл еще раз
+        setTimeout(() => {
+            this.loadMessageAttachment(attachment, container);
+        }, 1000);
+    }
+}
+
+/**
+ * Вспомогательный класс для обработки ошибок и уведомлений
+ */
+class NotificationHandler {
+    /**
+     * Показывает уведомление пользователю
+     * @param {string} message - Текст уведомления
+     * @param {string} type - Тип уведомления (success, error, warning, info)
+     * @param {number} duration - Продолжительность показа в мс
+     */
+    static showNotification(message, type = 'info', duration = 3000) {
+        const notification = document.getElementById("notification");
+        if (!notification) return;
+        
+        // Устанавливаем класс в зависимости от типа уведомления
+        notification.className = "notification show";
+        notification.dataset.type = type;
+        
+        // Устанавливаем иконку
+        const icon = notification.querySelector(".notification-icon i");
+        if (icon) {
+            switch (type) {
+                case 'success':
+                    icon.className = 'ri-check-line';
+                    break;
+                case 'error':
+                    icon.className = 'ri-error-warning-line';
+                    break;
+                case 'warning':
+                    icon.className = 'ri-alert-line';
+                    break;
+                default:
+                    icon.className = 'ri-information-line';
+            }
+        }
+        
+        // Устанавливаем текст уведомления
+        const notificationMessage = notification.querySelector(".notification-message");
+        if (notificationMessage) {
+            notificationMessage.textContent = message;
+        }
+        
+        // Показываем уведомление
+        notification.classList.add("show");
+        
+        // Устанавливаем таймер для скрытия
+        const timeout = setTimeout(() => {
+            this.hideNotification(notification);
+        }, duration);
+        
+        // Сохраняем ссылку на таймер для возможности отмены
+        notification.dataset.timeout = timeout;
+        
+        // Добавляем обработчик клика для закрытия уведомления
+        const closeBtn = notification.querySelector(".notification-close");
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                clearTimeout(parseInt(notification.dataset.timeout));
+                this.hideNotification(notification);
+            };
+        }
+    }
+    
+    /**
+     * Скрывает уведомление
+     * @param {HTMLElement} notification - Элемент уведомления
+     */
+    static hideNotification(notification = null) {
+        if (!notification) {
+            notification = document.getElementById("notification");
+        }
+        
+        if (notification) {
+            notification.classList.remove("show");
+            
+            // Очищаем таймер если он существует
+            if (notification.dataset.timeout) {
+                clearTimeout(parseInt(notification.dataset.timeout));
+                delete notification.dataset.timeout;
+            }
+        }
+    }
+    
+    /**
+     * Обрабатывает ошибки HTTP запросов
+     * @param {Error} error - Объект ошибки
+     * @param {string} context - Контекст, в котором произошла ошибка
+     * @param {boolean} showNotification - Показывать ли уведомление пользователю
+     */
+    static handleError(error, context, showNotification = true) {
+        // Форматируем сообщение об ошибке
+        let errorMessage = `Ошибка: ${error.message}`;
+        
+        // Добавляем контекст если он указан
+        if (context) {
+            console.error(`Ошибка в ${context}:`, error);
+            errorMessage = `Ошибка в ${context}: ${error.message}`;
+        } else {
+            console.error('Ошибка:', error);
+        }
+        
+        // Показываем уведомление если нужно
+        if (showNotification) {
+            this.showNotification(errorMessage, 'error');
+        }
+        
+        return errorMessage;
+    }
+}
+
+// Экспорт новых классов
+window.MediaHandler = MediaHandler;
+window.NotificationHandler = NotificationHandler;
+
 // Экспорт классов
 window.UserAPI = UserAPI;
 window.ContactAPI = ContactAPI;
 window.MessageAPI = MessageAPI;
+window.MediaFileAPI = MediaFileAPI;
 window.MessengerUI = MessengerUI; 

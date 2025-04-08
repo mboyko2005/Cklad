@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
         animatedIcon.classList.add('animate-on-entry');
     }
     
-    // При загрузке показываем пустой правый блок с приглашением выбрать контакт
+    // При загрузке показываем красивую приветственную панель с анимацией
     const messagesContainer = document.getElementById("messagesContainer");
     if (messagesContainer) {
         messagesContainer.innerHTML = `
@@ -19,12 +19,40 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <h2>Добро пожаловать в мессенджер</h2>
                 <p>Выберите контакт из списка слева или начните новый чат, чтобы начать общение</p>
+                <div class="welcome-features">
+                    <div class="feature-item">
+                        <i class="ri-attachment-2"></i>
+                        <span>Делитесь файлами</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="ri-emotion-line"></i>
+                        <span>Используйте эмодзи</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="ri-search-line"></i>
+                        <span>Ищите сообщения</span>
+                    </div>
+                </div>
             </div>
         `;
     }
     
     // Инициализируем переменную текущего индекса поиска
     currentSearchIndex = 0;
+
+    // Инициализируем менеджер вложений
+    window.attachmentManager = new MessengerAttachment({
+        attachmentButtonId: 'attachment-button',
+        fileInputId: 'file-input',
+        previewContainerId: 'attachment-preview',
+        messageTextAreaId: 'messageTextArea'
+    });
+    
+    // Инициализируем менеджер эмодзи
+    EmojiManager.init({
+        messageTextAreaId: 'messageTextArea',
+        emojiButtonId: 'emojiButton'
+    });
 });
 
 // Обработчик события pageshow (срабатывает при возврате на страницу)
@@ -251,9 +279,9 @@ function initializeEventListeners() {
     const prevSearchBtn = document.getElementById("prevSearchBtn");
     const nextSearchBtn = document.getElementById("nextSearchBtn");
     const messageTextArea = document.getElementById("messageTextArea");
-    const attachButton = document.getElementById("attachButton");
+    const attachmentButton = document.getElementById("attachment-button");
     const emojiButton = document.getElementById("emojiButton");
-    const sendButton = document.getElementById("sendButton");
+    const sendButton = document.getElementById("send-button");
     const removeAttachmentBtn = document.getElementById("removeAttachmentBtn");
 
     if (backBtn) {
@@ -318,12 +346,12 @@ function initializeEventListeners() {
         messageTextArea.addEventListener("keydown", handleMessageKeyDown);
     }
 
-    if (attachButton) {
-        attachButton.addEventListener("click", handleAttachment);
+    if (attachmentButton) {
+        attachmentButton.addEventListener("click", handleAttachment);
     }
 
     if (emojiButton) {
-        emojiButton.addEventListener("click", handleEmoji);
+        emojiButton.addEventListener("click", handleEmojiButtonClick);
     }
 
     if (sendButton) {
@@ -369,10 +397,15 @@ async function selectContact(contactEl) {
     // Загружаем шаблоны сообщений для этого контакта
     await loadMessageTemplates(contactId);
 
+    // Сбрасываем вложения при выборе нового контакта
+    if (window.attachmentManager) {
+        window.attachmentManager.clearAttachments();
+    }
+
     // Фокусируем поле ввода
     const messageTextArea = document.getElementById("messageTextArea");
     if (messageTextArea) {
-        messageTextArea.focus();
+            messageTextArea.focus();
     }
 }
 
@@ -445,78 +478,80 @@ async function loadChatHistory(contactId) {
 
 /** Отправка сообщения */
 async function sendMessage() {
-    try {
-        const messageTextArea = document.getElementById("messageTextArea");
-        const messageText = messageTextArea.value.trim();
-        
-        if (!messageText) {
-            return; // Не отправляем пустые сообщения
-        }
-        
-        const userId = localStorage.getItem("userId");
-        if (!userId) {
-            MessengerUI.showNotification("Ошибка авторизации. Пожалуйста, перезайдите в систему.");
+    const messageTextArea = document.getElementById('messageTextArea');
+    const messageText = messageTextArea.value.trim();
+    const messageInputContainer = document.querySelector('.message-input-container');
+    
+    // Получаем ID текущего пользователя и выбранного контакта
+    const currentUserId = localStorage.getItem("userId");
+    const selectedContactEl = document.querySelector(".contact-item.active");
+    
+    if (!selectedContactEl) {
+        MessengerUI.showNotification('Пожалуйста, выберите контакт для отправки сообщения', 'error');
         return;
     }
-
-        // Получаем ID получателя либо из активного контакта, либо из атрибута данных текстового поля
-        let receiverId = null;
-        const activeContact = document.querySelector(".contact-item.active");
-        
-        if (activeContact) {
-            receiverId = activeContact.dataset.id;
-        } else if (messageTextArea.dataset.receiverId) {
-            receiverId = messageTextArea.dataset.receiverId;
-        }
-        
-        if (!receiverId) {
-            MessengerUI.showNotification("Выберите контакт для отправки сообщения");
-            return;
-        }
-        
-        // Отправляем сообщение через MessageAPI
-        const data = await MessageAPI.sendMessage(userId, receiverId, messageText);
-        
-        // Очищаем поле ввода и сбрасываем его высоту
-        messageTextArea.value = "";
-        messageTextArea.style.height = "40px";
-        
-        // Убираем панель предпросмотра вложений, если она открыта
-        const attachmentPreview = document.getElementById("attachmentPreview");
-        if (attachmentPreview) {
-            attachmentPreview.classList.remove("active");
-        }
-        
-        // Добавляем новое сообщение в чат без перезагрузки всей истории
-        const messagesContainer = document.getElementById("messagesContainer");
-        
-        // Если это первое сообщение в чате, очищаем контейнер от плейсхолдера
-        if (messagesContainer.querySelector(".empty-messages") || messagesContainer.querySelector(".welcome-panel")) {
-            messagesContainer.innerHTML = "";
-        }
-        
-        // Создаем элемент сообщения и добавляем его в контейнер
-        const messageElement = MessengerUI.createMessageElement(data.message, true);
-        messagesContainer.appendChild(messageElement);
-        
-        // Прокручиваем чат вниз
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        
-        // Если контакт не найден в списке (новый чат), обновляем список контактов
-        if (!activeContact) {
-            await loadContacts(userId);
+    
+    const selectedContactId = selectedContactEl.dataset.id;
+    
+    if (!messageText && !window.attachmentManager?.hasAttachment()) {
+        return;
+    }
+    
+    // Показываем индикатор отправки сообщения
+    const sendButton = document.getElementById('send-button');
+    if (sendButton) {
+        const originalIcon = sendButton.innerHTML;
+        sendButton.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i>';
+        sendButton.disabled = true;
+    }
+    
+    try {
+        // Проверяем, есть ли вложение
+        if (window.attachmentManager && window.attachmentManager.hasAttachment()) {
+            // Отправляем сообщение с вложением
+            await MediaFileAPI.sendMessageWithAttachment(
+                currentUserId, 
+                selectedContactId, 
+                messageText, 
+                window.attachmentManager.getAttachment()
+            );
             
-            // Добавляем активный класс контакту с которым начали чат
-            setTimeout(() => {
-                const newContactItem = document.querySelector(`[data-id="${receiverId}"]`);
-                if (newContactItem) {
-                    newContactItem.classList.add("active");
-                }
-            }, 300);
+            // Очищаем поле ввода и вложение
+            messageTextArea.value = '';
+            window.attachmentManager.clearAttachments();
+            
+            // Фокусируемся на поле ввода
+            messageTextArea.focus();
+            
+            // Обновляем чат для отображения нового сообщения
+            await loadChatHistory(selectedContactId);
+        } else if (messageText) {
+            // Отправляем текстовое сообщение без вложения
+            await MessageAPI.sendMessage(currentUserId, selectedContactId, messageText);
+            
+            // Очищаем поле ввода
+            messageTextArea.value = '';
+            
+            // Фокусируемся на поле ввода
+            messageTextArea.focus();
+            
+            // Обновляем чат для отображения нового сообщения
+            await loadChatHistory(selectedContactId);
         }
     } catch (error) {
-        console.error("Ошибка при отправке сообщения:", error);
-        MessengerUI.showNotification("Не удалось отправить сообщение");
+        console.error('Ошибка при отправке сообщения:', error);
+        MessengerUI.showNotification('Ошибка при отправке сообщения: ' + error.message, 'error');
+    } finally {
+        // Восстанавливаем кнопку отправки
+        if (sendButton) {
+            sendButton.innerHTML = '<i class="ri-send-plane-fill"></i>';
+            sendButton.disabled = false;
+        }
+        
+        // Сбрасываем высоту текстового поля
+        if (messageTextArea) {
+            messageTextArea.style.height = 'auto';
+        }
     }
 }
 
@@ -614,10 +649,10 @@ async function handleMessageSearch(event) {
 /** Функция выделения найденного сообщения */
 function highlightSearchResult(index, results) {
     if (!results || results.length === 0) return;
-    
+
     // Обновляем текущий индекс
     currentSearchIndex = index;
-    
+
     // Обновляем текст счетчика
     document.getElementById("searchResultsCount").textContent = 
         `${index + 1} из ${results.length}`;
@@ -625,14 +660,14 @@ function highlightSearchResult(index, results) {
     // Удаляем выделение с предыдущих результатов
     const allResultItems = document.querySelectorAll(".search-result-item");
     allResultItems.forEach(item => item.classList.remove("active"));
-    
+
     // Добавляем выделение текущему результату
     const currentResultItem = document.querySelector(`.search-result-item[data-index="${index}"]`);
     if (currentResultItem) {
         currentResultItem.classList.add("active");
         currentResultItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-    
+
     // Находим сообщение в основном контейнере
     const messageId = results[index].messageId;
     const messageElement = document.querySelector(`.message-wrapper[data-id="${messageId}"]`);
@@ -643,7 +678,7 @@ function highlightSearchResult(index, results) {
         previousHighlighted.forEach(el => el.classList.remove("highlight"));
         
         // Добавляем выделение текущему сообщению
-        messageElement.classList.add("highlight");
+    messageElement.classList.add("highlight");
         
         // Прокручиваем к сообщению
         messageElement.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -654,7 +689,7 @@ function highlightSearchResult(index, results) {
 function navigateToPrevSearchResult() {
     const searchResults = document.querySelectorAll(".search-result-item");
     if (searchResults.length === 0) return;
-    
+
     const newIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
     
     // Получаем массив найденных сообщений
@@ -672,7 +707,7 @@ function navigateToPrevSearchResult() {
 function navigateToNextSearchResult() {
     const searchResults = document.querySelectorAll(".search-result-item");
     if (searchResults.length === 0) return;
-    
+
     const newIndex = (currentSearchIndex + 1) % searchResults.length;
     
     // Получаем массив найденных сообщений
@@ -734,108 +769,6 @@ async function deleteMessage(messageId) {
         console.error("Ошибка при удалении сообщения:", error);
         showNotification("Ошибка при удалении сообщения");
     }
-}
-
-/** Вешаем обработчики событий на элементы */
-function initializeEventListeners() {
-    const backBtn = document.getElementById("backBtn");
-    const exitBtn = document.getElementById("exitBtn");
-    const newChatBtn = document.getElementById("newChatBtn");
-    const menuBtn = document.getElementById("menuBtn");
-    const contactSearchInput = document.getElementById("contactSearchInput");
-    const deleteBtn = document.getElementById("deleteBtn");
-    const searchMessagesBtn = document.getElementById("searchMessagesBtn");
-    const infoBtn = document.getElementById("infoBtn");
-    const closeBtn = document.getElementById("closeBtn");
-    const messageSearchInput = document.getElementById("messageSearchInput");
-    const prevSearchBtn = document.getElementById("prevSearchBtn");
-    const nextSearchBtn = document.getElementById("nextSearchBtn");
-    const messageTextArea = document.getElementById("messageTextArea");
-    const attachButton = document.getElementById("attachButton");
-    const emojiButton = document.getElementById("emojiButton");
-    const sendButton = document.getElementById("sendButton");
-    const removeAttachmentBtn = document.getElementById("removeAttachmentBtn");
-
-    if (backBtn) {
-        backBtn.addEventListener("click", () => {
-            window.location.href = "../Admin.html";
-        });
-    }
-
-    if (exitBtn) {
-        exitBtn.addEventListener("click", handleExit);
-    }
-
-    if (newChatBtn) {
-        newChatBtn.addEventListener("click", handleNewChat);
-    }
-
-    if (menuBtn) {
-        menuBtn.addEventListener("click", () => {
-            showNotification("Меню находится в разработке");
-        });
-    }
-
-    if (contactSearchInput) {
-        contactSearchInput.addEventListener("input", handleContactSearch);
-    }
-
-    if (deleteBtn) {
-        deleteBtn.addEventListener("click", handleDeleteChat);
-    }
-
-    if (searchMessagesBtn) {
-        searchMessagesBtn.addEventListener("click", toggleSearchPanel);
-    }
-
-    if (infoBtn) {
-        infoBtn.addEventListener("click", () => {
-            showNotification("Функция информации о контакте находится в разработке");
-        });
-    }
-
-    if (closeBtn) {
-        closeBtn.addEventListener("click", () => {
-            window.location.href = "../Admin.html";
-        });
-    }
-
-    if (messageSearchInput) {
-        messageSearchInput.addEventListener("input", handleMessageSearch);
-        messageSearchInput.addEventListener("input", handleSearchMessageInput);
-    }
-
-    if (prevSearchBtn) {
-        prevSearchBtn.addEventListener("click", navigateToPrevSearchResult);
-    }
-
-    if (nextSearchBtn) {
-        nextSearchBtn.addEventListener("click", navigateToNextSearchResult);
-    }
-
-    if (messageTextArea) {
-        messageTextArea.addEventListener("input", autoResizeTextarea);
-        messageTextArea.addEventListener("keydown", handleMessageKeyDown);
-    }
-
-    if (attachButton) {
-        attachButton.addEventListener("click", handleAttachment);
-    }
-
-    if (emojiButton) {
-        emojiButton.addEventListener("click", handleEmoji);
-    }
-
-    if (sendButton) {
-        sendButton.addEventListener("click", sendMessage);
-    }
-
-    if (removeAttachmentBtn) {
-        removeAttachmentBtn.addEventListener("click", removeAttachment);
-    }
-
-    // Инициализируем переменную текущего индекса поиска
-    currentSearchIndex = 0;
 }
 
 /** Удаляем данные авторизации и перенаправляем на страницу входа */
@@ -1040,213 +973,122 @@ async function handleContactSearch(event) {
     }
 }
 
-/** Обработчик прикрепления файла */
+/** Обработка прикрепления файла */
 function handleAttachment() {
-    showNotification("Функция прикрепления файлов находится в разработке");
+    if (window.attachmentManager) {
+        // Используем метод класса MessengerAttachment для открытия диалога выбора файла
+        const fileInput = document.getElementById('file-input');
+        if (fileInput) {
+            fileInput.click();
+        }
+    } else {
+        console.error('Менеджер вложений не инициализирован');
+        MessengerUI.showNotification('Ошибка при инициализации менеджера вложений', 'error');
+    }
 }
 
-/** Обработчик вставки эмодзи */
-function handleEmoji() {
-    // Создаем панель с эмодзи, если она еще не существует
-    let emojiPanel = document.getElementById('emojiPanel');
+/**
+ * Показывает предпросмотр выбранного файла
+ * @param {File} file - Файл для предпросмотра
+ */
+function showFilePreview(file) {
+    if (!file) return;
     
-    // Если панель уже открыта, закрываем ее
-    if (emojiPanel) {
-        emojiPanel.remove();
-        return;
-    }
-    
-    // Создаем панель эмодзи
-    emojiPanel = document.createElement('div');
-    emojiPanel.id = 'emojiPanel';
-    emojiPanel.className = 'emoji-panel';
-    
-    // Популярные эмодзи
-    const popularEmojis = [
-        '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
-        '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚',
-        '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩',
-        '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖',
-        '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯',
-        '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '💔', '👍', '👎',
-        '👏', '🙌', '👋', '🤝', '👌', '✌️', '🤞', '🤟', '🤘', '👊'
-    ];
-    
-    // Создаем заголовок панели
-    const panelHeader = document.createElement('div');
-    panelHeader.className = 'emoji-panel-header';
-    panelHeader.textContent = 'Выберите стикер';
-    
-    // Создаем кнопку закрытия панели
-    const closeButton = document.createElement('button');
-    closeButton.className = 'emoji-panel-close';
-    closeButton.innerHTML = '<i class="ri-close-line"></i>';
-    closeButton.addEventListener('click', () => {
-        emojiPanel.remove();
-    });
-    
-    panelHeader.appendChild(closeButton);
-    emojiPanel.appendChild(panelHeader);
-    
-    // Создаем контейнер для эмодзи
-    const emojiContainer = document.createElement('div');
-    emojiContainer.className = 'emoji-container';
-    
-    // Добавляем эмодзи в контейнер
-    popularEmojis.forEach(emoji => {
-        const emojiButton = document.createElement('button');
-        emojiButton.className = 'emoji-button';
-        emojiButton.textContent = emoji;
-        emojiButton.addEventListener('click', () => {
-            // Получаем поле ввода сообщения
-            const messageTextArea = document.getElementById('messageTextArea');
-            if (messageTextArea) {
-                // Добавляем эмодзи в позицию курсора
-                const cursorPos = messageTextArea.selectionStart;
-                const textBefore = messageTextArea.value.substring(0, cursorPos);
-                const textAfter = messageTextArea.value.substring(cursorPos);
-                messageTextArea.value = textBefore + emoji + textAfter;
-                
-                // Устанавливаем новую позицию курсора
-                messageTextArea.selectionStart = cursorPos + emoji.length;
-                messageTextArea.selectionEnd = cursorPos + emoji.length;
-                
-                // Фокусируемся на поле ввода
-                messageTextArea.focus();
-                
-                // Обновляем высоту поля ввода
-                messageTextArea.style.height = 'auto';
-                messageTextArea.style.height = Math.min(messageTextArea.scrollHeight, 120) + 'px';
-            }
-        });
-        emojiContainer.appendChild(emojiButton);
-    });
-    
-    emojiPanel.appendChild(emojiContainer);
-    
-    // Получаем кнопку эмодзи для позиционирования панели
-    const emojiButton = document.getElementById('emojiButton');
-    if (emojiButton) {
-        // Добавляем панель в документ рядом с кнопкой эмодзи
-        const messageInputContainer = document.querySelector('.message-input-container');
-        if (messageInputContainer) {
-            messageInputContainer.parentNode.insertBefore(emojiPanel, messageInputContainer);
-        }
-    }
-    
-    // Добавляем обработчик клика вне панели для ее закрытия
-    document.addEventListener('click', function closeEmojiPanel(e) {
-        if (emojiPanel && !emojiPanel.contains(e.target) && e.target !== emojiButton) {
-            emojiPanel.remove();
-            document.removeEventListener('click', closeEmojiPanel);
-        }
-    });
-    
-    // Добавляем стили для панели эмодзи, если их еще нет
-    if (!document.getElementById('emojiPanelStyles')) {
-        const emojiStyles = document.createElement('style');
-        emojiStyles.id = 'emojiPanelStyles';
-        emojiStyles.textContent = `
-            .emoji-panel {
-                position: absolute;
-                bottom: 80px;
-                right: 20px;
-                background: var(--messenger-bg-color);
-                border: 1px solid var(--border-color);
-                border-radius: 12px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                width: 320px;
-                max-height: 300px;
-                overflow-y: auto;
-                z-index: 100;
-            }
-            
-            .emoji-panel-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 10px 15px;
-                border-bottom: 1px solid var(--border-color);
-                font-weight: 500;
-            }
-            
-            .emoji-panel-close {
-                background: none;
-                border: none;
-                color: var(--text-color);
-                cursor: pointer;
-                padding: 5px;
-                font-size: 16px;
-            }
-            
-            .emoji-container {
-                display: grid;
-                grid-template-columns: repeat(8, 1fr);
-                gap: 5px;
-                padding: 10px;
-            }
-            
-            .emoji-button {
-                background: none;
-                border: none;
-                font-size: 24px;
-                cursor: pointer;
-                padding: 5px;
-                border-radius: 5px;
-                transition: background-color 0.2s;
-            }
-            
-            .emoji-button:hover {
-                background-color: var(--hover-color);
-            }
-            
-            [data-theme="dark"] .emoji-panel {
-                background: var(--dark-messenger-bg-color);
-                border-color: var(--dark-border-color);
-            }
-            
-            [data-theme="dark"] .emoji-panel-header {
-                border-color: var(--dark-border-color);
-            }
-            
-            [data-theme="dark"] .emoji-panel-close {
-                color: var(--dark-text-color);
-            }
-            
-            [data-theme="dark"] .emoji-button:hover {
-                background-color: var(--dark-hover-color);
-            }
-        `;
-        document.head.appendChild(emojiStyles);
-    }
+    // Используем метод из класса MessengerAttachment
+    MessengerAttachment.showFilePreview(file);
 }
 
 /** Удаление вложения */
 function removeAttachment() {
-    const attachmentPreview = document.getElementById("attachmentPreview");
-    if (attachmentPreview) {
-        attachmentPreview.classList.remove("active");
-        const attachmentContent = document.getElementById("attachmentContent");
-        if (attachmentContent) {
-            attachmentContent.innerHTML = "";
-        }
+    if (window.attachmentManager) {
+        window.attachmentManager.clearAttachments();
     }
+}
+
+/** Обработчик нажатия на кнопку эмодзи */
+function handleEmojiButtonClick() {
+    // Используем метод из класса EmojiManager
+    EmojiManager.toggleEmojiPicker();
 }
 
 /** Автоматически изменяет высоту textarea при вводе текста */
 function autoResizeTextarea(event) {
     const textarea = event.target;
-    if (!textarea) return;
-    
-    textarea.style.height = "auto";
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
 }
 
-/** Обработчик нажатия клавиш в поле ввода сообщения */
-function handleMessageKeyDown(event) {
-    if (event.key === "Enter" && !event.shiftKey) {
+/**
+ * Обработчик события нажатия клавиш в поле ввода сообщения
+ */
+async function handleMessageKeyDown(event) {
+    // Отправка сообщения по Enter (без Shift)
+    if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
-        sendMessage();
+        await sendMessage();
+    }
+}
+
+/**
+ * Обработка редактирования сообщения
+ * @param {HTMLTextAreaElement} messageTextArea - Текстовое поле с сообщением
+ */
+async function handleEditMessage(messageTextArea) {
+    try {
+        const messageId = messageTextArea.dataset.editingMessageId;
+        const newText = messageTextArea.value.trim();
+        const inputContainer = document.querySelector('.input-container');
+        
+        if (!messageId || !newText) {
+            return;
+        }
+        
+        // Отправляем запрос на редактирование сообщения
+        const result = await MessageAPI.editMessage(messageId, newText);
+        
+        if (result && result.success) {
+            // Обновляем текст сообщения в DOM
+            const messageElement = document.querySelector(`.message-wrapper[data-id="${messageId}"]`);
+            if (messageElement) {
+                const messageContent = messageElement.querySelector('.message-content');
+                if (messageContent) {
+                    messageContent.textContent = newText;
+                    
+                    // Анимация обновления
+                    messageElement.classList.add('message-updated');
+                    setTimeout(() => {
+                        messageElement.classList.remove('message-updated');
+                    }, 2000);
+                }
+            }
+            
+            // Очищаем поле ввода и сбрасываем режим редактирования
+            messageTextArea.value = '';
+            messageTextArea.style.height = '40px';
+            delete messageTextArea.dataset.editingMessageId;
+            
+            // Сбрасываем стили редактирования
+            if (inputContainer) {
+                inputContainer.classList.remove('editing');
+            }
+            
+            // Возвращаем иконку отправки
+            const sendButton = document.getElementById('sendButton');
+            if (sendButton) {
+                const icon = sendButton.querySelector('i');
+                if (icon) {
+                    icon.className = 'ri-send-plane-fill';
+                }
+            }
+            
+            // Уведомляем об успехе
+            MessengerUI.showNotification('Сообщение успешно изменено');
+        } else {
+            throw new Error(result?.message || 'Не удалось изменить сообщение');
+        }
+    } catch (error) {
+        console.error('Ошибка при редактировании сообщения:', error);
+        MessengerUI.showNotification('Не удалось отредактировать сообщение: ' + error.message);
     }
 }
 
@@ -1533,7 +1375,7 @@ function handleSearchMessageInput(event) {
 }
 
 function showMessageContextMenu(event, messageId, messageText, isSender) {
-    event.preventDefault();
+        event.preventDefault();
 
     // Удаляем предыдущее контекстное меню, если оно есть
     const oldMenu = document.querySelector('.context-menu');
@@ -1593,10 +1435,34 @@ function showMessageContextMenu(event, messageId, messageText, isSender) {
 async function editMessage(messageId, messageText) {
     try {
         const messageInput = document.getElementById('messageTextArea');
+        const inputContainer = document.querySelector('.input-container');
+        
         if (messageInput) {
+            // Устанавливаем текст сообщения в поле ввода
             messageInput.value = messageText;
             messageInput.dataset.editingMessageId = messageId;
             messageInput.focus();
+            
+            // Авторесайз поля ввода
+            messageInput.style.height = "auto";
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + "px";
+            
+            // Добавляем индикатор редактирования
+            if (inputContainer) {
+                inputContainer.classList.add('editing');
+            }
+            
+            // Показываем уведомление
+            MessengerUI.showNotification('Редактирование сообщения');
+            
+            // Меняем внешний вид кнопки "Отправить"
+            const sendButton = document.getElementById('sendButton');
+            if (sendButton) {
+                const icon = sendButton.querySelector('i');
+                if (icon) {
+                    icon.className = 'ri-pencil-line'; // Меняем иконку на карандаш
+                }
+            }
         }
     } catch (error) {
         console.error('Ошибка при редактировании сообщения:', error);
@@ -1606,37 +1472,58 @@ async function editMessage(messageId, messageText) {
 
 async function deleteMessageForMe(messageId) {
     try {
-        // Удаляем сообщение для текущего пользователя через API
-        await MessageAPI.deleteMessageForMe(messageId);
-
-        // Удаляем элемент сообщения из интерфейса
-        const messageElement = document.querySelector(`.message-wrapper[data-id="${messageId}"]`);
-        if (messageElement) {
-            messageElement.remove();
+        if (!messageId) {
+            MessengerUI.showNotification('Ошибка: ID сообщения не указан');
+            return;
         }
 
-        MessengerUI.showNotification('Сообщение удалено');
+        // Удаляем сообщение для текущего пользователя через API
+        const result = await MessageAPI.deleteMessageForMe(messageId);
+        
+        if (result && result.success) {
+            // Удаляем элемент сообщения из интерфейса
+            const messageElement = document.querySelector(`.message-wrapper[data-id="${messageId}"]`);
+            if (messageElement) {
+                messageElement.remove();
+            }
+            MessengerUI.showNotification('Сообщение удалено');
+        } else {
+            throw new Error(result?.message || 'Неизвестная ошибка при удалении сообщения');
+        }
     } catch (error) {
         console.error('Ошибка при удалении сообщения:', error);
-        MessengerUI.showNotification('Не удалось удалить сообщение');
+        MessengerUI.showNotification('Не удалось удалить сообщение: ' + error.message);
     }
 }
 
 async function deleteMessageForAll(messageId) {
     try {
-        // Удаляем сообщение для всех пользователей через API
-        await MessageAPI.deleteMessageForAll(messageId);
-
-        // Удаляем элемент сообщения из интерфейса
-        const messageElement = document.querySelector(`.message-wrapper[data-id="${messageId}"]`);
-        if (messageElement) {
-            messageElement.remove();
+        if (!messageId) {
+            MessengerUI.showNotification('Ошибка: ID сообщения не указан');
+            return;
         }
 
-        MessengerUI.showNotification('Сообщение удалено для всех');
+        // Запрос подтверждения перед удалением для всех
+        if (!confirm('Вы уверены, что хотите удалить сообщение для всех участников?')) {
+            return;
+        }
+
+        // Удаляем сообщение для всех пользователей через API
+        const result = await MessageAPI.deleteMessageForAll(messageId);
+        
+        if (result && result.success) {
+            // Удаляем элемент сообщения из интерфейса
+            const messageElement = document.querySelector(`.message-wrapper[data-id="${messageId}"]`);
+            if (messageElement) {
+                messageElement.remove();
+            }
+            MessengerUI.showNotification('Сообщение удалено для всех');
+        } else {
+            throw new Error(result?.message || 'Неизвестная ошибка при удалении сообщения');
+        }
     } catch (error) {
         console.error('Ошибка при удалении сообщения:', error);
-        MessengerUI.showNotification('Не удалось удалить сообщение');
+        MessengerUI.showNotification('Не удалось удалить сообщение: ' + error.message);
     }
 }
 
@@ -1647,6 +1534,17 @@ messageElement.addEventListener('contextmenu', (e) => {
 
 // Форматирование даты
 function formatDate(date) {
+    // Убедимся, что мы работаем с объектом Date
+    if (!(date instanceof Date)) {
+        date = new Date(date);
+    }
+    
+    // Проверяем валидность даты
+    if (isNaN(date.getTime())) {
+        console.error("Неверный формат даты:", date);
+        return "Неизвестная дата";
+    }
+    
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -1656,16 +1554,43 @@ function formatDate(date) {
     const yesterdayDate = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
     const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     
+    // Отладочная информация
+    console.log("Сравнение дат:", {
+        "Оригинальная дата": date.toISOString(),
+        "Дата сообщения": messageDate.toISOString(),
+        "Сегодня": todayDate.toISOString(),
+        "Вчера": yesterdayDate.toISOString(),
+        "Совпадение с сегодня": messageDate.getTime() === todayDate.getTime(),
+        "Совпадение с вчера": messageDate.getTime() === yesterdayDate.getTime()
+    });
+    
     if (messageDate.getTime() === todayDate.getTime()) {
         return "Сегодня";
     } else if (messageDate.getTime() === yesterdayDate.getTime()) {
         return "Вчера";
     } else {
-        return date.toLocaleDateString();
+        // Форматируем дату в российском формате: ДД.ММ.ГГГГ
+        return date.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
     }
 }
 
 // Форматирование времени
 function formatTime(date) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+/**
+ * Создает и добавляет вложение к сообщению
+ * @param {Object} message - Объект сообщения
+ * @param {HTMLElement} messageContent - Элемент с контентом сообщения
+ */
+function createMessageAttachment(message, messageContent) {
+    if (!message.hasAttachment) return;
+    
+    // Используем класс MessengerAttachment для загрузки и отображения вложения
+    MessengerAttachment.loadMessageAttachment(message.messageId, messageContent);
 }

@@ -142,16 +142,23 @@
       
       <!-- Панель ввода сообщения -->
       <div class="message-input-container">
-        <button class="icon-button" id="attachButton" title="Прикрепить файл">
-          <i class="ri-attachment-2"></i>
-        </button>
-        <textarea id="messageTextArea" class="message-input" placeholder="Введите сообщение..." rows="1"></textarea>
-        <button class="icon-button" id="emojiButton" title="Эмодзи">
-          <i class="ri-emotion-line"></i>
-        </button>
-        <button class="send-button" id="sendButton" title="Отправить сообщение">
-          <i class="ri-send-plane-fill"></i>
-        </button>
+        <!-- Предпросмотр прикрепленного файла над полем ввода -->
+        <div class="message-attachment-preview" id="attachment-preview"></div>
+        
+        <!-- Контейнер с полем ввода и кнопками -->
+        <div class="message-input-controls">
+          <button class="icon-button" id="attachment-button" title="Прикрепить файл">
+            <i class="ri-attachment-2"></i>
+          </button>
+          <input type="file" id="file-input" class="hidden-file-input" style="display: none;">
+          <textarea id="messageTextArea" class="message-input" placeholder="Введите сообщение..." rows="1"></textarea>
+          <button class="icon-button" id="emojiButton" title="Эмодзи">
+            <i class="ri-emotion-line"></i>
+          </button>
+          <button class="send-button" id="send-button" title="Отправить">
+            <i class="ri-send-plane-fill"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -169,8 +176,10 @@
     </div>
   </div>
 
-  <!-- Скрипты -->
+  <!-- JavaScript files -->
   <script src="MessengerAPI.js"></script>
+  <script src="EmojiManager.js"></script>
+  <script src="MessengerAttachment.js"></script>
   <script src="Messenger.js"></script>
 </body>
 </html> 
