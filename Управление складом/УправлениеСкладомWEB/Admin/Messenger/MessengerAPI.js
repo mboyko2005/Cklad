@@ -169,6 +169,9 @@ class ContactAPI extends BaseAPI {
  * Класс для работы с сообщениями
  */
 class MessageAPI extends BaseAPI {
+    static updateInterval = null;
+    static currentContactId = null;
+
     /**
      * Получить историю переписки
      * @param {number} userId - ID пользователя
@@ -398,6 +401,124 @@ class MessageAPI extends BaseAPI {
             return this.checkResponse(response, "Ошибка при редактировании сообщения");
         } catch (error) {
             return this.handleError(error, "Ошибка при редактировании сообщения");
+        }
+    }
+
+    /**
+     * Запускает автоматическое обновление чата
+     * @param {number} userId - ID текущего пользователя
+     * @param {number} contactId - ID собеседника
+     */
+    static startAutoUpdate(userId, contactId) {
+        this.currentContactId = contactId;
+        
+        // Останавливаем предыдущее обновление, если оно было
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+        }
+        
+        // Запускаем новое обновление каждые 3 секунды
+        this.updateInterval = setInterval(async () => {
+            try {
+                const response = await this.getConversation(userId, contactId);
+                if (response.success && response.messages) {
+                    this.updateChatMessages(response.messages);
+                }
+            } catch (error) {
+                console.error('Ошибка при автоматическом обновлении чата:', error);
+            }
+        }, 3000);
+    }
+
+    /**
+     * Останавливает автоматическое обновление чата
+     */
+    static stopAutoUpdate() {
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+            this.updateInterval = null;
+        }
+        this.currentContactId = null;
+    }
+
+    /**
+     * Обновляет сообщения в чате
+     * @param {Array} messages - Новые сообщения
+     */
+    static updateChatMessages(messages) {
+        const messagesContainer = document.querySelector('.messages-container');
+        if (!messagesContainer) return;
+
+        // Получаем текущие сообщения
+        const currentMessages = Array.from(messagesContainer.querySelectorAll('.message-wrapper'))
+            .map(el => ({
+                messageId: parseInt(el.dataset.messageId),
+                element: el
+            }));
+
+        // Обрабатываем новые сообщения
+        messages.forEach(message => {
+            const existingMessageEl = currentMessages.find(m => m.messageId === message.messageId);
+            
+            if (!existingMessageEl) {
+                // Добавляем новое сообщение
+                const isSender = message.senderId === parseInt(UserAPI.getCurrentUserId());
+                const messageElement = MessengerUI.createMessageElement(message, isSender);
+                messagesContainer.appendChild(messageElement);
+                
+                // Если есть вложение, сразу начинаем его загрузку
+                if (message.hasAttachment) {
+                    MessengerUI.loadMessageAttachment(message.messageId, messageElement);
+                }
+            }
+        });
+
+        // Прокручиваем к последнему сообщению
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    static async sendMessageWithAttachment(senderId, receiverId, text, file) {
+        try {
+            // Сначала отправляем сообщение
+            const messageResponse = await this.sendMessage(senderId, receiverId, text);
+            if (!messageResponse.success) {
+                throw new Error(messageResponse.message || 'Ошибка отправки сообщения');
+            }
+
+            const messageId = messageResponse.message.messageId;
+
+            // Создаем временный элемент для отображения загрузки
+            const tempMessage = {
+                messageId,
+                senderId,
+                receiverId,
+                text,
+                timestamp: new Date(),
+                isRead: false,
+                hasAttachment: true
+            };
+
+            // Добавляем сообщение в чат сразу
+            const messageElement = MessengerUI.createMessageElement(tempMessage, true);
+            const messagesContainer = document.querySelector('.messages-container');
+            if (messagesContainer) {
+                messagesContainer.appendChild(messageElement);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            // Загружаем файл
+            const uploadResponse = await MediaFileAPI.uploadMedia(file, messageId);
+            if (!uploadResponse.success) {
+                throw new Error(uploadResponse.message || 'Ошибка загрузки файла');
+            }
+
+            // Обновляем отображение вложения
+            MessengerUI.loadMessageAttachment(messageId, messageElement);
+
+            return messageResponse;
+        } catch (error) {
+            console.error('Ошибка при отправке сообщения с вложением:', error);
+            throw error;
         }
     }
 }
@@ -639,152 +760,6 @@ class MediaFileAPI {
             return `/api/message/media/${messageId}/stream`;
         }
         return `/api/message/media/${messageId}`;
-    }
-    
-    /**
-     * Отправляет сообщение с вложением
-     * @param {number} senderId - ID отправителя
-     * @param {number} receiverId - ID получателя
-     * @param {string} text - Текст сообщения
-     * @param {File} file - Файл для отправки
-     * @returns {Promise<Object>} - Результат отправки
-     */
-    static async sendMessageWithAttachment(senderId, receiverId, text, file) {
-        try {
-            if (!senderId) {
-                throw new Error('Не указан ID отправителя');
-            }
-            
-            if (!receiverId) {
-                throw new Error('Не указан ID получателя');
-            }
-            
-            if (!file) {
-                throw new Error('Не выбран файл для отправки');
-            }
-            
-            // Проверка размера файла
-            const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB - согласно ограничению на сервере
-            
-            if (file.size > MAX_FILE_SIZE) {
-                throw new Error(`Размер файла не должен превышать ${MAX_FILE_SIZE / (1024 * 1024)} MB`);
-            }
-            
-            // Создаем предварительный URL для изображения, если это изображение
-            let previewUrl = null;
-            if (file.type.startsWith('image/')) {
-                previewUrl = URL.createObjectURL(file);
-            }
-            
-            console.log('Отправка сообщения с вложением:', file.name, file.type, file.size);
-            
-            // Отправляем текстовое сообщение
-            const messageData = {
-                senderId: senderId,
-                receiverId: receiverId,
-                text: text || ''
-            };
-            
-            const messageResponse = await fetch('/api/message/send', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'UserId': senderId
-                },
-                body: JSON.stringify(messageData)
-            });
-            
-            if (!messageResponse.ok) {
-                throw new Error(`Ошибка HTTP: ${messageResponse.status}`);
-            }
-            
-            const messageResult = await messageResponse.json();
-            
-            if (!messageResult.success) {
-                throw new Error(messageResult.message || 'Ошибка при отправке сообщения');
-            }
-            
-            const messageId = messageResult.message.messageId;
-            
-            // Обновляем UI с сообщением, показывая, что вложение загружается
-            const message = {
-                messageId: messageId,
-                senderId: senderId,
-                receiverId: receiverId,
-                text: text || '',
-                timestamp: new Date(),
-                isRead: false,
-                hasAttachment: true,
-                attachment: {
-                    name: file.name,
-                    type: file.type.startsWith('image/') ? 'image' : 'file',
-                    size: file.size,
-                    previewUrl: previewUrl // Используем созданный URL для предпросмотра
-                }
-            };
-            
-            // Запускаем асинхронную загрузку файла
-            this.uploadMedia(file, messageId)
-                .then(uploadResult => {
-                    console.log('Файл успешно загружен:', uploadResult);
-                    
-                    // После успешной загрузки обновляем URL в сообщении
-                    if (message.attachment && previewUrl) {
-                        URL.revokeObjectURL(previewUrl); // Освобождаем ресурсы
-                        message.attachment.previewUrl = null;
-                    }
-                    
-                    // Если пользователь смотрит сообщение, обновим его отображение
-                    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-                    if (messageElement) {
-                        const attachmentContainer = messageElement.querySelector('.message-content-attachment');
-                        if (attachmentContainer) {
-                            // Удаляем индикатор загрузки
-                            const loadingIndicator = attachmentContainer.querySelector('.attachment-loading');
-                            if (loadingIndicator) {
-                                attachmentContainer.removeChild(loadingIndicator);
-                            }
-                            
-                            // Загружаем вложение
-                            MessengerUI.loadMessageAttachment(messageId, attachmentContainer);
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка при загрузке файла:', error);
-                    
-                    // Обновляем UI с ошибкой загрузки
-                    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-                    if (messageElement) {
-                        const attachmentContainer = messageElement.querySelector('.message-content-attachment');
-                        if (attachmentContainer) {
-                            // Удаляем индикатор загрузки
-                            const loadingIndicator = attachmentContainer.querySelector('.attachment-loading');
-                            if (loadingIndicator) {
-                                attachmentContainer.removeChild(loadingIndicator);
-                            }
-                            
-                            // Показываем ошибку
-                            const errorElement = document.createElement('div');
-                            errorElement.className = 'attachment-error';
-                            errorElement.innerHTML = '<i class="ri-error-warning-line"></i> Ошибка загрузки вложения';
-                            attachmentContainer.appendChild(errorElement);
-                        }
-                    }
-                    
-                    MessengerUI.showNotification('Ошибка при загрузке вложения: ' + error.message);
-                });
-            
-            return {
-                success: true,
-                message: 'Сообщение отправлено',
-                messageId: messageId,
-                messageData: message
-            };
-        } catch (error) {
-            console.error('Ошибка при отправке сообщения с вложением:', error);
-            throw error;
-        }
     }
 }
 

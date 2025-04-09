@@ -509,7 +509,7 @@ async function sendMessage() {
         // Проверяем, есть ли вложение
         if (window.attachmentManager && window.attachmentManager.hasAttachment()) {
             // Отправляем сообщение с вложением
-            await MediaFileAPI.sendMessageWithAttachment(
+            await MessageAPI.sendMessageWithAttachment(
                 currentUserId, 
                 selectedContactId, 
                 messageText, 
