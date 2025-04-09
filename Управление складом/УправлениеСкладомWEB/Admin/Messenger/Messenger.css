@@ -843,22 +843,23 @@ html, body {
 .message-file {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
-  background-color: rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
-  margin-bottom: 8px;
+  padding: 10px;
+  background-color: #007aff;
+  border-radius: var(--border-radius-sm);
   text-decoration: none;
-  color: var(--text-color);
-  transition: background-color 0.2s;
+  color: white !important;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.message-file:hover {
+  background-color: #0062cc;
 }
 
 .message-file i {
   margin-right: 8px;
-  font-size: 1.2rem;
-}
-
-.message-file:hover {
-  background-color: rgba(0, 0, 0, 0.08);
+  font-size: 18px;
+  color: white;
 }
 
 /* Стили для предложенных сообщений */
@@ -1996,21 +1997,22 @@ html, body {
   display: flex;
   align-items: center;
   padding: 10px;
-  background-color: rgba(var(--primary-color-rgb), 0.1);
+  background-color: #007aff;
   border-radius: var(--border-radius-sm);
   text-decoration: none;
-  color: var(--primary-color);
+  color: white !important;
   font-size: 14px;
   transition: background-color 0.2s ease;
 }
 
 .message-file:hover {
-  background-color: rgba(var(--primary-color-rgb), 0.2);
+  background-color: #0062cc;
 }
 
 .message-file i {
   margin-right: 8px;
   font-size: 18px;
+  color: white;
 }
 
 @keyframes spin {
@@ -2108,4 +2110,139 @@ html, body {
 .icon-button i.ri-attachment-2 {
   transform: rotate(-45deg);
   font-size: 22px;
+}
+
+/* Styling for document download links */
+.file-attachment a {
+  color: white !important;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+/* Specific styling for "Скачать документ" text */
+.message-file,
+.message-file *,
+.message-file i {
+  color: white !important;
+}
+
+/* Стили для загрузки вложений */
+.message-attachment.loading {
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 8px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.message-attachment .file-name {
+    font-weight: 500;
+    margin-bottom: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+}
+
+.message-attachment .progress-container {
+    height: 10px;
+    width: 100%;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+    margin-top: 5px;
+}
+
+.message-attachment .progress-bar {
+    height: 100%;
+    background-color: #4f6dff;
+    border-radius: 5px;
+    transition: width 0.3s ease;
+}
+
+.message-attachment .progress-text {
+    position: absolute;
+    top: -18px;
+    right: 0;
+    font-size: 12px;
+    color: #666;
+}
+
+.message-attachment.error {
+    background-color: rgba(255, 0, 0, 0.05);
+}
+
+.message-attachment .error-message {
+    color: #e53935;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.message-attachment .retry-button {
+    background-color: #4f6dff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    align-self: flex-end;
+}
+
+.message-attachment .retry-button:hover {
+    background-color: #3f5cff;
+}
+
+.message-attachments {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Стили для предпросмотра вложений */
+#attachmentPreviewContainer {
+    display: none;
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.attachment-preview {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.attachment-preview-icon {
+    font-size: 24px;
+    margin-right: 10px;
+    color: #4f6dff;
+}
+
+.attachment-preview-name {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.attachment-preview-size {
+    margin: 0 10px;
+    color: #666;
+    font-size: 12px;
+}
+
+.attachment-preview-remove {
+    cursor: pointer;
+    color: #e53935;
+    font-size: 18px;
 } 

@@ -36,10 +36,13 @@ class MessengerUI {
                 attachmentElement = `
                     <div class="file-attachment">
                         <i class="ri-file-line"></i>
-                        <a href="/api/message/media/${messageId}" target="_blank" download="${attachment.name}">
-                            ${attachment.name}
-                        </a>
-                        <span class="file-size">${this.formatFileSize(attachment.size)}</span>
+                        <div class="file-details">
+                            <a href="/api/message/media/${messageId}" target="_blank" download="${attachment.name}" style="color: white; text-decoration: none;">
+                                <span class="file-name">${attachment.name}</span>
+                                <i class="ri-download-line"></i>
+                            </a>
+                            <span class="file-size">${this.formatFileSize(attachment.size)}</span>
+                        </div>
                     </div>
                 `;
             }
@@ -186,20 +189,51 @@ style.textContent = `
     .file-attachment {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px;
-        background: rgba(0, 0, 0, 0.05);
+        gap: 12px;
+        padding: 10px;
+        background: var(--message-sent-bg, #007aff);
         border-radius: 4px;
+        width: 100%;
     }
 
     .file-attachment i {
         font-size: 24px;
-        color: #3498db;
+        color: white;
+        flex-shrink: 0;
+    }
+    
+    .file-details {
+        flex-grow: 1;
+        overflow: hidden;
+    }
+
+    .file-attachment a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+
+    .file-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 180px;
+        display: inline-block;
+    }
+
+    .file-attachment a i.ri-download-line {
+        font-size: 16px;
+        margin-left: 8px;
     }
 
     .file-attachment .file-size {
-        color: #666;
-        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 11px;
+        display: block;
     }
 
     .image-attachment img {

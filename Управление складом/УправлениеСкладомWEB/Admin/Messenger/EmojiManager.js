@@ -241,7 +241,7 @@ class EmojiManager {
         const emojiPicker = document.getElementById('emojiPicker');
         if (!emojiPicker) {
             this.createEmojiPicker();
-            setTimeout(() => this.showEmojiPicker(), 10);
+            setTimeout(() => this.toggleEmojiPicker(), 0);
             return;
         }
 

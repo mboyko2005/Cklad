@@ -19,8 +19,8 @@ namespace УправлениеСкладом.Controllers
         // Размер чанка по умолчанию (2 МБ)
         private const int DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024;
         
-        // Максимальный размер файла (10 МБ)
-        private const int MAX_FILE_SIZE = 10 * 1024 * 1024;
+        // Максимальный размер файла (1.5 ГБ)
+        private const long MAX_FILE_SIZE = 1536L * 1024 * 1024;
         
         // Директория для временного хранения чанков
         private readonly string _tempChunksDir = Path.Combine(Path.GetTempPath(), "MessageMediaChunks");
@@ -262,9 +262,11 @@ namespace УправлениеСкладом.Controllers
                                 byte[] fileData = (byte[])reader["Файл"];
                                 string fileType = reader.GetString(reader.GetOrdinal("Тип"));
                                 
-                                // Настройка кэширования для быстрой загрузки изображений
-                                Response.Headers.Add("Cache-Control", "public, max-age=31536000"); // Год
+                                // Улучшенная настройка кэширования для предотвращения повторной загрузки файлов
+                                Response.Headers.Add("Cache-Control", "public, max-age=31536000, immutable"); // Год + immutable флаг
                                 Response.Headers.Add("Expires", DateTime.UtcNow.AddYears(1).ToString("R"));
+                                Response.Headers.Add("ETag", $"W/\"{messageId}-{DateTime.UtcNow.Ticks}\"");
+                                Response.Headers.Add("Pragma", "public");
                                 
                                 // Определяем тип контента в зависимости от типа файла и его содержимого
                                 string contentType = GetContentType(fileType);
@@ -334,9 +336,11 @@ namespace УправлениеСкладом.Controllers
                                 var rangeHeader = Request.Headers["Range"].ToString();
                                 var range = GetRangeFromHeader(rangeHeader, fileSize);
                                 
-                                // Настройка кэширования
-                                Response.Headers.Add("Cache-Control", "public, max-age=31536000"); // Год
+                                // Улучшенная настройка кэширования
+                                Response.Headers.Add("Cache-Control", "public, max-age=31536000, immutable"); // Год + immutable флаг
                                 Response.Headers.Add("Expires", DateTime.UtcNow.AddYears(1).ToString("R"));
+                                Response.Headers.Add("ETag", $"W/\"{messageId}-{DateTime.UtcNow.Ticks}\"");
+                                Response.Headers.Add("Pragma", "public");
                                 Response.Headers.Add("Accept-Ranges", "bytes");
                                 
                                 // Определяем тип контента

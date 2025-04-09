@@ -53,11 +53,217 @@ document.addEventListener("DOMContentLoaded", () => {
         messageTextAreaId: 'messageTextArea',
         emojiButtonId: 'emojiButton'
     });
+    
+    // Запускаем процесс автоматической проверки новых сообщений
+    startMessagePolling();
 });
+
+// Переменные для контроля опроса сервера
+let messagePollingInterval = null;
+let lastMessageTimestamp = null;
+const POLLING_INTERVAL = 5000; // Интервал проверки новых сообщений (5 сек)
+
+/**
+ * Запускает периодическую проверку новых сообщений
+ */
+function startMessagePolling() {
+    if (messagePollingInterval) {
+        clearInterval(messagePollingInterval);
+    }
+    
+    // Устанавливаем интервал для проверки новых сообщений
+    messagePollingInterval = setInterval(checkForNewMessages, POLLING_INTERVAL);
+    
+    // Также запускаем проверку при переключении вкладки браузера
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            checkForNewMessages();
+        }
+    });
+    
+    console.log('Автоматическое обновление чата активировано');
+}
+
+/**
+ * Проверяет наличие новых сообщений для текущего контакта
+ */
+async function checkForNewMessages() {
+    try {
+        const selectedContact = document.querySelector('.contact-item.active');
+        if (!selectedContact) return; // Нет выбранного контакта
+        
+        const userId = localStorage.getItem("userId");
+        const contactId = selectedContact.dataset.id;
+        
+        if (!userId || !contactId) return;
+        
+        // Получаем последнее сообщение в чате для определения времени
+        const lastMessageElement = document.querySelector('.message-wrapper:last-child');
+        const lastMessageId = lastMessageElement ? lastMessageElement.dataset.id : null;
+        
+        // Получаем сообщения через API
+        const data = await MessageAPI.getConversation(userId, contactId);
+        const messages = data.messages || [];
+        
+        if (messages.length === 0) return;
+        
+        // Находим новые сообщения, которых еще нет в чате
+        let hasNewMessages = false;
+        const messagesContainer = document.getElementById("messagesContainer");
+        
+        if (lastMessageId) {
+            // Ищем сообщения, которые новее последнего отображаемого
+            const lastMessageIndex = messages.findIndex(msg => msg.messageId.toString() === lastMessageId);
+            
+            if (lastMessageIndex !== -1 && lastMessageIndex < messages.length - 1) {
+                // Есть новые сообщения
+                const newMessages = messages.slice(lastMessageIndex + 1);
+                console.log('Обнаружены новые сообщения:', newMessages.length);
+                
+                // Добавляем новые сообщения в чат
+                const fragment = document.createDocumentFragment();
+                
+                let lastDate = getLastVisibleDate();
+                
+                newMessages.forEach((message) => {
+                    const messageDate = new Date(message.timestamp);
+                    const currentDate = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+                    
+                    // Если дата изменилась, добавляем разделитель с датой
+                    if (!lastDate || lastDate.getTime() !== currentDate.getTime()) {
+                        const dateSeparator = document.createElement("div");
+                        dateSeparator.className = "date-separator";
+                        dateSeparator.textContent = formatDate(messageDate);
+                        fragment.appendChild(dateSeparator);
+                        lastDate = currentDate;
+                    }
+                    
+                    // Определяем, отправлено ли сообщение текущим пользователем
+                    const isSender = message.senderId.toString() === userId;
+                    
+                    // Создаем элемент сообщения и добавляем в фрагмент
+                    const messageElement = MessengerUI.createMessageElement(message, isSender);
+                    fragment.appendChild(messageElement);
+                });
+                
+                // Добавляем все новые сообщения в контейнер
+                messagesContainer.appendChild(fragment);
+                
+                // Прокручиваем вниз к новым сообщениям
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                hasNewMessages = true;
+                
+                // Отмечаем сообщения как прочитанные
+                await MessageAPI.markMessagesAsRead(userId, contactId);
+                
+                // Обновляем статус прочтения сообщений в интерфейсе
+                updateReadStatus();
+            }
+        } else {
+            // Если чат был пустой, просто загружаем все сообщения
+            await loadChatHistory(contactId);
+            hasNewMessages = true;
+        }
+        
+        // Если есть новые сообщения, обновляем список контактов для отображения последних сообщений
+        if (hasNewMessages) {
+            // Запоминаем ID активного контакта
+            const activeContactId = selectedContact.dataset.id;
+            
+            // Обновляем список контактов
+            await loadContacts(userId);
+            
+            // Восстанавливаем выбор активного контакта
+            const updatedContact = document.querySelector(`.contact-item[data-id="${activeContactId}"]`);
+            if (updatedContact) {
+                updatedContact.classList.add("active");
+            }
+            
+            // Проигрываем звук уведомления при получении новых сообщений
+            if (!document.hasFocus()) {
+                playNotificationSound();
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка при проверке новых сообщений:', error);
+    }
+}
+
+/**
+ * Возвращает дату последнего отображаемого разделителя даты
+ * @returns {Date|null} Последняя дата или null
+ */
+function getLastVisibleDate() {
+    const dateSeparators = document.querySelectorAll('.date-separator');
+    if (dateSeparators.length === 0) return null;
+    
+    const lastDateText = dateSeparators[dateSeparators.length - 1].textContent;
+    
+    if (lastDateText === 'Сегодня') {
+        const today = new Date();
+        return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    } else if (lastDateText === 'Вчера') {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        return new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+    } else {
+        // Парсим дату в формате ДД.ММ.ГГГГ
+        const parts = lastDateText.split('.');
+        if (parts.length === 3) {
+            return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Обновляет статус прочтения сообщений в интерфейсе
+ */
+function updateReadStatus() {
+    const sentMessages = document.querySelectorAll('.message-wrapper.sent');
+    sentMessages.forEach(messageEl => {
+        const readStatus = messageEl.querySelector('.read-status');
+        if (readStatus) {
+            readStatus.innerHTML = '✓✓'; // Отмечаем как прочитанное
+        }
+    });
+}
+
+/**
+ * Воспроизводит звук уведомления о новом сообщении
+ */
+function playNotificationSound() {
+    // Создаем элемент звука, если он еще не существует
+    let notificationSound = document.getElementById('notificationSound');
+    
+    if (!notificationSound) {
+        notificationSound = document.createElement('audio');
+        notificationSound.id = 'notificationSound';
+        notificationSound.src = '../../../assets/sounds/notification.mp3'; // Путь к звуковому файлу
+        notificationSound.volume = 0.5;
+        document.body.appendChild(notificationSound);
+    }
+    
+    // Воспроизводим звук
+    notificationSound.play().catch(err => {
+        console.warn('Не удалось воспроизвести звук уведомления:', err);
+    });
+}
 
 // Обработчик события pageshow (срабатывает при возврате на страницу)
 window.addEventListener("pageshow", () => {
     applyTheme();
+    // Проверяем новые сообщения при возврате на страницу
+    checkForNewMessages();
+});
+
+// Останавливаем опрос сервера при закрытии страницы
+window.addEventListener("beforeunload", () => {
+    if (messagePollingInterval) {
+        clearInterval(messagePollingInterval);
+    }
 });
 
 // Функция применения темы
@@ -478,79 +684,126 @@ async function loadChatHistory(contactId) {
 
 /** Отправка сообщения */
 async function sendMessage() {
-    const messageTextArea = document.getElementById('messageTextArea');
-    const messageText = messageTextArea.value.trim();
-    const messageInputContainer = document.querySelector('.message-input-container');
-    
-    // Получаем ID текущего пользователя и выбранного контакта
-    const currentUserId = localStorage.getItem("userId");
-    const selectedContactEl = document.querySelector(".contact-item.active");
-    
-    if (!selectedContactEl) {
-        MessengerUI.showNotification('Пожалуйста, выберите контакт для отправки сообщения', 'error');
-        return;
-    }
-    
-    const selectedContactId = selectedContactEl.dataset.id;
-    
-    if (!messageText && !window.attachmentManager?.hasAttachment()) {
-        return;
-    }
-    
-    // Показываем индикатор отправки сообщения
-    const sendButton = document.getElementById('send-button');
-    if (sendButton) {
-        const originalIcon = sendButton.innerHTML;
-        sendButton.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i>';
-        sendButton.disabled = true;
-    }
-    
     try {
-        // Проверяем, есть ли вложение
-        if (window.attachmentManager && window.attachmentManager.hasAttachment()) {
-            // Отправляем сообщение с вложением
-            await MessageAPI.sendMessageWithAttachment(
-                currentUserId, 
-                selectedContactId, 
-                messageText, 
-                window.attachmentManager.getAttachment()
-            );
-            
-            // Очищаем поле ввода и вложение
-            messageTextArea.value = '';
-            window.attachmentManager.clearAttachments();
-            
-            // Фокусируемся на поле ввода
-            messageTextArea.focus();
-            
-            // Обновляем чат для отображения нового сообщения
-            await loadChatHistory(selectedContactId);
-        } else if (messageText) {
-            // Отправляем текстовое сообщение без вложения
-            await MessageAPI.sendMessage(currentUserId, selectedContactId, messageText);
-            
-            // Очищаем поле ввода
-            messageTextArea.value = '';
-            
-            // Фокусируемся на поле ввода
-            messageTextArea.focus();
-            
-            // Обновляем чат для отображения нового сообщения
-            await loadChatHistory(selectedContactId);
+        const messageTextArea = document.getElementById("messageTextArea");
+        const messageText = messageTextArea.value.trim();
+        const messageInputContainer = document.querySelector(".message-input-container");
+        
+        // Получаем ID текущего пользователя
+        const currentUserId = localStorage.getItem("userId");
+        
+        // Получаем ID получателя
+        let receiverId;
+        
+        // Проверяем есть ли receiverId в dataset текстового поля (для новых чатов)
+        if (messageTextArea.dataset.receiverId) {
+            receiverId = messageTextArea.dataset.receiverId;
+            console.log("Получатель из dataset:", receiverId);
+        } else {
+            // Получаем ID из активного контакта
+            const selectedContactEl = document.querySelector(".contact-item.active");
+            if (!selectedContactEl) {
+                showNotification("Выберите контакт для отправки сообщения");
+                return;
+            }
+            receiverId = selectedContactEl.dataset.id;
+            console.log("Получатель из активного контакта:", receiverId);
         }
-    } catch (error) {
-        console.error('Ошибка при отправке сообщения:', error);
-        MessengerUI.showNotification('Ошибка при отправке сообщения: ' + error.message, 'error');
+        
+        // Проверяем, что ID получателя получен
+        if (!receiverId) {
+            showNotification("Не удалось определить получателя сообщения");
+            return;
+        }
+        
+        // Проверяем наличие текста или вложения
+        if (!messageText && !window.attachmentManager?.hasAttachment()) {
+            return;
+        }
+        
+        // Показываем индикатор отправки сообщения
+        const sendButton = document.getElementById("send-button");
+        if (sendButton) {
+            const originalIcon = sendButton.innerHTML;
+            sendButton.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i>';
+            sendButton.disabled = true;
+        }
+        
+        console.log("Отправка сообщения:", {senderId: currentUserId, receiverId, text: messageText});
+        
+        try {
+            // Проверяем, есть ли вложение
+            if (window.attachmentManager && window.attachmentManager.hasAttachment()) {
+                // Отправляем сообщение с вложением
+                const result = await MessageAPI.sendMessageWithAttachment(
+                    currentUserId,
+                    receiverId,
+                    messageText,
+                    window.attachmentManager.getAttachment()
+                );
+                
+                console.log("Результат отправки с вложением:", result);
+                
+                // Очищаем поле ввода и вложение
+                messageTextArea.value = "";
+                window.attachmentManager.clearAttachments();
+                
+                // Фокусируемся на поле ввода
+                messageTextArea.focus();
+                
+                // Обновляем чат для отображения нового сообщения
+                await loadChatHistory(receiverId);
+            } else if (messageText) {
+                // Отправляем текстовое сообщение без вложения
+                const result = await MessageAPI.sendMessage(currentUserId, receiverId, messageText);
+                
+                console.log("Результат отправки текста:", result);
+                
+                // Очищаем поле ввода
+                messageTextArea.value = "";
+                
+                // Фокусируемся на поле ввода
+                messageTextArea.focus();
+                
+                // Обновляем чат для отображения нового сообщения
+                await loadChatHistory(receiverId);
+            }
+            
+            // Очищаем data-attribute после успешной отправки
+            if (messageTextArea.dataset.receiverId) {
+                delete messageTextArea.dataset.receiverId;
+            }
+            
+            // Обновляем список контактов
+            await loadContacts(currentUserId);
+            
+            // Находим и активируем контакт с получателем
+            setTimeout(() => {
+                const contact = document.querySelector(`.contact-item[data-id="${receiverId}"]`);
+                if (contact && !contact.classList.contains("active")) {
+                    selectContact(contact);
+                }
+            }, 300);
+            
+        } catch (error) {
+            console.error("Ошибка при отправке сообщения:", error);
+            showNotification("Ошибка при отправке сообщения: " + error.message);
+        }
+    } catch (e) {
+        console.error("Общая ошибка в функции sendMessage:", e);
+        showNotification("Произошла ошибка при отправке сообщения");
     } finally {
         // Восстанавливаем кнопку отправки
+        const sendButton = document.getElementById("send-button");
         if (sendButton) {
             sendButton.innerHTML = '<i class="ri-send-plane-fill"></i>';
             sendButton.disabled = false;
         }
         
         // Сбрасываем высоту текстового поля
+        const messageTextArea = document.getElementById("messageTextArea");
         if (messageTextArea) {
-            messageTextArea.style.height = 'auto';
+            messageTextArea.style.height = "auto";
         }
     }
 }
@@ -977,9 +1230,9 @@ async function handleContactSearch(event) {
 function handleAttachment() {
     if (window.attachmentManager) {
         // Используем метод класса MessengerAttachment для открытия диалога выбора файла
-        const fileInput = document.getElementById('file-input');
-        if (fileInput) {
-            fileInput.click();
+    const fileInput = document.getElementById('file-input');
+    if (fileInput) {
+        fileInput.click();
         }
     } else {
         console.error('Менеджер вложений не инициализирован');
@@ -1238,6 +1491,8 @@ async function startNewChat(selectedUserId, selectedUserName) {
             return;
         }
 
+        console.log("Начинаем новый чат с:", selectedUserName, "ID:", selectedUserId);
+
         // Закрываем модальное окно, если оно открыто
         const modal = document.getElementById('newChatModal');
         if (modal) modal.remove();
@@ -1260,40 +1515,72 @@ async function startNewChat(selectedUserId, selectedUserName) {
 
         // Проверяем, есть ли этот контакт уже в списке
         const existingContact = document.querySelector(`.contact-item[data-id="${selectedUserId}"]`);
+        
         if (existingContact) {
             // Если контакт существует, делаем его активным
+            console.log("Найден существующий контакт, активируем его");
             existingContact.classList.add("active");
-        }
+            
+            // Загружаем историю чата
+            await loadChatHistory(selectedUserId);
+        } else {
+            console.log("Создаем временный контакт");
+            // Если контакта нет, создаем временный элемент и делаем его активным
+            const contactsList = document.getElementById("contactsList");
+            if (contactsList) {
+                // Создаем новый элемент контакта
+                const tempContact = document.createElement("div");
+                tempContact.className = "contact-item active";
+                tempContact.dataset.id = selectedUserId;
+                
+                const contactAvatar = document.createElement("div");
+                contactAvatar.className = "contact-avatar";
+                contactAvatar.innerHTML = '<i class="ri-user-line"></i>';
+                
+                const contactInfo = document.createElement("div");
+                contactInfo.className = "contact-info";
+                contactInfo.innerHTML = `
+                    <div class="contact-name">${selectedUserName}</div>
+                    <div class="contact-role">Новый чат</div>
+                `;
+                
+                tempContact.appendChild(contactAvatar);
+                tempContact.appendChild(contactInfo);
+                
+                // Добавляем обработчик клика
+                tempContact.addEventListener("click", () => {
+                    selectContact(tempContact);
+                });
+                
+                // Добавляем временный контакт в начало списка
+                if (contactsList.firstChild) {
+                    contactsList.insertBefore(tempContact, contactsList.firstChild);
+                } else {
+                    contactsList.appendChild(tempContact);
+                }
+            }
 
-        // Показываем пустой чат
-        const messagesContainer = document.getElementById("messagesContainer");
-        if (messagesContainer) {
-            messagesContainer.innerHTML = `
-                <div class="empty-messages">
-                    <p>У вас пока нет сообщений с этим пользователем</p>
-                    <p>Отправьте сообщение, чтобы начать общение</p>
-                </div>
-            `;
+            // Показываем пустой чат
+            const messagesContainer = document.getElementById("messagesContainer");
+            if (messagesContainer) {
+                messagesContainer.innerHTML = `
+                    <div class="empty-messages">
+                        <p>У вас пока нет сообщений с этим пользователем</p>
+                        <p>Отправьте сообщение, чтобы начать общение</p>
+                    </div>
+                `;
+            }
         }
 
         // Фокусируем поле ввода сообщения
         const messageTextArea = document.getElementById("messageTextArea");
         if (messageTextArea) {
-            messageTextArea.focus();
             // Сохраняем ID получателя как атрибут данных для отправки сообщения
             messageTextArea.dataset.receiverId = selectedUserId;
+            // Устанавливаем фокус
+            messageTextArea.focus();
+            console.log("Установлен dataset.receiverId:", selectedUserId);
         }
-
-        // Обновляем список контактов
-        await loadContacts(userId);
-
-        // Делаем контакт активным после обновления списка
-        setTimeout(() => {
-            const updatedContact = document.querySelector(`.contact-item[data-id="${selectedUserId}"]`);
-            if (updatedContact) {
-                updatedContact.classList.add("active");
-            }
-        }, 500);
 
         // Показываем уведомление
         showNotification(`Чат с ${selectedUserName} создан`);
@@ -1593,4 +1880,375 @@ function createMessageAttachment(message, messageContent) {
     
     // Используем класс MessengerAttachment для загрузки и отображения вложения
     MessengerAttachment.loadMessageAttachment(message.messageId, messageContent);
+}
+
+/**
+ * Добавляет индикатор загрузки вложения в UI
+ * @param {string} id - Уникальный идентификатор вложения
+ * @param {string} fileName - Имя файла
+ */
+function addAttachmentLoadingIndicator(id, fileName) {
+    const messagesContainer = document.getElementById("messagesContainer");
+    const lastMessage = messagesContainer.lastElementChild;
+    
+    const attachmentContainer = document.createElement("div");
+    attachmentContainer.className = "message-attachment loading";
+    attachmentContainer.id = id;
+    
+    const fileNameElement = document.createElement("div");
+    fileNameElement.className = "file-name";
+    fileNameElement.textContent = fileName;
+    
+    const progressContainer = document.createElement("div");
+    progressContainer.className = "progress-container";
+    
+    const progressBar = document.createElement("div");
+    progressBar.className = "progress-bar";
+    progressBar.style.width = "0%";
+    
+    const progressText = document.createElement("div");
+    progressText.className = "progress-text";
+    progressText.textContent = "0%";
+    
+    progressContainer.appendChild(progressBar);
+    progressContainer.appendChild(progressText);
+    
+    attachmentContainer.appendChild(fileNameElement);
+    attachmentContainer.appendChild(progressContainer);
+    
+    if (lastMessage && lastMessage.classList.contains("message-outgoing")) {
+        const attachmentsContainer = lastMessage.querySelector(".message-attachments");
+        if (attachmentsContainer) {
+            attachmentsContainer.appendChild(attachmentContainer);
+        } else {
+            const newAttachmentsContainer = document.createElement("div");
+            newAttachmentsContainer.className = "message-attachments";
+            newAttachmentsContainer.appendChild(attachmentContainer);
+            lastMessage.appendChild(newAttachmentsContainer);
+        }
+    } else {
+        // Создаем новое сообщение для отображения загрузки
+        const newMessage = document.createElement("div");
+        newMessage.className = "message message-outgoing";
+        
+        const newAttachmentsContainer = document.createElement("div");
+        newAttachmentsContainer.className = "message-attachments";
+        newAttachmentsContainer.appendChild(attachmentContainer);
+        
+        newMessage.appendChild(newAttachmentsContainer);
+        messagesContainer.appendChild(newMessage);
+        scrollToBottom();
+    }
+}
+
+/**
+ * Обновляет прогресс загрузки вложения
+ * @param {string} id - Идентификатор вложения
+ * @param {number} progress - Процент загрузки (0-100)
+ */
+function updateAttachmentProgress(id, progress) {
+    const attachmentContainer = document.getElementById(id);
+    if (attachmentContainer) {
+        const progressBar = attachmentContainer.querySelector(".progress-bar");
+        const progressText = attachmentContainer.querySelector(".progress-text");
+        
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
+        }
+        
+        if (progressText) {
+            progressText.textContent = `${Math.round(progress)}%`;
+        }
+    }
+}
+
+/**
+ * Удаляет индикатор загрузки вложения
+ * @param {string} id - Идентификатор вложения
+ */
+function removeAttachmentLoadingIndicator(id) {
+    const attachmentContainer = document.getElementById(id);
+    if (attachmentContainer) {
+        attachmentContainer.remove();
+    }
+}
+
+/**
+ * Отображает ошибку загрузки вложения
+ * @param {string} id - Идентификатор вложения
+ * @param {string} errorMessage - Сообщение об ошибке
+ */
+function updateAttachmentError(id, errorMessage) {
+    const attachmentContainer = document.getElementById(id);
+    if (attachmentContainer) {
+        attachmentContainer.classList.remove("loading");
+        attachmentContainer.classList.add("error");
+        
+        const progressContainer = attachmentContainer.querySelector(".progress-container");
+        if (progressContainer) {
+            progressContainer.innerHTML = `
+                <div class="error-message">${errorMessage}</div>
+                <button class="retry-button">Повторить</button>
+            `;
+            
+            const retryButton = progressContainer.querySelector(".retry-button");
+            if (retryButton) {
+                retryButton.addEventListener("click", () => {
+                    // Логика повторной отправки будет реализована позже
+                    showNotification("Функция повторной отправки в разработке");
+                });
+            }
+        }
+    }
+}
+
+// Инициализация элементов для вложений
+document.addEventListener("DOMContentLoaded", function() {
+    // Инициализация fileInput
+    fileInput = document.getElementById("messageAttachment");
+    if (fileInput) {
+        fileInput.addEventListener("change", handleFileSelection);
+    }
+    
+    // Инициализация контейнера предпросмотра вложений
+    attachmentPreviewContainer = document.getElementById("attachmentPreviewContainer");
+    
+    // Добавление обработчика события drop для области чата
+    const chatArea = document.querySelector(".chat-messages");
+    if (chatArea) {
+        chatArea.addEventListener("dragover", function(e) {
+            e.preventDefault();
+            chatArea.classList.add("drag-over");
+        });
+        
+        chatArea.addEventListener("dragleave", function() {
+            chatArea.classList.remove("drag-over");
+        });
+        
+        chatArea.addEventListener("drop", function(e) {
+            e.preventDefault();
+            chatArea.classList.remove("drag-over");
+            
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelection();
+            }
+        });
+    }
+});
+
+// Обработка выбора файла
+function handleFileSelection() {
+    if (!fileInput.files.length) return;
+    
+    // Показать контейнер предпросмотра
+    attachmentPreviewContainer.style.display = "block";
+    attachmentPreviewContainer.innerHTML = "";
+    
+    // Создать предпросмотр для каждого файла
+    Array.from(fileInput.files).forEach((file, index) => {
+        const fileSize = formatFileSize(file.size);
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        
+        const previewElement = document.createElement("div");
+        previewElement.className = "attachment-preview";
+        previewElement.innerHTML = `
+            <div class="attachment-preview-icon">
+                <i class="fas ${getFileIcon(fileExtension)}"></i>
+            </div>
+            <div class="attachment-preview-name">${file.name}</div>
+            <div class="attachment-preview-size">${fileSize}</div>
+            <div class="attachment-preview-remove" data-index="${index}">
+                <i class="fas fa-times"></i>
+            </div>
+        `;
+        
+        attachmentPreviewContainer.appendChild(previewElement);
+        
+        // Добавить обработчик события для удаления файла
+        const removeButton = previewElement.querySelector(".attachment-preview-remove");
+        removeButton.addEventListener("click", function() {
+            removeFileFromInput(parseInt(this.dataset.index));
+        });
+    });
+}
+
+// Удаление файла из input
+function removeFileFromInput(index) {
+    const dt = new DataTransfer();
+    const files = fileInput.files;
+    
+    for (let i = 0; i < files.length; i++) {
+        if (i !== index) {
+            dt.items.add(files[i]);
+        }
+    }
+    
+    fileInput.files = dt.files;
+    handleFileSelection();
+    
+    // Скрыть контейнер предпросмотра, если файлов не осталось
+    if (fileInput.files.length === 0) {
+        attachmentPreviewContainer.style.display = "none";
+    }
+}
+
+// Определение иконки файла по расширению
+function getFileIcon(extension) {
+    const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "svg"];
+    const documentExtensions = ["doc", "docx", "pdf", "txt", "rtf", "xlsx", "xls", "ppt", "pptx"];
+    const archiveExtensions = ["zip", "rar", "7z", "tar", "gz"];
+    
+    if (imageExtensions.includes(extension)) {
+        return "fa-file-image";
+    } else if (documentExtensions.includes(extension)) {
+        return "fa-file-alt";
+    } else if (archiveExtensions.includes(extension)) {
+        return "fa-file-archive";
+    } else {
+        return "fa-file";
+    }
+}
+
+// Форматирование размера файла
+function formatFileSize(bytes) {
+    if (bytes === 0) return "0 Bytes";
+    
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
+// Функция для создания HTML элемента загрузки вложения
+function createAttachmentLoadingElement(file, messageId) {
+    const attachmentElement = document.createElement("div");
+    attachmentElement.className = "message-attachment loading";
+    attachmentElement.id = `attachment-${messageId}`;
+    
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    const fileSize = formatFileSize(file.size);
+    
+    attachmentElement.innerHTML = `
+        <div class="file-name">
+            <i class="fas ${getFileIcon(fileExtension)}"></i> ${file.name}
+        </div>
+        <div class="file-size">${fileSize}</div>
+        <div class="progress-container">
+            <div class="progress-bar" style="width: 0%"></div>
+            <div class="progress-text">0%</div>
+        </div>
+    `;
+    
+    return attachmentElement;
+}
+
+// Функция для обновления прогресса загрузки
+function updateAttachmentProgress(messageId, progress) {
+    const attachmentElement = document.getElementById(`attachment-${messageId}`);
+    if (!attachmentElement) return;
+    
+    const progressBar = attachmentElement.querySelector(".progress-bar");
+    const progressText = attachmentElement.querySelector(".progress-text");
+    
+    progressBar.style.width = `${progress}%`;
+    progressText.textContent = `${progress}%`;
+}
+
+// Функция для установки ошибки загрузки вложения
+function setAttachmentError(messageId, errorMessage) {
+    const attachmentElement = document.getElementById(`attachment-${messageId}`);
+    if (!attachmentElement) return;
+    
+    attachmentElement.classList.add("error");
+    attachmentElement.classList.remove("loading");
+    
+    // Заменяем контейнер прогресса на сообщение об ошибке
+    const progressContainer = attachmentElement.querySelector(".progress-container");
+    if (progressContainer) {
+        progressContainer.innerHTML = `
+            <div class="error-message">${errorMessage}</div>
+            <button class="retry-button" data-message-id="${messageId}">Повторить</button>
+        `;
+        
+        const retryButton = attachmentElement.querySelector(".retry-button");
+        retryButton.addEventListener("click", function() {
+            // Добавить логику повторной загрузки, если необходимо
+            console.log("Retry upload for message ID:", this.dataset.messageId);
+        });
+    }
+}
+
+// Функция для создания сообщения с вложением после успешной загрузки
+function createMessageWithAttachment(messageData) {
+    const attachmentElement = document.getElementById(`attachment-${messageData.id}`);
+    if (!attachmentElement) return;
+    
+    // Убираем класс loading и добавляем финальные стили
+    attachmentElement.classList.remove("loading");
+    attachmentElement.classList.remove("error");
+    
+    // Заменяем содержимое на финальное представление вложения
+    const fileExtension = messageData.attachment.fileName.split('.').pop().toLowerCase();
+    
+    attachmentElement.innerHTML = `
+        <div class="file-name">
+            <i class="fas ${getFileIcon(fileExtension)}"></i> ${messageData.attachment.fileName}
+        </div>
+        <div class="file-size">${formatFileSize(messageData.attachment.fileSize)}</div>
+        <a href="${messageData.attachment.fileUrl}" class="download-link" target="_blank">
+            <i class="fas fa-download"></i> Скачать
+        </a>
+    `;
+}
+
+function uploadAttachment(file, messageId) {
+    return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("messageId", messageId);
+        
+        const xhr = new XMLHttpRequest();
+        
+        xhr.open("POST", `${apiUrl}/api/messages/upload-attachment`, true);
+        
+        // Добавляем токен аутентификации
+        const token = localStorage.getItem("authToken");
+        if (token) {
+            xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+        }
+        
+        // Отслеживание прогресса загрузки
+        xhr.upload.addEventListener("progress", function(e) {
+            if (e.lengthComputable) {
+                const progressPercentage = Math.round((e.loaded / e.total) * 100);
+                updateAttachmentProgress(messageId, progressPercentage);
+            }
+        });
+        
+        xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    resolve(response);
+                } catch (error) {
+                    reject(new Error("Ошибка при разборе ответа сервера"));
+                }
+            } else {
+                reject(new Error(`Ошибка загрузки: ${xhr.status} ${xhr.statusText}`));
+            }
+        };
+        
+        xhr.onerror = function() {
+            reject(new Error("Ошибка сети при загрузке файла"));
+        };
+        
+        xhr.timeout = 60000; // 60 секунд таймаут
+        xhr.ontimeout = function() {
+            reject(new Error("Время ожидания загрузки истекло"));
+        };
+        
+        xhr.send(formData);
+    });
 }

@@ -10,8 +10,8 @@ class MessengerAttachment {
         this.messageTextArea = document.getElementById(options.messageTextAreaId || 'messageTextArea');
         this.messageInputContainer = document.querySelector('.message-input-container');
         
-        // Максимальный размер файла (10MB)
-        this.maxFileSize = options.maxFileSize || 10 * 1024 * 1024;
+        // Максимальный размер файла (1.5GB)
+        this.maxFileSize = options.maxFileSize || 1536 * 1024 * 1024;
         
         // Текущее вложение
         this.currentAttachment = null;

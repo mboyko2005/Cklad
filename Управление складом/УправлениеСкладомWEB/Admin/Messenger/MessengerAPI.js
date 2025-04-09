@@ -755,7 +755,8 @@ class MediaFileAPI {
      * @returns {string} - URL для доступа к медиафайлу
      */
     static getMediaUrl(messageId, useStream = false) {
-        // Убираем параметр timestamp для лучшего кеширования
+        // Создаем постоянное кэширование файлов с помощью версионирования URL
+        // Используем messageId как версию для стабильности URL
         if (useStream) {
             return `/api/message/media/${messageId}/stream`;
         }
@@ -1130,7 +1131,7 @@ class MessengerUI {
                     // Добавляем видео в контейнер
                     videoContainer.appendChild(videoElement);
                 } else {
-                    // Для других типов файлов создаем ссылку
+                    // Для других типов файлов создаем ссылку для скачивания
                     const fileContainer = document.createElement("div");
                     fileContainer.className = "message-file-container";
                     
@@ -1139,23 +1140,29 @@ class MessengerUI {
                     fileLink.href = mediaUrl;
                     fileLink.target = "_blank";
                     fileLink.download = "";  // Для скачивания файла
+                    fileLink.style.color = "white"; // Make text white 
                     
                     // Выбираем подходящую иконку в зависимости от типа файла
                     let iconClass = "ri-file-line";
-                    let fileTypeName = "файл";
                     
-                    if (mediaFile.type.toLowerCase() === "audio") {
-                        iconClass = "ri-file-music-line";
-                        fileTypeName = "аудио";
-                    } else if (mediaFile.type.toLowerCase() === "document") {
-                        iconClass = "ri-file-text-line";
-                        fileTypeName = "документ";
-                    } else if (mediaFile.type.toLowerCase() === "pdf") {
+                    if (mediaFile.type.includes('pdf')) {
                         iconClass = "ri-file-pdf-line";
-                        fileTypeName = "PDF";
+                    } else if (mediaFile.type.includes('word') || mediaFile.type.includes('doc')) {
+                        iconClass = "ri-file-word-line";
+                    } else if (mediaFile.type.includes('excel') || mediaFile.type.includes('sheet') || mediaFile.type.includes('xls')) {
+                        iconClass = "ri-file-excel-line";
+                    } else if (mediaFile.type.includes('text')) {
+                        iconClass = "ri-file-text-line";
                     }
                     
-                    fileLink.innerHTML = `<i class="${iconClass}"></i> Скачать ${fileTypeName}`;
+                    // Создаем HTML-структуру с именем файла и иконкой загрузки
+                    fileLink.innerHTML = `
+                        <div style="display: flex; align-items: center;">
+                            <i class="${iconClass}" style="margin-right: 8px;"></i>
+                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${mediaFile.name || mediaFile.type}</span>
+                        </div>
+                        <i class="ri-download-line"></i>
+                    `;
                     
                     // Если у нас есть размер файла, добавим его
                     if (mediaFile.size) {
@@ -1216,51 +1223,74 @@ class MessengerUI {
      * @param {HTMLElement} progressIndicator - Индикатор прогресса
      */
     static loadImageWithProgress(url, imageElement, progressIndicator) {
-        // Создаем запрос
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.responseType = 'blob';
-        
-        // Устанавливаем обработчик прогресса
-        xhr.onprogress = function(event) {
-            if (event.lengthComputable && progressIndicator) {
-                const percent = Math.round((event.loaded / event.total) * 100);
-                const progressBar = progressIndicator.querySelector('.progress-bar');
-                if (progressBar) {
-                    progressBar.style.width = percent + '%';
-                }
+        // Проверяем, есть ли изображение в кэше браузера
+        const img = new Image();
+        img.onload = function() {
+            // Если изображение уже в кэше, просто используем его
+            imageElement.src = url;
+            // Удаляем индикатор прогресса
+            if (progressIndicator && progressIndicator.parentNode) {
+                progressIndicator.parentNode.removeChild(progressIndicator);
             }
         };
-        
-        // Устанавливаем обработчик завершения
-        xhr.onload = function() {
-            if (this.status === 200) {
-                const blob = this.response;
-                const objectURL = URL.createObjectURL(blob);
-                
-                // Устанавливаем URL для изображения
-                imageElement.src = objectURL;
-                
-                // Освобождаем URL при выгрузке изображения
-                imageElement.onload = function() {
-                    // Удаляем индикатор прогресса
-                    if (progressIndicator && progressIndicator.parentNode) {
-                        progressIndicator.parentNode.removeChild(progressIndicator);
+        img.onerror = function() {
+            // Если изображение не в кэше, загружаем с отслеживанием прогресса
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.responseType = 'blob';
+            
+            // Устанавливаем обработчик прогресса
+            xhr.onprogress = function(event) {
+                if (event.lengthComputable && progressIndicator) {
+                    const percent = Math.round((event.loaded / event.total) * 100);
+                    const progressBar = progressIndicator.querySelector('.progress-bar');
+                    if (progressBar) {
+                        progressBar.style.width = percent + '%';
                     }
-                };
-            } else {
-                // В случае ошибки устанавливаем обработчик ошибки изображения
+                }
+            };
+            
+            // Устанавливаем обработчик завершения
+            xhr.onload = function() {
+                if (this.status === 200) {
+                    const blob = this.response;
+                    const objectURL = URL.createObjectURL(blob);
+                    
+                    // Устанавливаем URL для изображения
+                    imageElement.src = objectURL;
+                    
+                    // Сохраняем blob в локальном кэше для повторного использования
+                    try {
+                        const urlKey = `image_${url.split('/').pop()}`;
+                        localStorage.setItem(urlKey, objectURL);
+                    } catch (e) {
+                        console.warn('Не удалось сохранить изображение в локальном хранилище:', e);
+                    }
+                    
+                    // Освобождаем URL при выгрузке изображения
+                    imageElement.onload = function() {
+                        // Удаляем индикатор прогресса
+                        if (progressIndicator && progressIndicator.parentNode) {
+                            progressIndicator.parentNode.removeChild(progressIndicator);
+                        }
+                    };
+                } else {
+                    // В случае ошибки устанавливаем обработчик ошибки изображения
+                    imageElement.onerror();
+                }
+            };
+            
+            // Устанавливаем обработчик ошибки
+            xhr.onerror = function() {
                 imageElement.onerror();
-            }
+            };
+            
+            // Запускаем запрос
+            xhr.send();
         };
         
-        // Устанавливаем обработчик ошибки
-        xhr.onerror = function() {
-            imageElement.onerror();
-        };
-        
-        // Запускаем запрос
-        xhr.send();
+        // Проверяем, есть ли изображение в кэше
+        img.src = url;
     }
     
     /**
@@ -1374,15 +1404,33 @@ class MediaHandler {
             mediaElement.href = mediaUrl;
             mediaElement.className = 'message-file';
             mediaElement.target = '_blank';
+            mediaElement.style.color = 'white';
+            mediaElement.style.display = 'flex';
+            mediaElement.style.alignItems = 'center';
+            mediaElement.style.justifyContent = 'space-between';
+            mediaElement.style.width = '100%';
             
-            const icon = document.createElement('i');
-            icon.className = 'ri-file-line';
+            // Выбираем подходящую иконку в зависимости от типа файла
+            let iconClass = "ri-file-line";
             
-            const fileName = document.createElement('span');
-            fileName.textContent = attachment.fileName || 'Файл';
+            if (attachment.mediaType.includes('pdf')) {
+                iconClass = "ri-file-pdf-line";
+            } else if (attachment.mediaType.includes('word') || attachment.mediaType.includes('doc')) {
+                iconClass = "ri-file-word-line";
+            } else if (attachment.mediaType.includes('excel') || attachment.mediaType.includes('sheet') || attachment.mediaType.includes('xls')) {
+                iconClass = "ri-file-excel-line";
+            } else if (attachment.mediaType.includes('text')) {
+                iconClass = "ri-file-text-line";
+            }
             
-            mediaElement.appendChild(icon);
-            mediaElement.appendChild(fileName);
+            // Создаем HTML-структуру с именем файла и иконкой загрузки
+            mediaElement.innerHTML = `
+                <div style="display: flex; align-items: center;">
+                    <i class="${iconClass}" style="margin-right: 8px;"></i>
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${attachment.fileName || 'Файл'}</span>
+                </div>
+                <i class="ri-download-line"></i>
+            `;
         }
         
         return mediaElement;
@@ -1577,4 +1625,94 @@ window.UserAPI = UserAPI;
 window.ContactAPI = ContactAPI;
 window.MessageAPI = MessageAPI;
 window.MediaFileAPI = MediaFileAPI;
-window.MessengerUI = MessengerUI; 
+window.MessengerUI = MessengerUI;
+
+/**
+ * Начало нового чата с выбранным пользователем
+ * @param {number} selectedUserId - ID выбранного пользователя
+ * @param {string} selectedUserName - Имя выбранного пользователя
+ */
+async function startNewChat(selectedUserId, selectedUserName) {
+    try {
+        const userId = localStorage.getItem("userId");
+        if (!userId || !selectedUserId) {
+            showNotification("Ошибка выбора пользователя");
+            return;
+        }
+
+        // Закрываем модальное окно, если оно открыто
+        const modal = document.getElementById('newChatModal');
+        if (modal) modal.remove();
+
+        // Очищаем поле поиска контактов
+        const searchInput = document.getElementById("contactSearchInput");
+        if (searchInput) {
+            searchInput.value = '';
+        }
+
+        // Устанавливаем заголовок чата
+        const chatTitle = document.getElementById('chatTitle');
+        const chatStatus = document.getElementById('chatStatus');
+        if (chatTitle) chatTitle.textContent = selectedUserName;
+        if (chatStatus) chatStatus.textContent = ""; // Можно загрузить роль пользователя при необходимости
+
+        // Очищаем активность со всех контактов
+        const contacts = document.querySelectorAll(".contact-item");
+        contacts.forEach(c => c.classList.remove("active"));
+
+        // Проверяем, есть ли этот контакт уже в списке
+        const existingContact = document.querySelector(`.contact-item[data-id="${selectedUserId}"]`);
+        if (existingContact) {
+            // Если контакт существует, делаем его активным
+            existingContact.classList.add("active");
+        } else {
+            // Если контакта нет, создаем временный элемент и делаем его активным
+            const messagesContainer = document.getElementById("messagesContainer");
+            if (messagesContainer) {
+                messagesContainer.innerHTML = `
+                    <div class="empty-messages">
+                        <p>У вас пока нет сообщений с этим пользователем</p>
+                        <p>Отправьте сообщение, чтобы начать общение</p>
+                    </div>
+                `;
+            }
+            
+            // Создаем временный элемент контакта
+            const tempContact = document.createElement("div");
+            tempContact.className = "contact-item active";
+            tempContact.dataset.id = selectedUserId;
+            tempContact.style.display = "none"; // Делаем его скрытым, но активным для функционала
+            
+            const contactsList = document.getElementById("contactsList");
+            if (contactsList) {
+                contactsList.appendChild(tempContact);
+            }
+        }
+
+        // Фокусируем поле ввода сообщения
+        const messageTextArea = document.getElementById("messageTextArea");
+        if (messageTextArea) {
+            messageTextArea.focus();
+            // Сохраняем ID получателя как атрибут данных для отправки сообщения
+            messageTextArea.dataset.receiverId = selectedUserId;
+        }
+
+        // Обновляем список контактов
+        await loadContacts(userId);
+
+        // Делаем контакт активным после обновления списка
+        setTimeout(() => {
+            const updatedContact = document.querySelector(`.contact-item[data-id="${selectedUserId}"]`);
+            if (updatedContact) {
+                updatedContact.classList.add("active");
+            }
+        }, 500);
+
+        // Показываем уведомление
+        showNotification(`Чат с ${selectedUserName} создан`);
+
+    } catch (error) {
+        console.error("Ошибка при создании нового чата:", error);
+        showNotification("Не удалось создать новый чат");
+    }
+} 
