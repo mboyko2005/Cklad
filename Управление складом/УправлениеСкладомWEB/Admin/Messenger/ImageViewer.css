@@ -1,0 +1,633 @@
+/* Стили для просмотрщика изображений */
+.image-viewer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 1050;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s ease-in-out;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.image-viewer.active {
+    display: flex;
+    opacity: 1;
+}
+
+.image-viewer-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-viewer-img,
+.imageviewer-canvas {
+    max-width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+    transform-origin: center;
+    transition: transform 0.15s ease-out;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    will-change: transform, opacity;
+    display: block;
+    margin: 0 auto;
+    cursor: grab;
+}
+
+.imageviewer-canvas {
+    position: relative;
+    margin: 0 auto 60px auto;
+    cursor: grab;
+    background-color: transparent;
+}
+
+.imageviewer-canvas.animate-in {
+    animation: zoomIn 0.5s ease-out forwards;
+}
+
+.imageviewer-canvas.active {
+    cursor: crosshair;
+}
+
+/* Панель инструментов фиксированной высоты внизу */
+.image-viewer-toolbar {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(30, 30, 30, 0.85);
+    border-radius: 30px;
+    padding: 12px 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.image-viewer-toolbar:hover {
+    transform: translateX(-50%) translateY(-5px);
+}
+
+/* Панель режима рисования */
+.drawing-toolbar {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 8px;
+    padding: 10px 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    align-items: center;
+    gap: 15px;
+    z-index: 9999;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 80%;
+}
+
+.image-viewer-tool {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.image-viewer-tool::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: scale(0);
+    transition: transform 0.3s ease;
+}
+
+.image-viewer-tool:hover::before {
+    transform: scale(1);
+}
+
+.image-viewer-tool:hover {
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+.image-viewer-tool:active {
+    transform: translateY(1px);
+}
+
+.image-viewer-tool.active {
+    background-color: rgba(0, 123, 255, 0.7);
+    transform: scale(1.05);
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+}
+
+.toolbar-separator {
+    width: 1px;
+    height: 24px;
+    background-color: rgba(255, 255, 255, 0.2);
+    margin: 0 5px;
+}
+
+.image-viewer-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(40, 40, 40, 0.7);
+    border: none;
+    color: white;
+    font-size: 24px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 1001;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.image-viewer-close:hover {
+    background: rgba(255, 70, 70, 0.8);
+    transform: rotate(90deg);
+}
+
+/* Стили для панели инструментов рисования */
+.drawing-toolbar {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 8px;
+    padding: 10px 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    align-items: center;
+    gap: 15px;
+    z-index: 9999;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 80%;
+}
+
+/* Контейнер выбора цвета */
+.color-picker-container {
+    display: flex;
+    align-items: center;
+}
+
+/* Стили для выбора цвета */
+#colorPicker {
+    opacity: 0;
+    position: absolute;
+    width: 0;
+    height: 0;
+}
+
+.color-picker-label {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    font-size: 20px;
+    transition: background-color 0.2s;
+}
+
+.color-picker-label:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Стили для выбора размера кисти */
+.brush-size-select {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 8px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    outline: none;
+}
+
+.brush-size-select option {
+    background-color: #333;
+    color: white;
+}
+
+/* Кнопка сохранения */
+.image-viewer-save-btn {
+    background: rgba(25, 135, 84, 0.8);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.image-viewer-save-btn:hover {
+    background: rgba(25, 135, 84, 1);
+}
+
+.image-viewer-save-btn i {
+    font-size: 16px;
+}
+
+/* Стили для текстовых элементов управления */
+.text-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.text-input {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.1);
+    color: white;
+    min-width: 150px;
+}
+
+.text-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.text-size-select, 
+.text-font-select {
+    padding: 3px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    cursor: pointer;
+}
+
+.text-size-select option, 
+.text-font-select option {
+    background: #222;
+    color: white;
+}
+
+/* Стили для активного канваса */
+.drawing-canvas.active {
+    cursor: crosshair;
+}
+
+/* Анимации для панели инструментов */
+@keyframes slideUp {
+    from {
+        transform: translate(-50%, 20px);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+}
+
+.drawing-toolbar {
+    animation: slideUp 0.3s ease-out forwards;
+}
+
+/* Режим рисования */
+.draw-mode-active .imageviewer-canvas {
+    cursor: crosshair !important;
+}
+
+.draw-mode-active .image-viewer-content {
+    padding-top: 60px;
+}
+
+/* Стили для режима обрезки */
+.image-viewer-crop-box {
+    position: absolute;
+    border: 2px dashed #fff;
+    background-color: rgba(255, 255, 255, 0.1);
+    box-sizing: border-box;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+}
+
+.image-viewer-crop-buttons {
+    display: flex;
+    gap: 10px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.image-viewer-btn {
+    background-color: rgba(30, 30, 30, 0.8);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.image-viewer-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.image-viewer-apply-crop {
+    background-color: rgba(0, 120, 255, 0.8);
+}
+
+.image-viewer-apply-crop:hover {
+    background-color: rgba(0, 130, 255, 1);
+}
+
+.image-viewer-cancel-crop {
+    background-color: rgba(150, 150, 150, 0.8);
+}
+
+.image-viewer-cancel-crop:hover {
+    background-color: rgba(255, 70, 70, 0.8);
+}
+
+/* Стили для анимации загрузки */
+.image-viewer-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    z-index: 1002;
+}
+
+.lottie-animation {
+    width: 120px;
+    height: 120px;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    position: relative;
+}
+
+.spinner-dot {
+    width: 8px;
+    height: 8px;
+    background-color: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    transform-origin: center 30px;
+    animation: spinnerFade 1.2s linear infinite;
+}
+
+.loading-text {
+    color: white;
+    font-size: 16px;
+    text-align: center;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Стили для сообщений об ошибках */
+.image-viewer-error {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(40, 40, 40, 0.9);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    max-width: 300px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 1002;
+}
+
+.error-icon {
+    font-size: 40px;
+    color: #ff4646;
+}
+
+.error-text {
+    color: white;
+    font-size: 16px;
+    text-align: center;
+    line-height: 1.5;
+}
+
+.error-close-btn {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 10px;
+}
+
+.error-close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+    from { 
+        opacity: 0; 
+        transform: scale(0.9);
+    }
+    to { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+@keyframes spinnerFade {
+    0%, 39%, 100% { opacity: 0; }
+    40%, 80% { opacity: 1; }
+}
+
+/* Адаптивные стили для мобильных устройств */
+@media (max-width: 768px) {
+    .image-viewer-toolbar {
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 10px 15px;
+        gap: 8px;
+        bottom: 20px;
+    }
+    
+    .image-viewer-tool {
+        width: 38px;
+        height: 38px;
+        font-size: 18px;
+    }
+    
+    .brush-size-select {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+    
+    .image-viewer-btn {
+        padding: 8px 14px;
+        font-size: 12px;
+    }
+    
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .lottie-animation {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+/* Стили для темного режима */
+@media (prefers-color-scheme: dark) {
+    .image-viewer {
+        background-color: rgba(0, 0, 0, 0.95);
+    }
+}
+
+/* Стили для текстового слоя */
+.text-layer {
+    position: absolute;
+    border: 1px dashed transparent;
+    padding: 5px;
+    z-index: 1000;
+    transition: border-color 0.2s;
+    max-width: 80%;
+    word-wrap: break-word;
+    pointer-events: auto !important;
+    color: #ffffff;
+    background-color: rgba(0, 0, 0, 0.1);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.text-layer:hover {
+    border-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.text-layer-done,
+.text-layer-delete {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+    pointer-events: auto !important;
+    z-index: 1001;
+}
+
+.text-layer-done {
+    top: -10px;
+    right: -10px;
+    background-color: rgba(40, 167, 69, 0.85);
+}
+
+.text-layer-delete {
+    top: -10px;
+    left: -10px;
+    background-color: rgba(220, 53, 69, 0.85);
+}
+
+.text-layer-done:hover,
+.text-layer-delete:hover {
+    transform: scale(1.1);
+}
+
+/* Кнопка добавления текста */
+.add-text-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.2s;
+}
+
+.add-text-btn:hover {
+    background: #0069d9;
+} 

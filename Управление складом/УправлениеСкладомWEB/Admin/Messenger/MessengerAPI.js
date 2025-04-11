@@ -452,7 +452,7 @@ class MessageAPI extends BaseAPI {
         // Получаем текущие сообщения
         const currentMessages = Array.from(messagesContainer.querySelectorAll('.message-wrapper'))
             .map(el => ({
-                messageId: parseInt(el.dataset.messageId),
+                messageId: parseInt(el.dataset.id),
                 element: el
             }));
 
@@ -469,6 +469,16 @@ class MessageAPI extends BaseAPI {
                 // Если есть вложение, сразу начинаем его загрузку
                 if (message.hasAttachment) {
                     MessengerUI.loadMessageAttachment(message.messageId, messageElement);
+                }
+            } else if (message.hasAttachment) {
+                // Проверяем, если у существующего сообщения есть вложение, но оно не загружено
+                const hasLoadedAttachment = existingMessageEl.element.querySelector('.message-image') ||
+                                           existingMessageEl.element.querySelector('.file-attachment') ||
+                                           existingMessageEl.element.querySelector('.message-file');
+                
+                // Если вложение не загружено, но флаг hasAttachment=true, загружаем его
+                if (!hasLoadedAttachment) {
+                    MessengerUI.loadMessageAttachment(message.messageId, existingMessageEl.element);
                 }
             }
         });
@@ -498,12 +508,16 @@ class MessageAPI extends BaseAPI {
                 hasAttachment: true
             };
 
-            // Добавляем сообщение в чат сразу
-            const messageElement = MessengerUI.createMessageElement(tempMessage, true);
-            const messagesContainer = document.querySelector('.messages-container');
-            if (messagesContainer) {
-                messagesContainer.appendChild(messageElement);
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            // Проверяем не существует ли уже этот элемент (предотвращаем дублирование)
+            let messageElement = document.querySelector(`.message-wrapper[data-id="${messageId}"]`);
+            if (!messageElement) {
+                // Добавляем сообщение в чат только если его еще нет
+                messageElement = MessengerUI.createMessageElement(tempMessage, true);
+                const messagesContainer = document.querySelector('.messages-container');
+                if (messagesContainer) {
+                    messagesContainer.appendChild(messageElement);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
             }
 
             // Загружаем файл
@@ -512,8 +526,92 @@ class MessageAPI extends BaseAPI {
                 throw new Error(uploadResponse.message || 'Ошибка загрузки файла');
             }
 
-            // Обновляем отображение вложения
-            MessengerUI.loadMessageAttachment(messageId, messageElement);
+            // После успешной загрузки немедленно обновляем вложение в сообщении
+            if (messageElement) {
+                // Удаляем временный индикатор загрузки если он есть
+                const loadingIndicator = messageElement.querySelector('.attachment-loading');
+                if (loadingIndicator && loadingIndicator.parentNode) {
+                    loadingIndicator.parentNode.removeChild(loadingIndicator);
+                }
+                
+                // Проверяем наличие контейнера для вложения
+                let attachmentContainer = messageElement.querySelector('.message-content-attachment');
+                if (!attachmentContainer) {
+                    const messageContent = messageElement.querySelector('.message-content');
+                    if (messageContent) {
+                        attachmentContainer = document.createElement('div');
+                        attachmentContainer.className = 'message-content-attachment';
+                        messageContent.insertBefore(attachmentContainer, messageContent.firstChild);
+                    }
+                }
+                
+                // Загружаем и отображаем вложение
+                if (attachmentContainer) {
+                    // Получаем информацию о загруженном файле
+                    const mediaInfo = await MediaFileAPI.getMessageMediaInfo(messageId);
+                    if (mediaInfo && mediaInfo.length > 0) {
+                        const mediaFile = mediaInfo[0];
+                        
+                        // Проверяем наличие имени файла, если его нет - используем запасной вариант
+                        const fileName = mediaFile.name || (file ? file.name : 'Файл') || 'Файл';
+                        const fileSize = mediaFile.size || (file ? file.size : 0);
+                        
+                        if (mediaFile.type && mediaFile.type.toLowerCase() === "image") {
+                            // Создаем элемент изображения
+                            attachmentContainer.innerHTML = `
+                                <div class="image-attachment">
+                                    <img src="/api/message/media/${messageId}" alt="Изображение" 
+                                         onclick="if(window.imageViewer) window.imageViewer.open('/api/message/media/${messageId}')">
+                                </div>
+                            `;
+                        } else {
+                            // Определяем иконку в зависимости от расширения файла
+                            let iconClass = 'ri-file-line';
+                            const fileExt = fileName.split('.').pop().toLowerCase();
+                            
+                            // Выбираем подходящую иконку в зависимости от типа файла
+                            if (['pdf'].includes(fileExt)) {
+                                iconClass = 'ri-file-pdf-line';
+                            } else if (['doc', 'docx'].includes(fileExt)) {
+                                iconClass = 'ri-file-word-line';
+                            } else if (['xls', 'xlsx'].includes(fileExt)) {
+                                iconClass = 'ri-file-excel-line';
+                            } else if (['ppt', 'pptx'].includes(fileExt)) {
+                                iconClass = 'ri-file-ppt-line';
+                            } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(fileExt)) {
+                                iconClass = 'ri-file-zip-line';
+                            } else if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(fileExt)) {
+                                iconClass = 'ri-image-line';
+                            } else if (['mp3', 'wav', 'ogg', 'aac'].includes(fileExt)) {
+                                iconClass = 'ri-music-line';
+                            } else if (['mp4', 'avi', 'mov', 'wmv', 'mkv'].includes(fileExt)) {
+                                iconClass = 'ri-video-line';
+                            } else if (['txt', 'html', 'css', 'js'].includes(fileExt)) {
+                                iconClass = 'ri-file-text-line';
+                            }
+                            
+                            // Создаем элемент файла с улучшенным дизайном
+                            attachmentContainer.innerHTML = `
+                                <div class="file-attachment">
+                                    <div class="file-icon-container">
+                                        <i class="${iconClass}"></i>
+                                        <span class="file-ext">${fileExt}</span>
+                                    </div>
+                                    <div class="file-details">
+                                        <a href="/api/message/media/${messageId}" target="_blank" download="${fileName}" class="file-download-link">
+                                            <span class="file-name">${fileName}</span>
+                                            <div class="file-size-row">
+                                                <span class="file-size">${MessengerUI.formatFileSize(fileSize)}</span>
+                                                <i class="ri-download-line download-icon"></i>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+            }
 
             return messageResponse;
         } catch (error) {
@@ -876,7 +974,14 @@ class MessengerUI {
                 // Добавляем обработчик клика для открытия изображения в новом окне
                 imageElement.addEventListener("click", () => {
                     const mediaUrl = MediaFileAPI.getMediaUrl(message.messageId);
-                    window.open(mediaUrl, "_blank");
+                    // Используем ImageViewer вместо открытия в новой вкладке
+                    if (window.imageViewer) {
+                        window.imageViewer.open(mediaUrl);
+                    } else {
+                        // Запасной вариант, если ImageViewer не инициализирован
+                        window.open(mediaUrl, "_blank");
+                        console.warn('ImageViewer не инициализирован. Проверьте подключение ImageViewer.js');
+                    }
                 });
                 
                 // Добавляем обработчик ошибки загрузки
@@ -1002,7 +1107,14 @@ class MessengerUI {
                     
                     // Добавляем обработчик клика для открытия изображения в новом окне
                     imageElement.addEventListener("click", () => {
-                        window.open(mediaUrl, "_blank");
+                        // Используем ImageViewer вместо открытия в новой вкладке
+                        if (window.imageViewer) {
+                            window.imageViewer.open(mediaUrl);
+                        } else {
+                            // Запасной вариант, если ImageViewer не инициализирован
+                            window.open(mediaUrl, '_blank');
+                            console.warn('ImageViewer не найден. Проверьте подключение ImageViewer.js');
+                        }
                     });
                     
                     // Добавляем обработчик для показа загруженного изображения
@@ -1386,7 +1498,14 @@ class MediaHandler {
             mediaElement.src = mediaUrl;
             mediaElement.className = 'message-image';
             mediaElement.onclick = function() {
-                window.open(mediaUrl, '_blank');
+                // Используем ImageViewer вместо открытия в новой вкладке
+                if (window.imageViewer) {
+                    window.imageViewer.open(mediaUrl);
+                } else {
+                    // Запасной вариант, если ImageViewer не инициализирован
+                    window.open(mediaUrl, '_blank');
+                    console.warn('ImageViewer не найден. Проверьте подключение ImageViewer.js');
+                }
             };
         } else if (attachment.mediaType.startsWith('video/')) {
             mediaElement = document.createElement('video');
@@ -1714,5 +1833,133 @@ async function startNewChat(selectedUserId, selectedUserName) {
     } catch (error) {
         console.error("Ошибка при создании нового чата:", error);
         showNotification("Не удалось создать новый чат");
+    }
+}
+
+/**
+ * Класс MessengerAPI - фасад для работы с API мессенджера
+ */
+class MessengerAPI {
+    constructor() {
+        this.currentUserId = UserAPI.getCurrentUserId();
+    }
+    
+    /**
+     * Получить ID текущего пользователя
+     * @returns {string} ID пользователя
+     */
+    getCurrentUserId() {
+        return this.currentUserId;
+    }
+    
+    /**
+     * Прикрепляет изображение к форме ввода сообщения
+     * @param {string} imageDataUrl - Данные изображения в формате base64
+     * @returns {boolean} - Успешность операции
+     */
+    attachImage(imageDataUrl) {
+        try {
+            if (!imageDataUrl) {
+                throw new Error('Нет данных изображения');
+            }
+            
+            console.log('Attaching image to message input. Data length:', imageDataUrl.length);
+            
+            // Найти контейнер предпросмотра вложений
+            const previewContainer = document.getElementById('attachment-preview');
+            if (!previewContainer) {
+                throw new Error('Контейнер предпросмотра не найден');
+            }
+            
+            // Очистить предыдущие вложения
+            previewContainer.innerHTML = '';
+            previewContainer.classList.add('active');
+            
+            // Создать элемент изображения
+            const img = document.createElement('img');
+            img.src = imageDataUrl;
+            img.className = 'attachment-preview-image';
+            
+            // Создать обертку для предпросмотра
+            const previewWrapper = document.createElement('div');
+            previewWrapper.className = 'attachment-preview-wrapper';
+            previewWrapper.appendChild(img);
+            
+            // Добавить информацию о файле
+            const fileInfo = document.createElement('div');
+            fileInfo.className = 'attachment-file-info';
+            fileInfo.innerHTML = `
+                <div class="attachment-file-name">Изображение</div>
+                <div class="attachment-file-size">Отредактированное фото</div>
+            `;
+            
+            previewWrapper.appendChild(fileInfo);
+            
+            // Добавить кнопку удаления
+            const removeButton = document.createElement('button');
+            removeButton.className = 'remove-attachment-btn';
+            removeButton.setAttribute('title', 'Удалить вложение');
+            removeButton.innerHTML = '<i class="ri-close-line"></i>';
+            removeButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                previewContainer.innerHTML = '';
+                previewContainer.classList.remove('active');
+            });
+            
+            previewWrapper.appendChild(removeButton);
+            previewContainer.appendChild(previewWrapper);
+            
+            // Сохранить ссылку на изображение в контейнере
+            previewContainer.imageData = imageDataUrl;
+            
+            // Изменить стиль кнопки прикрепления
+            const attachmentButton = document.getElementById('attachment-button');
+            if (attachmentButton) {
+                attachmentButton.classList.add('attachment-button-active');
+            }
+            
+            // Добавить класс к контейнеру ввода для стилизации
+            const messageInputContainer = document.querySelector('.message-input-container');
+            if (messageInputContainer) {
+                messageInputContainer.classList.add('has-attachment');
+            }
+            
+            // Изменить placeholder в текстовом поле
+            const messageTextArea = document.getElementById('messageTextArea');
+            if (messageTextArea) {
+                const originalPlaceholder = messageTextArea.getAttribute('data-original-placeholder') || 
+                                          messageTextArea.placeholder;
+                
+                // Сохранить оригинальный placeholder, если он еще не сохранен
+                if (!messageTextArea.getAttribute('data-original-placeholder')) {
+                    messageTextArea.setAttribute('data-original-placeholder', originalPlaceholder);
+                }
+                
+                messageTextArea.placeholder = 'Добавьте подпись к изображению...';
+                
+                // Фокусироваться на текстовом поле для удобства пользователя
+                messageTextArea.focus();
+            }
+            
+            // Запустить событие для обновления UI
+            const attachmentEvent = new CustomEvent('attachment-added', {
+                detail: { type: 'image', data: imageDataUrl }
+            });
+            document.dispatchEvent(attachmentEvent);
+            
+            console.log('Image attached successfully');
+            return true;
+        } catch (error) {
+            console.error('Ошибка при прикреплении изображения:', error);
+            
+            // Отображение уведомления об ошибке
+            if (typeof MessengerUI !== 'undefined' && MessengerUI.showNotification) {
+                MessengerUI.showNotification('Ошибка при прикреплении изображения: ' + error.message, 'error');
+            } else if (typeof showNotification === 'function') {
+                showNotification('Ошибка при прикреплении изображения');
+            }
+            
+            return false;
+        }
     }
 } 

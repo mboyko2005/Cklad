@@ -54,6 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
         emojiButtonId: 'emojiButton'
     });
     
+    // Проверяем инициализацию ImageViewer
+    if (typeof window.imageViewer === 'undefined') {
+        console.warn('ImageViewer не был инициализирован. Создаем новый экземпляр.');
+        window.imageViewer = new ImageViewer();
+    }
+    
     // Запускаем процесс автоматической проверки новых сообщений
     startMessagePolling();
 });
@@ -511,6 +517,9 @@ function initializeEventListeners() {
     }
 
     if (contactSearchInput) {
+        // Удаляем старые обработчики, если есть
+        contactSearchInput.removeEventListener("input", handleContactSearch);
+        // Добавляем новый обработчик
         contactSearchInput.addEventListener("input", handleContactSearch);
     }
 
@@ -682,129 +691,205 @@ async function loadChatHistory(contactId) {
     }
 }
 
-/** Отправка сообщения */
-async function sendMessage() {
-    try {
-        const messageTextArea = document.getElementById("messageTextArea");
-        const messageText = messageTextArea.value.trim();
-        const messageInputContainer = document.querySelector(".message-input-container");
+function createMessageElement(message, isSender) {
+    const messageWrapper = document.createElement('div');
+    messageWrapper.className = `message-wrapper ${isSender ? 'sent' : 'received'}`;
+    messageWrapper.dataset.messageId = message.messageId;
+
+    const messageBubble = document.createElement('div');
+    messageBubble.className = 'message-bubble';
+
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+
+    // Если есть вложение, добавляем его перед текстом
+    if (message.attachment) {
+        const attachmentContainer = document.createElement('div');
+        attachmentContainer.className = 'message-attachment-container';
         
-        // Получаем ID текущего пользователя
-        const currentUserId = localStorage.getItem("userId");
-        
-        // Получаем ID получателя
-        let receiverId;
-        
-        // Проверяем есть ли receiverId в dataset текстового поля (для новых чатов)
-        if (messageTextArea.dataset.receiverId) {
-            receiverId = messageTextArea.dataset.receiverId;
-            console.log("Получатель из dataset:", receiverId);
+        if (message.attachment.type.startsWith('image/')) {
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'message-image-container';
+            const img = document.createElement('img');
+            img.src = message.attachment.url;
+            img.alt = message.attachment.name;
+            img.className = 'message-image';
+            imgContainer.appendChild(img);
+            attachmentContainer.appendChild(imgContainer);
         } else {
-            // Получаем ID из активного контакта
-            const selectedContactEl = document.querySelector(".contact-item.active");
-            if (!selectedContactEl) {
-                showNotification("Выберите контакт для отправки сообщения");
-                return;
-            }
-            receiverId = selectedContactEl.dataset.id;
-            console.log("Получатель из активного контакта:", receiverId);
+            const fileContainer = document.createElement('div');
+            fileContainer.className = 'message-file';
+            fileContainer.innerHTML = `
+                <i class="ri-file-line"></i>
+                <div class="file-info">
+                    <span class="file-name">${message.attachment.name}</span>
+                    <span class="file-size">${formatFileSize(message.attachment.size)}</span>
+                </div>
+            `;
+            attachmentContainer.appendChild(fileContainer);
         }
-        
-        // Проверяем, что ID получателя получен
-        if (!receiverId) {
-            showNotification("Не удалось определить получателя сообщения");
+        messageContent.appendChild(attachmentContainer);
+    }
+
+    // Добавляем текст сообщения
+    if (message.text) {
+        const textElement = document.createElement('div');
+        textElement.className = 'message-text';
+        textElement.textContent = message.text;
+        messageContent.appendChild(textElement);
+    }
+
+    const messageTime = document.createElement('div');
+    messageTime.className = 'message-time';
+    
+    // Проверяем валидность даты
+    const timestamp = message.timestamp ? new Date(message.timestamp) : new Date();
+    const isValidDate = !isNaN(timestamp.getTime());
+    messageTime.textContent = isValidDate ? formatTime(timestamp) : formatTime(new Date());
+
+    messageBubble.appendChild(messageContent);
+    messageBubble.appendChild(messageTime);
+    messageWrapper.appendChild(messageBubble);
+
+    return messageWrapper;
+}
+
+async function sendMessage() {
+    const messageTextArea = document.getElementById('messageTextArea');
+    const text = messageTextArea.value.trim();
+    
+    // Получаем ID текущего пользователя
+    const currentUserId = localStorage.getItem('userId');
+    if (!currentUserId) {
+        showNotification('Ошибка: пользователь не авторизован');
+        return;
+    }
+
+    // Получаем ID получателя
+    let receiverId;
+    
+    // Проверяем есть ли receiverId в dataset текстового поля (для новых чатов)
+    if (messageTextArea.dataset.receiverId) {
+        receiverId = messageTextArea.dataset.receiverId;
+    } else {
+        // Получаем ID из активного контакта
+        const selectedContactEl = document.querySelector('.contact-item.active');
+        if (!selectedContactEl) {
+            showNotification('Выберите контакт для отправки сообщения');
             return;
         }
-        
-        // Проверяем наличие текста или вложения
-        if (!messageText && !window.attachmentManager?.hasAttachment()) {
-            return;
-        }
-        
-        // Показываем индикатор отправки сообщения
-        const sendButton = document.getElementById("send-button");
-        if (sendButton) {
-            const originalIcon = sendButton.innerHTML;
-            sendButton.innerHTML = '<i class="ri-loader-4-line" style="animation: spin 1s linear infinite;"></i>';
-            sendButton.disabled = true;
-        }
-        
-        console.log("Отправка сообщения:", {senderId: currentUserId, receiverId, text: messageText});
-        
-        try {
-            // Проверяем, есть ли вложение
-            if (window.attachmentManager && window.attachmentManager.hasAttachment()) {
-                // Отправляем сообщение с вложением
-                const result = await MessageAPI.sendMessageWithAttachment(
-                    currentUserId,
-                    receiverId,
-                    messageText,
-                    window.attachmentManager.getAttachment()
-                );
-                
-                console.log("Результат отправки с вложением:", result);
-                
-                // Очищаем поле ввода и вложение
-                messageTextArea.value = "";
-                window.attachmentManager.clearAttachments();
-                
-                // Фокусируемся на поле ввода
-                messageTextArea.focus();
-                
-                // Обновляем чат для отображения нового сообщения
-                await loadChatHistory(receiverId);
-            } else if (messageText) {
-                // Отправляем текстовое сообщение без вложения
-                const result = await MessageAPI.sendMessage(currentUserId, receiverId, messageText);
-                
-                console.log("Результат отправки текста:", result);
-                
-                // Очищаем поле ввода
-                messageTextArea.value = "";
-                
-                // Фокусируемся на поле ввода
-                messageTextArea.focus();
-                
-                // Обновляем чат для отображения нового сообщения
-                await loadChatHistory(receiverId);
+        receiverId = selectedContactEl.dataset.id;
+    }
+
+    // Проверяем наличие текста или вложения
+    const attachment = MessengerAttachment.getAttachment();
+    let messageText = text;
+
+    // Если нет текста, но есть вложение - используем имя файла как текст
+    if (!text && attachment) {
+        messageText = attachment.name;
+    }
+
+    // Если нет ни текста, ни вложения, не отправляем сообщение
+    if (!messageText && !attachment) {
+        return;
+    }
+
+    // Генерируем временный ID для отслеживания
+    const tempId = 'temp_' + Date.now();
+    
+    // Сразу очищаем поле ввода
+    messageTextArea.value = '';
+    
+    // Сразу добавляем временное сообщение в чат для мгновенной обратной связи
+    const messagesContainer = document.getElementById('messagesContainer');
+    
+    // Создаем временное сообщение
+    const tempMessage = {
+        messageId: tempId,
+        senderId: currentUserId,
+        text: messageText,
+        timestamp: new Date().toISOString(),
+        isRead: false
+    };
+    
+    // Если есть вложение, добавляем его к временному сообщению
+    if (attachment) {
+        tempMessage.attachment = {
+            name: attachment.name,
+            type: attachment.type,
+            size: attachment.size,
+            url: URL.createObjectURL(attachment)
+        };
+    }
+    
+    // Добавляем временное сообщение в чат
+    const tempElement = createMessageElement(tempMessage, true);
+    tempElement.classList.add('sending');
+    messagesContainer.appendChild(tempElement);
+    
+    // Прокручиваем к последнему сообщению
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    try {
+        let message;
+        // Отправляем сообщение асинхронно
+        if (attachment) {
+            // Очищаем предпросмотр вложения в интерфейсе
+            MessengerAttachment.clearAttachments();
+            
+            // Отправляем сообщение с вложением
+            message = await MessageAPI.sendMessageWithAttachment(currentUserId, receiverId, messageText, attachment);
+            
+            // После успешной отправки, удаляем временный элемент
+            // чтобы избежать дублирования, поскольку API создаст новый элемент
+            if (tempElement && document.body.contains(tempElement)) {
+                tempElement.remove();
             }
+        } else {
+            // Отправляем обычное текстовое сообщение
+            message = await MessageAPI.sendMessage(currentUserId, receiverId, messageText);
             
-            // Очищаем data-attribute после успешной отправки
-            if (messageTextArea.dataset.receiverId) {
-                delete messageTextArea.dataset.receiverId;
+            // Заменяем временное сообщение на реальное или обновляем его
+            if (tempElement && document.body.contains(tempElement)) {
+                tempElement.classList.remove('sending');
+                tempElement.dataset.messageId = message.messageId;
             }
+        }
+
+        // Очищаем data-attribute после успешной отправки
+        if (messageTextArea.dataset.receiverId) {
+            delete messageTextArea.dataset.receiverId;
+        }
+
+    } catch (error) {
+        console.error('Ошибка при отправке сообщения:', error);
+        
+        // Помечаем сообщение как ошибочное
+        if (tempElement && document.body.contains(tempElement)) {
+            tempElement.classList.remove('sending');
+            tempElement.classList.add('error');
             
-            // Обновляем список контактов
-            await loadContacts(currentUserId);
-            
-            // Находим и активируем контакт с получателем
-            setTimeout(() => {
-                const contact = document.querySelector(`.contact-item[data-id="${receiverId}"]`);
-                if (contact && !contact.classList.contains("active")) {
-                    selectContact(contact);
+            // Добавляем кнопку для повторной отправки
+            const retryButton = document.createElement('button');
+            retryButton.className = 'retry-message-btn';
+            retryButton.innerHTML = '<i class="ri-restart-line"></i>';
+            retryButton.title = 'Повторить отправку';
+            retryButton.addEventListener('click', async () => {
+                // Удаляем сообщение с ошибкой
+                tempElement.remove();
+                // Восстанавливаем текст в поле ввода
+                messageTextArea.value = messageText;
+                // Если было вложение, восстанавливаем его
+                if (attachment) {
+                    MessengerAttachment.showFilePreview(attachment);
                 }
-            }, 300);
+            });
             
-        } catch (error) {
-            console.error("Ошибка при отправке сообщения:", error);
-            showNotification("Ошибка при отправке сообщения: " + error.message);
-        }
-    } catch (e) {
-        console.error("Общая ошибка в функции sendMessage:", e);
-        showNotification("Произошла ошибка при отправке сообщения");
-    } finally {
-        // Восстанавливаем кнопку отправки
-        const sendButton = document.getElementById("send-button");
-        if (sendButton) {
-            sendButton.innerHTML = '<i class="ri-send-plane-fill"></i>';
-            sendButton.disabled = false;
+            tempElement.querySelector('.message-bubble').appendChild(retryButton);
         }
         
-        // Сбрасываем высоту текстового поля
-        const messageTextArea = document.getElementById("messageTextArea");
-        if (messageTextArea) {
-            messageTextArea.style.height = "auto";
-        }
+        showNotification('Ошибка при отправке сообщения');
     }
 }
 
@@ -1128,7 +1213,7 @@ async function loadMessageTemplates(contactId) {
 async function handleContactSearch(event) {
     try {
         const searchQuery = event.target.value.trim();
-    const userId = localStorage.getItem("userId");
+        const userId = localStorage.getItem("userId");
         const contactsContainer = document.getElementById("contactsList");
         
         if (!userId) {
@@ -1141,10 +1226,10 @@ async function handleContactSearch(event) {
         if (!searchQuery) {
             // Если поле поиска пустое, возвращаем все контакты
             await loadContacts(userId);
-        return;
-    }
-    
-    try {
+            return;
+        }
+        
+        try {
             // Сначала ищем среди существующих контактов
             const contacts = await ContactAPI.getContacts(userId, searchQuery);
             contactsContainer.innerHTML = "";
@@ -1172,47 +1257,47 @@ async function handleContactSearch(event) {
             
             if (filteredUsers.length === 0) {
                 contactsContainer.innerHTML = "<div class='no-results'>Ничего не найдено</div>";
-            return;
-        }
-        
+                return;
+            }
+            
             // Отображаем найденных пользователей
             filteredUsers.forEach(user => {
-            const contactItem = document.createElement("div");
+                const contactItem = document.createElement("div");
                 contactItem.className = "contact-item search-result";
                 contactItem.dataset.id = user.id;
 
-            const contactAvatar = document.createElement("div");
-            contactAvatar.className = "contact-avatar";
-            const avatarIcon = document.createElement("i");
-            avatarIcon.className = "ri-user-line";
-            contactAvatar.appendChild(avatarIcon);
+                const contactAvatar = document.createElement("div");
+                contactAvatar.className = "contact-avatar";
+                const avatarIcon = document.createElement("i");
+                avatarIcon.className = "ri-user-line";
+                contactAvatar.appendChild(avatarIcon);
 
-            const contactInfo = document.createElement("div");
-            contactInfo.className = "contact-info";
+                const contactInfo = document.createElement("div");
+                contactInfo.className = "contact-info";
 
-            const contactName = document.createElement("div");
-            contactName.className = "contact-name";
+                const contactName = document.createElement("div");
+                contactName.className = "contact-name";
                 contactName.textContent = user.login;
 
-            const contactRole = document.createElement("div");
-            contactRole.className = "contact-role";
+                const contactRole = document.createElement("div");
+                contactRole.className = "contact-role";
                 contactRole.textContent = user.role;
 
-            contactInfo.appendChild(contactName);
-            contactInfo.appendChild(contactRole);
+                contactInfo.appendChild(contactName);
+                contactInfo.appendChild(contactRole);
 
-            contactItem.appendChild(contactAvatar);
-            contactItem.appendChild(contactInfo);
+                contactItem.appendChild(contactAvatar);
+                contactItem.appendChild(contactInfo);
 
                 // Добавляем обработчик клика для создания нового чата с этим пользователем
-            contactItem.addEventListener("click", () => {
+                contactItem.addEventListener("click", () => {
                     startNewChat(user.id, user.login);
-            });
+                });
 
                 contactsContainer.appendChild(contactItem);
-        });
-        
-    } catch (error) {
+            });
+            
+        } catch (error) {
             console.error("Ошибка поиска:", error);
             contactsContainer.innerHTML = "<div class='error-message'>Ошибка поиска</div>";
             
@@ -1228,15 +1313,39 @@ async function handleContactSearch(event) {
 
 /** Обработка прикрепления файла */
 function handleAttachment() {
-    if (window.attachmentManager) {
-        // Используем метод класса MessengerAttachment для открытия диалога выбора файла
     const fileInput = document.getElementById('file-input');
-    if (fileInput) {
-        fileInput.click();
+    const file = fileInput.files[0];
+    
+    if (file) {
+        // Сразу показываем предпросмотр
+        showFilePreview(file);
+        
+        // Если это изображение, сразу добавляем его в чат
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const messagesContainer = document.getElementById('messagesContainer');
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message-wrapper sent';
+                
+                const currentTime = new Date();
+                const formattedTime = formatTime(currentTime);
+                
+                messageElement.innerHTML = `
+                    <div class="message-bubble">
+                        <div class="message-content">
+                            <div class="message-image-container">
+                                <img src="${e.target.result}" alt="${file.name}" class="message-image">
+                            </div>
+                        </div>
+                        <div class="message-time">${formattedTime}</div>
+                    </div>
+                `;
+                messagesContainer.appendChild(messageElement);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            };
+            reader.readAsDataURL(file);
         }
-    } else {
-        console.error('Менеджер вложений не инициализирован');
-        MessengerUI.showNotification('Ошибка при инициализации менеджера вложений', 'error');
     }
 }
 
@@ -2251,4 +2360,215 @@ function uploadAttachment(file, messageId) {
         
         xhr.send(formData);
     });
+}
+
+// Функция для создания панели просмотра изображений
+function createImageViewer() {
+    // Глобальный экземпляр imageViewer уже создан в ImageViewer.js
+    // Этот метод теперь просто проверяет существование экземпляра
+    if (!window.imageViewer) {
+        console.error("ImageViewer не инициализирован. Проверьте подключение ImageViewer.js");
+        return null;
+    }
+    return window.imageViewer;
+}
+
+// Функция для открытия изображения в просмотрщике
+function openImageViewer(imageSrc) {
+    // Проверяем, существует ли экземпляр просмотрщика
+    if (!window.imageViewer) {
+        // Создаем контейнер для просмотрщика
+        const viewerContainer = document.createElement('div');
+        viewerContainer.id = 'imageViewerContainer';
+        viewerContainer.className = 'image-viewer';
+        document.body.appendChild(viewerContainer);
+        
+        // Создаем элемент изображения
+        const imgElement = document.createElement('img');
+        imgElement.className = 'image-viewer-img';
+        
+        // Инициализируем просмотрщик
+        window.imageViewer = new ImageViewer(viewerContainer, imgElement);
+    }
+    
+    // Открываем просмотрщик с указанным изображением
+    window.imageViewer.open(imageSrc, (editedImageData) => {
+        // Callback для обработки отредактированного изображения (если нужно)
+        console.log('Изображение отредактировано:', editedImageData && editedImageData.substring(0, 30) + '...');
+    });
+    
+    // Предотвращаем всплытие события, чтобы не сработали другие обработчики
+    return false;
+}
+
+// Обновляем обработчик клика по изображениям в чате
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('message-image')) {
+        openImageViewer(e.target.src);
+    }
+});
+
+/**
+ * Открывает просмотрщик изображений для выбранного изображения в сообщении
+ * @param {Event} e - Событие клика
+ * @param {string} imageUrl - URL изображения
+ */
+function openImageViewer(e, imageUrl) {
+    e.preventDefault();
+    e.stopPropagation(); // Предотвращаем всплытие события
+    
+    // Проверяем инициализирован ли глобальный экземпляр imageViewer
+    if (!window.imageViewer) {
+        // Создаем контейнер для просмотрщика, если его еще нет
+        let container = document.getElementById('imageViewerContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'imageViewerContainer';
+            container.className = 'image-viewer';
+            document.body.appendChild(container);
+        }
+        
+        // Создаем элемент изображения
+        const imageElement = document.createElement('img');
+        imageElement.className = 'image-viewer-img';
+        
+        // Инициализируем просмотрщик изображений
+        window.imageViewer = new ImageViewer(container, imageElement);
+    }
+    
+    // Открываем просмотрщик с выбранным изображением
+    window.imageViewer.open(imageUrl, null, function(editedImageData) {
+        // Callback для подтверждения редактирования
+        // Добавляем отредактированное изображение к сообщению для отправки
+        appendImageToMessage(editedImageData);
+        
+        // Показываем предпросмотр изображения
+        const previewContainer = document.querySelector('.message-attachments-preview');
+        if (previewContainer) {
+            // Очищаем предыдущие предпросмотры
+            previewContainer.innerHTML = '';
+            
+            // Создаем предпросмотр изображения
+            const imgPreview = document.createElement('div');
+            imgPreview.className = 'image-preview';
+            imgPreview.innerHTML = `
+                <img src="${editedImageData}" alt="Отредактированное изображение">
+                <button class="remove-attachment" onclick="removeAttachment(this)">
+                    <i class="ri-close-line"></i>
+                </button>
+            `;
+            
+            previewContainer.appendChild(imgPreview);
+            previewContainer.style.display = 'flex';
+        }
+    });
+}
+
+/**
+ * Добавляет изображение к сообщению для отправки
+ * @param {string} imageData - URL или Data URL изображения
+ */
+function appendImageToMessage(imageData) {
+    // Проверяем, инициализирован ли массив прикрепленных файлов
+    if (!window.attachments) {
+        window.attachments = [];
+    }
+    
+    // Преобразуем Data URL в Blob для отправки
+    if (imageData.startsWith('data:')) {
+        const byteString = atob(imageData.split(',')[1]);
+        const mimeType = imageData.split(',')[0].split(':')[1].split(';')[0];
+        
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        
+        const blob = new Blob([ab], { type: mimeType });
+        const file = new File([blob], "edited_image.png", { type: "image/png" });
+        
+        // Добавляем файл в список прикрепленных
+        window.attachments.push({
+            file: file,
+            type: 'image',
+            dataUrl: imageData
+        });
+    } else {
+        // Если это обычный URL, загружаем изображение и преобразуем в Blob
+        fetch(imageData)
+            .then(response => response.blob())
+            .then(blob => {
+                const file = new File([blob], "image.png", { type: "image/png" });
+                
+                // Добавляем файл в список прикрепленных
+                window.attachments.push({
+                    file: file,
+                    type: 'image',
+                    url: imageData
+                });
+            });
+    }
+    
+    // Обновляем UI для отображения прикрепленных файлов
+    updateAttachmentsUI();
+}
+
+/**
+ * Удаляет прикрепленный файл
+ * @param {HTMLElement} element - Кнопка удаления
+ */
+function removeAttachment(element) {
+    const preview = element.closest('.image-preview');
+    if (preview) {
+        const index = Array.from(preview.parentNode.children).indexOf(preview);
+        
+        // Удаляем файл из массива
+        if (window.attachments && window.attachments.length > index) {
+            window.attachments.splice(index, 1);
+        }
+        
+        // Удаляем предпросмотр
+        preview.remove();
+        
+        // Скрываем контейнер, если больше нет прикрепленных файлов
+        const previewContainer = document.querySelector('.message-attachments-preview');
+        if (previewContainer && previewContainer.children.length === 0) {
+            previewContainer.style.display = 'none';
+        }
+        
+        // Обновляем UI
+        updateAttachmentsUI();
+    }
+}
+
+/**
+ * Обновляет интерфейс прикрепленных файлов
+ */
+function updateAttachmentsUI() {
+    const attachBtn = document.querySelector('.attach-btn');
+    const previewContainer = document.querySelector('.message-attachments-preview');
+    
+    if (window.attachments && window.attachments.length > 0) {
+        // Есть прикрепленные файлы - изменяем стиль кнопки
+        if (attachBtn) {
+            attachBtn.classList.add('has-attachments');
+        }
+        
+        // Показываем контейнер с предпросмотром
+        if (previewContainer) {
+            previewContainer.style.display = 'flex';
+        }
+    } else {
+        // Нет прикрепленных файлов
+        if (attachBtn) {
+            attachBtn.classList.remove('has-attachments');
+        }
+        
+        // Скрываем контейнер с предпросмотром
+        if (previewContainer) {
+            previewContainer.style.display = 'none';
+        }
+    }
 }

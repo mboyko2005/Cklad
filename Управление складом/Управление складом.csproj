@@ -316,7 +316,22 @@
     <None Update="УправлениеСкладомWEB\Admin\ManageUsers\ManageUsers.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="УправлениеСкладомWEB\Admin\Messenger\ContactManager.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="УправлениеСкладомWEB\Admin\Messenger\EmojiManager.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Admin\Messenger\ImageViewer.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Admin\Messenger\ImageViewer.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Admin\Messenger\MediaFileAPI.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Admin\Messenger\MessageStyler.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="УправлениеСкладомWEB\Admin\Messenger\Messenger.css">

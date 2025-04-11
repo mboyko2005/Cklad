@@ -1,8 +1,39 @@
 class MessengerUI {
     static async loadMessageAttachment(messageId, messageElement) {
         try {
-            const attachmentContainer = messageElement.querySelector('.message-content-attachment');
-            if (!attachmentContainer) return;
+            if (!messageId || !messageElement) {
+                console.error('Отсутствуют необходимые параметры: messageId или messageElement');
+                return;
+            }
+            
+            // Проверяем, нет ли уже контейнера вложения в сообщении с загруженным содержимым
+            const existingAttachment = messageElement.querySelector('.message-image, .file-attachment');
+            if (existingAttachment) {
+                console.log('Вложение уже загружено для сообщения:', messageId);
+                return;
+            }
+            
+            // Получаем или создаем контейнер вложения
+            let attachmentContainer = messageElement.querySelector('.message-content-attachment');
+            
+            if (!attachmentContainer) {
+                // Создаем контейнер, если его еще нет
+                const messageContent = messageElement.querySelector('.message-content');
+                if (!messageContent) {
+                    console.error('Не найден контейнер message-content для message ID:', messageId);
+                    return;
+                }
+                
+                attachmentContainer = document.createElement('div');
+                attachmentContainer.className = 'message-content-attachment';
+                
+                // Вставляем контейнер в начало содержимого сообщения
+                if (messageContent.firstChild) {
+                    messageContent.insertBefore(attachmentContainer, messageContent.firstChild);
+                } else {
+                    messageContent.appendChild(attachmentContainer);
+                }
+            }
 
             // Показываем индикатор загрузки
             attachmentContainer.innerHTML = `
@@ -50,6 +81,7 @@ class MessengerUI {
             attachmentContainer.innerHTML = attachmentElement;
         } catch (error) {
             console.error('Ошибка при загрузке вложения:', error);
+            const attachmentContainer = messageElement.querySelector('.message-content-attachment');
             if (attachmentContainer) {
                 attachmentContainer.innerHTML = `
                     <div class="attachment-error">
@@ -95,22 +127,74 @@ class MessengerUI {
     static createMessageElement(message, isSender) {
         const messageWrapper = document.createElement('div');
         messageWrapper.className = `message-wrapper ${isSender ? 'sent' : 'received'}`;
-        messageWrapper.dataset.messageId = message.messageId;
+        messageWrapper.dataset.id = message.messageId;
 
-        const timestamp = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-        messageWrapper.innerHTML = `
-            <div class="message">
-                <div class="message-content">
-                    ${message.text ? `<div class="message-text">${message.text}</div>` : ''}
-                    ${message.hasAttachment ? '<div class="message-content-attachment"></div>' : ''}
-                    <div class="message-meta">
-                        <span class="message-time">${timestamp}</span>
-                        ${isSender ? `<span class="message-status ${message.isRead ? 'read' : 'sent'}"></span>` : ''}
+        // Create message bubble
+        const messageBubble = document.createElement('div');
+        messageBubble.className = 'message-bubble';
+        
+        // Create message content container
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+        
+        // Проверяем наличие вложения
+        if (message.attachment) {
+            // Создаем контейнер для вложения
+            const attachmentContainer = document.createElement('div');
+            attachmentContainer.className = 'message-content-attachment';
+            
+            // Определяем, какой тип вложения
+            if (message.attachment.type.startsWith('image/')) {
+                // Отображаем изображение
+                attachmentContainer.innerHTML = `
+                    <div class="image-attachment">
+                        <img src="${message.attachment.url}" alt="Изображение" 
+                             onclick="MessengerUI.showImagePreview(this.src)">
                     </div>
-                </div>
-            </div>
+                `;
+            } else {
+                // Отображаем файл
+                attachmentContainer.innerHTML = `
+                    <div class="file-attachment">
+                        <i class="ri-file-line"></i>
+                        <div class="file-details">
+                            <span class="file-name">${message.attachment.name}</span>
+                            <span class="file-size">${this.formatFileSize(message.attachment.size)}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            messageContent.appendChild(attachmentContainer);
+        } else if (message.hasAttachment) {
+            // Если есть флаг вложения, но нет локального объекта, создаем пустой контейнер
+            // который будет заполнен позже через loadMessageAttachment
+            const attachmentContainer = document.createElement('div');
+            attachmentContainer.className = 'message-content-attachment';
+            messageContent.appendChild(attachmentContainer);
+        }
+        
+        // Добавляем текст сообщения
+        if (message.text) {
+            const textElement = document.createElement('div');
+            textElement.className = 'message-text';
+            textElement.textContent = message.text;
+            messageContent.appendChild(textElement);
+        }
+        
+        // Добавляем метаданные (время и статус)
+        const metaElement = document.createElement('div');
+        metaElement.className = 'message-meta';
+        
+        const timestamp = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        metaElement.innerHTML = `
+            <span class="message-time">${timestamp}</span>
+            ${isSender ? `<span class="message-status ${message.isRead ? 'read' : 'sent'}"></span>` : ''}
         `;
+        
+        messageContent.appendChild(metaElement);
+        messageBubble.appendChild(messageContent);
+        messageWrapper.appendChild(messageBubble);
 
         return messageWrapper;
     }
