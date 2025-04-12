@@ -10,9 +10,13 @@ document.addEventListener("DOMContentLoaded", () => {
   Promise.all([
     loadInventoryData(),
     loadExpectedDeliveriesData(),
-    loadMissingProductsList()
+    loadMissingProductsList(),
+    loadUnreadMessages()
   ]).finally(() => {
     hideLoadingIndicators();
+    
+    // Запускаем проверку непрочитанных сообщений каждые 30 секунд
+    setInterval(loadUnreadMessages, 30000);
   });
 });
 
@@ -104,6 +108,7 @@ function initializeEventListeners() {
   const manageStocksCard = document.getElementById("manageStocksCard");
   const moveGoodsCard = document.getElementById("moveGoodsCard");
   const inoutAccountingCard = document.getElementById("inoutAccountingCard");
+  const messengerAnalytic = document.getElementById("messengerAnalytic");
 
   if (viewGoodsCard) {
     viewGoodsCard.addEventListener("click", () => {
@@ -123,6 +128,11 @@ function initializeEventListeners() {
   if (inoutAccountingCard) {
     inoutAccountingCard.addEventListener("click", () => {
       window.location.href = "InventoryLog/InventoryLog.html";
+    });
+  }
+  if (messengerAnalytic) {
+    messengerAnalytic.addEventListener("click", () => {
+      window.location.href = "Messenger/Messenger.html";
     });
   }
 
@@ -255,6 +265,118 @@ async function loadMissingProductsList() {
     console.error("Ошибка загрузки списка отсутствующих товаров:", error);
     updateMissingProductsDisplay([], true);
   }
+}
+
+/** Загрузка количества непрочитанных сообщений */
+async function loadUnreadMessages() {
+  const cacheKey = 'unreadMessages';
+  
+  try {
+    // Используем MessengerAPI для получения реальных данных
+    const data = await MessengerAPI.getUnreadMessagesCount();
+    
+    if (data.success) {
+      // Сохраняем в кеш
+      cacheData(cacheKey, data);
+      
+      // Обновляем интерфейс
+      updateUnreadMessagesDisplay(data);
+      updateNotificationMessages(data);
+    } else {
+      throw new Error("Ошибка получения данных о непрочитанных сообщениях");
+    }
+  } catch (error) {
+    console.error("Ошибка загрузки непрочитанных сообщений:", error);
+    
+    // В случае ошибки проверяем кеш
+    const cachedData = getCachedData(cacheKey);
+    
+    if (cachedData) {
+      // Используем кешированные данные
+      updateUnreadMessagesDisplay(cachedData);
+      updateNotificationMessages(cachedData);
+    } else {
+      // Вместо отображения ошибки используем данные эмуляции
+      const emulationData = MessengerAPI.getUnreadMessagesEmulation();
+      cacheData(cacheKey, emulationData);
+      updateUnreadMessagesDisplay(emulationData);
+      updateNotificationMessages(emulationData);
+    }
+  }
+}
+
+/** Обновляет счетчик непрочитанных сообщений */
+function updateUnreadMessagesDisplay(data, isError = false) {
+  const messageCounter = document.querySelector("#messengerAnalytic .analytic-value");
+  if (messageCounter) {
+    // Если ошибка, показываем "0" вместо "Ошибка"
+    if (isError) {
+      messageCounter.textContent = "0";
+      messageCounter.classList.remove("has-messages");
+      return;
+    }
+    
+    // Обновляем текст счетчика
+    const count = data.unreadCount || 0;
+    messageCounter.textContent = count.toString();
+    
+    // Добавляем/удаляем класс для анимации
+    if (count > 0) {
+      messageCounter.classList.add("has-messages");
+    } else {
+      messageCounter.classList.remove("has-messages");
+    }
+  }
+}
+
+/** Обновляет уведомления о новых сообщениях */
+function updateNotificationMessages(data, isError = false) {
+  const notificationsBadge = document.querySelector(".notifications .badge");
+  if (notificationsBadge) {
+    // Добавляем к счетчику уведомлений количество непрочитанных сообщений
+    const currentCount = parseInt(notificationsBadge.textContent) || 0;
+    const missingCount = currentCount;
+    const totalCount = isError ? missingCount : (missingCount + data.unreadCount);
+    notificationsBadge.textContent = totalCount.toString();
+  }
+
+  const notificationsListEl = document.querySelector(".notifications-list");
+  if (!notificationsListEl) return;
+
+  // Находим заголовок уведомлений и меняем его
+  const notificationsHeader = document.querySelector(".notifications-header");
+  if (notificationsHeader) {
+    notificationsHeader.textContent = "Уведомления";
+  }
+
+  // Если были отображены какие-то уведомления о товарах, сохраняем их
+  const existingNotifications = notificationsListEl.innerHTML;
+
+  // Теперь добавляем сообщения от пользователей
+  if (isError || !data.messages || data.messages.length === 0) {
+    // Если есть ошибки или нет сообщений, оставляем только существующие уведомления
+    return;
+  }
+  
+  // Добавляем разделитель если есть существующие уведомления
+  let messagesHtml = "";
+  if (existingNotifications && existingNotifications.trim() !== "") {
+    messagesHtml += `<div class="notification-divider">Новые сообщения</div>`;
+  }
+
+  // Добавляем HTML для сообщений
+  messagesHtml += data.messages.map(msg => {
+    return `
+      <div class="notification-item message" onclick="window.location.href='Messenger/Messenger.html'">
+        <div class="notification-title">${msg.from}</div>
+        <div class="notification-text">${msg.subject}</div>
+        <div class="notification-time">${msg.time}</div>
+      </div>
+    `;
+  }).join("");
+
+  // Добавляем HTML к существующим уведомлениям
+  notificationsListEl.innerHTML += messagesHtml;
 }
 
 // Cache management functions

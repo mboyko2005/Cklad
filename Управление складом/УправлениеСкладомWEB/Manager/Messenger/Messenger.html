@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мессенджер</title>
+  <link rel="icon" href="../../../Логотип.ico" type="image/x-icon" />
+  <!-- Стили для Messenger -->
+  <link rel="stylesheet" href="Messenger.css">
+  <!-- Стили для ImageViewer -->
+  <link rel="stylesheet" href="ImageViewer.css">
+  <!-- Иконки (Remix Icon) -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Фоновые фигуры -->
+  <div class="background-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+    <div class="shape shape-4"></div>
+  </div>
+  
+  <!-- Верхняя панель -->
+  <header class="top-bar">
+    <div class="page-title">
+      <i class="ri-chat-3-line animated-icon"></i>
+      Мессенджер
+    </div>
+    <div class="user-info">
+      <span class="greeting">Добро пожаловать, </span>
+      <span class="username">Менеджер склада</span>
+      <div class="avatar">
+        <i class="ri-user-line"></i>
+      </div>
+      <!-- Меню пользователя при наведении -->
+      <div class="user-menu">
+        <button id="backBtn" class="user-menu-item">Вернуться в панель</button>
+        <button id="exitBtn" class="user-menu-item">Выход из системы</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Основной контейнер мессенджера -->
+  <div class="messenger-container">
+    <!-- Левая панель с контактами -->
+    <div class="contacts-panel">
+      <div class="contacts-header">
+        <div class="contacts-title">Сообщения</div>
+        <div class="contacts-actions">
+          <button class="icon-button" id="newChatBtn" title="Новый чат">
+            <i class="ri-user-add-line"></i>
+          </button>
+          <button class="icon-button" id="menuBtn" title="Меню">
+            <i class="ri-more-2-fill"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Поле поиска контактов -->
+      <div class="search-container">
+        <i class="ri-search-line search-icon"></i>
+        <input type="text" id="contactSearchInput" class="search-input" placeholder="Поиск...">
+      </div>
+      
+      <!-- Список контактов -->
+      <div class="contacts-list-header">Все чаты</div>
+      <div class="contacts-list" id="contactsList">
+        <!-- Контакты будут добавлены через JavaScript -->
+      </div>
+      
+      <!-- Нижние кнопки -->
+      <div class="contacts-footer">
+        <button class="icon-button" id="deleteBtn" title="Удалить чат">
+          <i class="ri-delete-bin-line"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Правая панель с чатом -->
+    <div class="chat-panel">
+      <!-- Заголовок чата -->
+      <div class="chat-header">
+        <div class="chat-info">
+          <div class="contact-avatar">
+            <i class="ri-user-line"></i>
+          </div>
+          <div class="chat-details">
+            <div class="chat-title" id="chatTitle">Выберите контакт</div>
+            <div class="chat-status" id="chatStatus"></div>
+          </div>
+        </div>
+        <div class="chat-actions">
+          <button class="icon-button" id="searchMessagesBtn" title="Поиск">
+            <i class="ri-search-line"></i>
+          </button>
+          <button class="icon-button" id="infoBtn" title="Информация">
+            <i class="ri-information-line"></i>
+          </button>
+          <button class="icon-button" id="closeBtn" title="Закрыть">
+            <i class="ri-close-line"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Панель поиска сообщений (скрыта изначально) -->
+      <div class="search-panel" id="searchPanel">
+        <div class="search-messages-container">
+          <i class="ri-search-line search-icon"></i>
+          <input type="text" id="messageSearchInput" class="search-input" placeholder="Поиск сообщений...">
+          <div class="search-results-count" id="searchResultsCount">0 из 0</div>
+          <button class="icon-button" id="prevSearchBtn" title="Предыдущий результат">
+            <i class="ri-arrow-left-line"></i>
+          </button>
+          <button class="icon-button" id="nextSearchBtn" title="Следующий результат">
+            <i class="ri-arrow-right-line"></i>
+          </button>
+        </div>
+        <div class="search-results" id="searchResults">
+          <!-- Результаты поиска будут добавлены через JavaScript -->
+        </div>
+      </div>
+      
+      <!-- Область сообщений -->
+      <div class="messages-container" id="messagesContainer">
+        <!-- Сообщения будут добавлены через JavaScript -->
+      </div>
+      
+      <!-- Панель предложенных сообщений -->
+      <div class="suggestions-container" id="suggestionsContainer">
+        <!-- Предложенные сообщения будут загружены динамически при необходимости -->
+      </div>
+      
+      <!-- Панель предпросмотра вложений (скрыта изначально) -->
+      <div class="attachment-preview" id="attachmentPreview" style="display: none !important;">
+        <div class="attachment-content" id="attachmentContent">
+          <!-- Содержимое вложения будет добавлено через JavaScript -->
+        </div>
+        <button class="icon-button remove-attachment-btn" id="removeAttachmentBtn" style="display: none !important;">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+      
+      <!-- Панель ввода сообщения -->
+      <div class="message-input-container">
+        <!-- Предпросмотр прикрепленного файла над полем ввода -->
+        <div class="message-attachment-preview" id="attachment-preview"></div>
+        
+        <!-- Контейнер с полем ввода и кнопками -->
+        <div class="message-input-controls">
+          <button class="icon-button" id="attachment-button" title="Прикрепить файл">
+            <i class="ri-attachment-2"></i>
+          </button>
+          <input type="file" id="file-input" class="hidden-file-input" style="display: none;">
+          <textarea id="messageTextArea" class="message-input" placeholder="Введите сообщение..." rows="1"></textarea>
+          <button class="icon-button" id="emojiButton" title="Эмодзи">
+            <i class="ri-emotion-line"></i>
+          </button>
+          <button class="send-button" id="send-button" title="Отправить">
+            <i class="ri-send-plane-fill"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Уведомление -->
+  <div class="notification" id="notification" title="Уведомление от системы">
+    <div class="notification-icon">
+      <i class="ri-information-line"></i>
+    </div>
+    <div class="notification-content">
+      <div class="notification-message"></div>
+    </div>
+    <div class="notification-close">
+      <i class="ri-close-line"></i>
+    </div>
+  </div>
+
+  <!-- JavaScript files -->
+  <script src="MessengerAPI.js"></script>
+  <script src="EmojiManager.js"></script>
+  <script src="MessengerAttachment.js"></script>
+  <script src="ImageViewer.js"></script>
+  <script src="Messenger.js"></script>
+</body>
+</html> 

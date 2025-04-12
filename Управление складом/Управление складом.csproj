@@ -421,6 +421,36 @@
     <None Update="УправлениеСкладомWEB\Manager\ManageUsers\ManageUsers.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="УправлениеСкладомWEB\Manager\Messenger\EmojiManager.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Manager\Messenger\ImageViewer.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Manager\Messenger\ImageViewer.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Manager\Messenger\MessageStyler.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Manager\Messenger\Messenger.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Manager\Messenger\Messenger.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Manager\Messenger\Messenger.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Manager\Messenger\MessengerAPI.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Manager\Messenger\MessengerAttachment.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Manager\Messenger\MessengerUI.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="УправлениеСкладомWEB\Manager\Reports\Reports.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -455,6 +485,36 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="УправлениеСкладомWEB\Staff\ManageStock\ManageStock.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Staff\Messenger\EmojiManager.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Staff\Messenger\ImageViewer.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Staff\Messenger\ImageViewer.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Staff\Messenger\MessageStyler.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Staff\Messenger\Messenger.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Staff\Messenger\Messenger.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Staff\Messenger\Messenger.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Staff\Messenger\MessengerAPI.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Staff\Messenger\MessengerAttachment.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="УправлениеСкладомWEB\Staff\Messenger\MessengerUI.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="УправлениеСкладомWEB\Staff\MoveItems\MoveItems.css">

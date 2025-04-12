@@ -56,6 +56,7 @@ function initializeEventListeners() {
   const manageInventoryCard = document.getElementById("manageInventoryCard");
   const reportsCard = document.getElementById("reportsCard");
   const settingsCard = document.getElementById("settingsCard");
+  const messengerCard = document.getElementById("messengerCard");
 
   if (manageUsersCard) {
     manageUsersCard.addEventListener("click", () => {
@@ -75,6 +76,11 @@ function initializeEventListeners() {
   if (settingsCard) {
     settingsCard.addEventListener("click", () => {
       window.location.href = "Settings/Settings.html";
+    });
+  }
+  if (messengerCard) {
+    messengerCard.addEventListener("click", () => {
+      window.location.href = "Messenger/Messenger.html";
     });
   }
 
