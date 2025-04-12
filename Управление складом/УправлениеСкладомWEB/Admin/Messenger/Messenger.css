@@ -858,7 +858,7 @@ html, body {
 
 /* Стили для предпросмотра вложений в поле ввода */
 .attachment-preview {
-  display: none;
+  display: none !important; /* Скрываем панель полностью */
   background-color: var(--bg-section);
   padding: 8px 15px;
   border-radius: 12px;
@@ -880,7 +880,7 @@ html, body {
 }
 
 .attachment-preview.active {
-  display: flex;
+  display: none !important; /* Скрываем даже когда активен */
   align-items: center;
   justify-content: space-between;
 }
@@ -1741,19 +1741,19 @@ html, body {
 
 /* Улучшенные стили для блока вложенных файлов */
 .attachment-preview {
+    display: none !important; /* Скрываем панель полностью */
     background-color: var(--bg-section);
     border-radius: var(--border-radius);
     padding: 12px;
     margin-bottom: 10px;
     box-shadow: var(--shadow-sm);
-    display: none;
     opacity: 0;
     transform: translateY(10px);
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .attachment-preview.active {
-    display: flex;
+    display: none !important; /* Скрываем даже когда активен */
     flex-direction: column;
     opacity: 1;
     transform: translateY(0);
