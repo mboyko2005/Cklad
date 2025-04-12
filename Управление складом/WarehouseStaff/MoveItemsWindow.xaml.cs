@@ -24,6 +24,7 @@ namespace УправлениеСкладом.Сотрудник_склада
 			public string Категория { get; set; }
 			public int Количество { get; set; }
 			public string Поставщик { get; set; }
+			public string Склад { get; set; }
 		}
 
 		private List<Item> items;
@@ -122,11 +123,13 @@ namespace УправлениеСкладом.Сотрудник_склада
 				{
 					connection.Open();
 					string query = @"
-						SELECT t.ТоварID, t.Наименование, t.Категория, ISNULL(SUM(sp.Количество), 0) AS Количество, p.Наименование AS Поставщик
+						SELECT t.ТоварID, t.Наименование, t.Категория, sp.Количество, p.Наименование AS Поставщик, s.Наименование AS Склад
 						FROM Товары t
-						LEFT JOIN СкладскиеПозиции sp ON t.ТоварID = sp.ТоварID
+						JOIN СкладскиеПозиции sp ON t.ТоварID = sp.ТоварID
+						JOIN Склады s ON sp.СкладID = s.СкладID
 						LEFT JOIN Поставщики p ON t.ПоставщикID = p.ПоставщикID
-						GROUP BY t.ТоварID, t.Наименование, t.Категория, p.Наименование";
+						WHERE sp.Количество > 0
+						ORDER BY t.ТоварID";
 
 					using (SqlCommand cmd = new SqlCommand(query, connection))
 					using (SqlDataReader reader = cmd.ExecuteReader())
@@ -139,7 +142,8 @@ namespace УправлениеСкладом.Сотрудник_склада
 								Наименование = reader.GetString(1),
 								Категория = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
 								Количество = reader.GetInt32(3),
-								Поставщик = reader.IsDBNull(4) ? string.Empty : reader.GetString(4)
+								Поставщик = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+								Склад = reader.GetString(5)
 							});
 						}
 					}
@@ -226,7 +230,8 @@ namespace УправлениеСкладом.Сотрудник_склада
 				.Where(i =>
 					(string.IsNullOrEmpty(searchText)
 					 || i.Наименование.ToLower().Contains(searchText)
-					 || i.Категория.ToLower().Contains(searchText))
+					 || i.Категория.ToLower().Contains(searchText)
+					 || i.Склад.ToLower().Contains(searchText))
 					&& (selectedCategory == "Все" || i.Категория == selectedCategory))
 				.ToList();
 
@@ -341,29 +346,11 @@ namespace УправлениеСкладом.Сотрудник_склада
 
 		private int GetQuantityInWarehouse(int товарID, string skladName)
 		{
-			using (SqlConnection conn = new SqlConnection(connectionString))
-			{
-				try
-				{
-					conn.Open();
-					string q = @"SELECT sp.Количество
-								 FROM СкладскиеПозиции sp
-								 JOIN Склады s ON sp.СкладID = s.СкладID
-								 WHERE sp.ТоварID = @tid AND s.Наименование = @sn";
-					using (SqlCommand cmd = new SqlCommand(q, conn))
-					{
-						cmd.Parameters.AddWithValue("@tid", товарID);
-						cmd.Parameters.AddWithValue("@sn", skladName);
-						object res = cmd.ExecuteScalar();
-						return res != null ? Convert.ToInt32(res) : 0;
-					}
-				}
-				catch (Exception ex)
-				{
-					MessageBox.Show($"Ошибка получения количества: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-					return 0;
-				}
-			}
+			// Получаем количество из загруженного списка товаров
+			var item = items.FirstOrDefault(i => i.ТоварID == товарID && i.Склад == skladName);
+			if (item != null)
+				return item.Количество;
+			return 0;
 		}
 
 		private List<string> GetWarehousesForProduct(int товарID)
@@ -398,7 +385,13 @@ namespace УправлениеСкладом.Сотрудник_склада
 
 		private void SetSourceLocationComboBox(int товарID)
 		{
-			var list = GetWarehousesForProduct(товарID);
+			// Получаем все склады, где есть данный товар с положительным количеством
+			var list = items
+				.Where(i => i.ТоварID == товарID && i.Количество > 0)
+				.Select(i => i.Склад)
+				.Distinct()
+				.ToList();
+			
 			if (list.Count == 0)
 			{
 				SourceLocationComboBox.ItemsSource = null;
@@ -464,14 +457,39 @@ namespace УправлениеСкладом.Сотрудник_склада
 							if (count == 0) { tran.Rollback(); return false; }
 						}
 
-						string updSrc = @"UPDATE СкладскиеПозиции SET Количество = Количество - @q, ДатаОбновления=GETDATE()
-										  WHERE ТоварID=@tid AND СкладID=@sid";
-						using (SqlCommand cmd = new SqlCommand(updSrc, conn, tran))
+						// Проверка текущего количества товара на исходном складе
+						string getQtyQuery = @"SELECT Количество FROM СкладскиеПозиции WHERE ТоварID=@tid AND СкладID=@sid";
+						int currentQty;
+						using (SqlCommand cmd = new SqlCommand(getQtyQuery, conn, tran))
 						{
-							cmd.Parameters.AddWithValue("@q", qty);
 							cmd.Parameters.AddWithValue("@tid", товарID);
 							cmd.Parameters.AddWithValue("@sid", srcSkladID);
-							cmd.ExecuteNonQuery();
+							currentQty = (int)cmd.ExecuteScalar();
+						}
+
+						// Если перемещаем все, удаляем запись
+						if (currentQty == qty)
+						{
+							string delSrc = @"DELETE FROM СкладскиеПозиции WHERE ТоварID=@tid AND СкладID=@sid";
+							using (SqlCommand cmd = new SqlCommand(delSrc, conn, tran))
+							{
+								cmd.Parameters.AddWithValue("@tid", товарID);
+								cmd.Parameters.AddWithValue("@sid", srcSkladID);
+								cmd.ExecuteNonQuery();
+							}
+						}
+						else
+						{
+							// Иначе уменьшаем количество
+							string updSrc = @"UPDATE СкладскиеПозиции SET Количество = Количество - @q, ДатаОбновления=GETDATE()
+											  WHERE ТоварID=@tid AND СкладID=@sid";
+							using (SqlCommand cmd = new SqlCommand(updSrc, conn, tran))
+							{
+								cmd.Parameters.AddWithValue("@q", qty);
+								cmd.Parameters.AddWithValue("@tid", товарID);
+								cmd.Parameters.AddWithValue("@sid", srcSkladID);
+								cmd.ExecuteNonQuery();
+							}
 						}
 
 						string checkDst = @"SELECT COUNT(*) FROM СкладскиеПозиции WHERE ТоварID=@tid AND СкладID=@sid";

@@ -263,6 +263,9 @@
                                             Binding="{Binding Цена, StringFormat={}{0:N2}}"
                                             Width="Auto"
                                             MinWidth="80" />
+                        <DataGridTextColumn Header="Склад"
+                                            Binding="{Binding Склад}"
+                                            Width="120" />
                     </DataGrid.Columns>
                 </DataGrid>
 

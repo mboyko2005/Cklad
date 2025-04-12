@@ -1,4 +1,4 @@
-let allItems = [];               // Список товаров (суммарные остатки)
+let allItems = [];               // Список товаров (с разбивкой по складам)
 let displayedItems = [];         // Текущий отфильтрованный список
 let categories = ["Все"];        // Список категорий
 let warehouses = [];             // Все склады
@@ -97,6 +97,12 @@ async function loadData() {
     applyFilters();
     // Заполним список целевого местоположения
     fillTargetLocationSelect(warehouses);
+
+    // Если был выбран товар, обновим список исходных складов
+    if (selectedItem) {
+      const sourceWarehouses = await loadSourceWarehouses(selectedItem.productId);
+      fillSourceLocationSelect(sourceWarehouses);
+    }
   } catch (error) {
     console.error(error);
     showNotification("Не удалось загрузить данные", "error");
@@ -164,9 +170,10 @@ function applyFilters() {
 
   displayedItems = allItems.filter(item => {
     const nameMatch = item.productName.toLowerCase().includes(searchValue);
-    const catMatch = item.category.toLowerCase().includes(searchValue);
+    const catMatch = (item.category || '').toLowerCase().includes(searchValue);
+    const warehouseMatch = item.warehouseName.toLowerCase().includes(searchValue);
     const categoryFilter = (selectedCategory === "Все" || item.category === selectedCategory);
-    return (nameMatch || catMatch) && categoryFilter;
+    return (nameMatch || catMatch || warehouseMatch) && categoryFilter;
   });
 
   renderItemsTable(displayedItems);
@@ -183,12 +190,19 @@ function renderItemsTable(items) {
 
   items.forEach(item => {
     const tr = document.createElement("tr");
-    tr.dataset.itemId = item.productId; // Для удобства
+    tr.dataset.itemId = item.productId;
+    tr.dataset.warehouseId = item.warehouseId;
+    if (selectedItem && 
+        selectedItem.productId === item.productId && 
+        selectedItem.warehouseId === item.warehouseId) {
+      tr.classList.add("selected");
+    }
     tr.innerHTML = `
       <td>${item.productId}</td>
       <td>${item.productName}</td>
-      <td>${item.category}</td>
+      <td>${item.category || ''}</td>
       <td>${item.quantity}</td>
+      <td>${item.warehouseName}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -200,24 +214,33 @@ async function handleItemSelection(e) {
   if (!row) return;
 
   // Снимаем выделение со всех строк
-  document.querySelectorAll("#itemsTable tbody tr").forEach(tr => tr.classList.remove("selected"));
+  document.querySelectorAll("#itemsTable tbody tr").forEach(tr => {
+    tr.classList.remove("selected");
+  });
+
+  // Выделяем выбранную строку
   row.classList.add("selected");
 
   const itemId = parseInt(row.dataset.itemId);
-  selectedItem = allItems.find(it => it.productId === itemId);
-  if (!selectedItem) return;
-
-  // Загружаем склады, где есть этот товар (с ненулевым количеством)
-  // GET /api/moveitems/warehouses/{itemId} - или ваш метод
-  try {
-    const resp = await fetch(`/api/moveitems/warehouses/${itemId}`);
-    if (!resp.ok) throw new Error("Ошибка при получении складов для товара");
-    sourceWarehousesForItem = await resp.json();
-
-    fillSourceLocationSelect(sourceWarehousesForItem);
-  } catch (error) {
-    console.error(error);
-    showNotification("Ошибка при загрузке складов с товаром", "error");
+  const warehouseId = parseInt(row.dataset.warehouseId);
+  selectedItem = allItems.find(item => 
+    item.productId === itemId && 
+    item.warehouseId === warehouseId
+  );
+  
+  if (selectedItem) {
+    // Загружаем склады для выбранного товара
+    const sourceWarehouses = await loadSourceWarehouses(selectedItem.productId);
+    fillSourceLocationSelect(sourceWarehouses);
+    
+    // Устанавливаем выбранный склад
+    const sourceSelect = document.getElementById("sourceLocationSelect");
+    if (sourceSelect) {
+      sourceSelect.value = selectedItem.warehouseId;
+    }
+    
+    // Очищаем поле количества
+    document.getElementById("moveQuantityInput").value = "";
   }
 }
 
@@ -311,10 +334,15 @@ async function handleMove() {
     return;
   }
 
+  // Проверяем, не превышает ли количество доступное на складе
+  if (moveQty > selectedItem.quantity) {
+    showNotification("Недостаточно товара на исходном складе", "error");
+    return;
+  }
+
   // Делаем POST-запрос на сервер: /api/moveitems
-  // Тело: { productId, sourceWarehouseId, targetWarehouseId, quantity, userId }
   try {
-    const userId = 3; // Пример, можно брать из локального хранилища
+    const userId = parseInt(localStorage.getItem("userId")) || 1;
     const response = await fetch("/api/moveitems", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -326,19 +354,44 @@ async function handleMove() {
         userId: userId
       })
     });
+
     if (!response.ok) {
       const errData = await response.json();
       throw new Error(errData.message || "Ошибка перемещения");
     }
+
     const result = await response.json();
     showNotification(result.message || "Товар перемещён", "success");
 
-    // После успеха — обновляем данные
+    // После успеха:
+    // 1. Очищаем поле количества
+    qtyInput.value = "";
+    
+    // 2. Обновляем данные
     await loadData();
-    document.getElementById("moveQuantityInput").value = "";
+
+    // 3. Если это было перемещение всего количества, очищаем выбор товара
+    if (moveQty === selectedItem.quantity) {
+      selectedItem = null;
+      clearSourceWarehouses();
+    }
   } catch (error) {
     console.error(error);
     showNotification(error.message, "error");
+  }
+}
+
+/** Загрузка складов для выбранного товара */
+async function loadSourceWarehouses(productId) {
+  try {
+    const response = await fetch(`/api/moveitems/warehouses/${productId}`);
+    if (!response.ok) throw new Error("Ошибка при загрузке складов товара");
+    sourceWarehousesForItem = await response.json();
+    return sourceWarehousesForItem;
+  } catch (error) {
+    console.error(error);
+    showNotification("Не удалось загрузить склады товара", "error");
+    return [];
   }
 }
 

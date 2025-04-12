@@ -359,10 +359,12 @@
                           SelectionChanged="ItemsDataGrid_SelectionChanged" 
                           Loaded="ItemsDataGrid_Loaded">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="ID" Binding="{Binding ТоварID}" Width="Auto"/>
+                        <DataGridTextColumn Header="ID" Binding="{Binding ТоварID}" Width="40"/>
                         <DataGridTextColumn Header="Наименование" Binding="{Binding Наименование}" Width="*"/>
-                        <DataGridTextColumn Header="Категория" Binding="{Binding Категория}" Width="*"/>
-                        <DataGridTextColumn Header="Количество" Binding="{Binding Количество}" Width="Auto"/>
+                        <DataGridTextColumn Header="Категория" Binding="{Binding Категория}" Width="150"/>
+                        <DataGridTextColumn Header="Количество" Binding="{Binding Количество}" Width="100"/>
+                        <DataGridTextColumn Header="Поставщик" Binding="{Binding Поставщик}" Width="120"/>
+                        <DataGridTextColumn Header="Склад" Binding="{Binding Склад}" Width="120"/>
                     </DataGrid.Columns>
                 </DataGrid>
 

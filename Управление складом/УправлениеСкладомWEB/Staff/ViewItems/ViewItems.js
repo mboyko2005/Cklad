@@ -62,7 +62,8 @@ function initializeEventListeners() {
       const filtered = goodsData.filter(item => {
         const nameMatch = (item.productName || "").toLowerCase().includes(query);
         const catMatch = (item.category || "").toLowerCase().includes(query);
-        return nameMatch || catMatch;
+        const warehouseMatch = (item.warehouseName || "").toLowerCase().includes(query);
+        return nameMatch || catMatch || warehouseMatch;
       });
       renderGoodsTable(filtered);
     });
@@ -138,6 +139,7 @@ function renderGoodsTable(items) {
       <td>${item.category || ""}</td>
       <td>${item.quantity || 0}</td>
       <td>${item.price ? parseFloat(item.price).toFixed(2) : "0.00"}</td>
+      <td>${item.warehouseName || "Нет на складе"}</td>
     `;
 
     tr.addEventListener("click", () => {

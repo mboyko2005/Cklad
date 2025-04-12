@@ -24,6 +24,7 @@ namespace УправлениеСкладом.Сотрудник_склада
 			public string Категория { get; set; }
 			public int Количество { get; set; }
 			public decimal Цена { get; set; }
+			public string Склад { get; set; }
 		}
 
 		private List<Item> items;
@@ -75,10 +76,13 @@ namespace УправлениеСкладом.Сотрудник_склада
 				{
 					await connection.OpenAsync();
 					string query = @"
-                        SELECT t.ТоварID, t.Наименование, t.Категория, ISNULL(SUM(sp.Количество), 0) AS Количество, ISNULL(t.Цена, 0) AS Цена
+                        SELECT t.ТоварID, t.Наименование, t.Категория, sp.Количество, ISNULL(t.Цена, 0) AS Цена, 
+                               s.Наименование AS Склад
                         FROM Товары t
-                        LEFT JOIN СкладскиеПозиции sp ON t.ТоварID = sp.ТоварID
-                        GROUP BY t.ТоварID, t.Наименование, t.Категория, t.Цена";
+                        JOIN СкладскиеПозиции sp ON t.ТоварID = sp.ТоварID
+                        JOIN Склады s ON sp.СкладID = s.СкладID
+                        WHERE sp.Количество > 0
+                        ORDER BY t.ТоварID";
 					using (SqlCommand command = new SqlCommand(query, connection))
 					using (SqlDataReader reader = await command.ExecuteReaderAsync())
 					{
@@ -92,7 +96,8 @@ namespace УправлениеСкладом.Сотрудник_склада
 									? string.Empty
 									: reader.GetString(reader.GetOrdinal("Категория")),
 								Количество = reader.GetInt32(reader.GetOrdinal("Количество")),
-								Цена = reader.GetDecimal(reader.GetOrdinal("Цена"))
+								Цена = reader.GetDecimal(reader.GetOrdinal("Цена")),
+								Склад = reader.GetString(reader.GetOrdinal("Склад"))
 							});
 						}
 					}
@@ -164,7 +169,8 @@ namespace УправлениеСкладом.Сотрудник_склада
 			displayedItems = items.Where(item =>
 				(string.IsNullOrEmpty(searchText) ||
 				 item.Наименование.ToLower().Contains(searchText) ||
-				 item.Категория.ToLower().Contains(searchText)) &&
+				 item.Категория.ToLower().Contains(searchText) ||
+				 item.Склад.ToLower().Contains(searchText)) &&
 				(item.Количество >= quantityMin && item.Количество <= quantityMax) &&
 				(item.Цена >= priceMin && item.Цена <= priceMax)
 			).ToList();

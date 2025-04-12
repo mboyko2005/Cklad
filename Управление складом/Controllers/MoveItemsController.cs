@@ -12,13 +12,15 @@ namespace YourAppNamespace.Controllers
 		private readonly string _connectionString =
 			@"Data Source=DESKTOP-Q11QP9V\SQLEXPRESS;Initial Catalog=УправлениеСкладом;Integrated Security=True";
 
-		// DTO для вывода списка товаров (суммарное кол-во)
+		// DTO для вывода списка товаров
 		public class ItemDto
 		{
 			public int ProductId { get; set; }
 			public string ProductName { get; set; }
 			public string Category { get; set; }
-			public int Quantity { get; set; } // Суммарное по всем складам
+			public int Quantity { get; set; }
+			public int WarehouseId { get; set; }
+			public string WarehouseName { get; set; }
 		}
 
 		// DTO для вывода складов
@@ -42,7 +44,7 @@ namespace YourAppNamespace.Controllers
 
 		/// <summary>
 		/// GET /api/moveitems/items
-		/// Возвращает список товаров (суммарное кол-во по всем складам).
+		/// Возвращает список товаров с разбивкой по складам.
 		/// </summary>
 		[HttpGet("items")]
 		public IActionResult GetItems()
@@ -54,11 +56,18 @@ namespace YourAppNamespace.Controllers
 				{
 					conn.Open();
 					string query = @"
-SELECT t.ТоварID, t.Наименование, t.Категория, ISNULL(SUM(sp.Количество), 0) AS Количество
+SELECT 
+    t.ТоварID,
+    t.Наименование,
+    t.Категория,
+    sp.Количество,
+    s.СкладID,
+    s.Наименование AS СкладНаименование
 FROM Товары t
-LEFT JOIN СкладскиеПозиции sp ON t.ТоварID = sp.ТоварID
-GROUP BY t.ТоварID, t.Наименование, t.Категория
-ORDER BY t.ТоварID;";
+JOIN СкладскиеПозиции sp ON t.ТоварID = sp.ТоварID
+JOIN Склады s ON sp.СкладID = s.СкладID
+WHERE sp.Количество > 0
+ORDER BY t.ТоварID, s.СкладID;";
 
 					using (var cmd = new SqlCommand(query, conn))
 					using (var rdr = cmd.ExecuteReader())
@@ -70,7 +79,9 @@ ORDER BY t.ТоварID;";
 								ProductId = rdr.GetInt32(0),
 								ProductName = rdr.IsDBNull(1) ? "" : rdr.GetString(1),
 								Category = rdr.IsDBNull(2) ? "" : rdr.GetString(2),
-								Quantity = rdr.GetInt32(3)
+								Quantity = rdr.GetInt32(3),
+								WarehouseId = rdr.GetInt32(4),
+								WarehouseName = rdr.GetString(5)
 							});
 						}
 					}
@@ -184,17 +195,14 @@ ORDER BY s.СкладID;";
 				{
 					try
 					{
-						// 1) Проверяем, есть ли нужное количество на исходном складе
-						string checkQ = @"
-SELECT COUNT(*) 
-FROM СкладскиеПозиции 
-WHERE ТоварID = @tid AND СкладID = @sid AND Количество >= @q;";
-						using (var cmdCheck = new SqlCommand(checkQ, conn, tran))
+						// 1) Проверяем наличие нужного количества на исходном складе
+						string checkQ = @"SELECT COUNT(*) FROM СкладскиеПозиции WHERE ТоварID=@tid AND СкладID=@sid AND Количество>=@q";
+						using (var cmd = new SqlCommand(checkQ, conn, tran))
 						{
-							cmdCheck.Parameters.AddWithValue("@tid", request.ProductId);
-							cmdCheck.Parameters.AddWithValue("@sid", request.SourceWarehouseId);
-							cmdCheck.Parameters.AddWithValue("@q", request.Quantity);
-							int count = (int)cmdCheck.ExecuteScalar();
+							cmd.Parameters.AddWithValue("@tid", request.ProductId);
+							cmd.Parameters.AddWithValue("@sid", request.SourceWarehouseId);
+							cmd.Parameters.AddWithValue("@q", request.Quantity);
+							int count = (int)cmd.ExecuteScalar();
 							if (count == 0)
 							{
 								tran.Rollback();
@@ -202,82 +210,90 @@ WHERE ТоварID = @tid AND СкладID = @sid AND Количество >= @q
 							}
 						}
 
-						// 2) Вычитаем количество из исходного склада
-						string updSrc = @"
-UPDATE СкладскиеПозиции
-SET Количество = Количество - @q,
-    ДатаОбновления = GETDATE()
-WHERE ТоварID = @tid AND СкладID = @sid;";
-						using (var cmdSrc = new SqlCommand(updSrc, conn, tran))
+						// 2) Получаем текущее количество на исходном складе
+						string getQtyQuery = @"SELECT Количество FROM СкладскиеПозиции WHERE ТоварID=@tid AND СкладID=@sid";
+						int currentQty;
+						using (var cmd = new SqlCommand(getQtyQuery, conn, tran))
 						{
-							cmdSrc.Parameters.AddWithValue("@q", request.Quantity);
-							cmdSrc.Parameters.AddWithValue("@tid", request.ProductId);
-							cmdSrc.Parameters.AddWithValue("@sid", request.SourceWarehouseId);
-							cmdSrc.ExecuteNonQuery();
+							cmd.Parameters.AddWithValue("@tid", request.ProductId);
+							cmd.Parameters.AddWithValue("@sid", request.SourceWarehouseId);
+							currentQty = (int)cmd.ExecuteScalar();
 						}
 
-						// 3) Прибавляем к целевому складу
-						//    Проверим, есть ли запись в СкладскиеПозиции для (ProductId, TargetWarehouseId)
-						string checkDst = @"
-SELECT COUNT(*) 
-FROM СкладскиеПозиции 
-WHERE ТоварID = @tid AND СкладID = @sid;";
-						int dstCount;
-						using (var cmdDstCheck = new SqlCommand(checkDst, conn, tran))
+						// 3) Если перемещаем все количество, удаляем запись
+						if (currentQty == request.Quantity)
 						{
-							cmdDstCheck.Parameters.AddWithValue("@tid", request.ProductId);
-							cmdDstCheck.Parameters.AddWithValue("@sid", request.TargetWarehouseId);
-							dstCount = (int)cmdDstCheck.ExecuteScalar();
-						}
-						if (dstCount > 0)
-						{
-							// Обновляем
-							string updDst = @"
-UPDATE СкладскиеПозиции
-SET Количество = Количество + @q,
-    ДатаОбновления = GETDATE()
-WHERE ТоварID = @tid AND СкладID = @sid;";
-							using (var cmdDst = new SqlCommand(updDst, conn, tran))
+							string delSrc = @"DELETE FROM СкладскиеПозиции WHERE ТоварID=@tid AND СкладID=@sid";
+							using (var cmd = new SqlCommand(delSrc, conn, tran))
 							{
-								cmdDst.Parameters.AddWithValue("@q", request.Quantity);
-								cmdDst.Parameters.AddWithValue("@tid", request.ProductId);
-								cmdDst.Parameters.AddWithValue("@sid", request.TargetWarehouseId);
-								cmdDst.ExecuteNonQuery();
+								cmd.Parameters.AddWithValue("@tid", request.ProductId);
+								cmd.Parameters.AddWithValue("@sid", request.SourceWarehouseId);
+								cmd.ExecuteNonQuery();
 							}
 						}
 						else
 						{
-							// Вставляем новую позицию
-							string insDst = @"
-INSERT INTO СкладскиеПозиции (ТоварID, СкладID, Количество, ДатаОбновления)
-VALUES (@tid, @sid, @q, GETDATE());";
-							using (var cmdIns = new SqlCommand(insDst, conn, tran))
+							// Иначе уменьшаем количество
+							string updSrc = @"UPDATE СкладскиеПозиции SET Количество = Количество - @q, ДатаОбновления=GETDATE() WHERE ТоварID=@tid AND СкладID=@sid";
+							using (var cmd = new SqlCommand(updSrc, conn, tran))
 							{
-								cmdIns.Parameters.AddWithValue("@q", request.Quantity);
-								cmdIns.Parameters.AddWithValue("@tid", request.ProductId);
-								cmdIns.Parameters.AddWithValue("@sid", request.TargetWarehouseId);
-								cmdIns.ExecuteNonQuery();
+								cmd.Parameters.AddWithValue("@q", request.Quantity);
+								cmd.Parameters.AddWithValue("@tid", request.ProductId);
+								cmd.Parameters.AddWithValue("@sid", request.SourceWarehouseId);
+								cmd.ExecuteNonQuery();
 							}
 						}
 
-						// 4) Записываем движение: минус на исходном, плюс на целевом
-						//    Таблица: ДвиженияТоваров(ТоварID, СкладID, Количество, ТипДвижения, ПользовательID, ДатаВремя, ...)
-						string insMov = @"
-INSERT INTO ДвиженияТоваров (ТоварID, СкладID, Количество, ТипДвижения, ПользовательID, ДатаВремя)
-VALUES (@tid, @sid, @cnt, @type, @uid, GETDATE());";
-						using (var cmdMov = new SqlCommand(insMov, conn, tran))
+						// 4) Проверяем наличие товара на целевом складе
+						string checkDst = @"SELECT COUNT(*) FROM СкладскиеПозиции WHERE ТоварID=@tid AND СкладID=@sid";
+						int dstCount;
+						using (var cmd = new SqlCommand(checkDst, conn, tran))
 						{
-							cmdMov.Parameters.AddWithValue("@tid", request.ProductId);
-							cmdMov.Parameters.AddWithValue("@sid", request.SourceWarehouseId);
-							cmdMov.Parameters.AddWithValue("@cnt", -request.Quantity);
-							cmdMov.Parameters.AddWithValue("@type", "Перемещение: Расход");
-							cmdMov.Parameters.AddWithValue("@uid", request.UserId);
-							cmdMov.ExecuteNonQuery();
+							cmd.Parameters.AddWithValue("@tid", request.ProductId);
+							cmd.Parameters.AddWithValue("@sid", request.TargetWarehouseId);
+							dstCount = (int)cmd.ExecuteScalar();
+						}
 
-							cmdMov.Parameters["@sid"].Value = request.TargetWarehouseId;
-							cmdMov.Parameters["@cnt"].Value = request.Quantity;
-							cmdMov.Parameters["@type"].Value = "Перемещение: Приход";
-							cmdMov.ExecuteNonQuery();
+						if (dstCount > 0)
+						{
+							// Обновляем существующую позицию
+							string updDst = @"UPDATE СкладскиеПозиции SET Количество = Количество + @q, ДатаОбновления=GETDATE() WHERE ТоварID=@tid AND СкладID=@sid";
+							using (var cmd = new SqlCommand(updDst, conn, tran))
+							{
+								cmd.Parameters.AddWithValue("@q", request.Quantity);
+								cmd.Parameters.AddWithValue("@tid", request.ProductId);
+								cmd.Parameters.AddWithValue("@sid", request.TargetWarehouseId);
+								cmd.ExecuteNonQuery();
+							}
+						}
+						else
+						{
+							// Создаем новую позицию
+							string insDst = @"INSERT INTO СкладскиеПозиции(ТоварID, СкладID, Количество, ДатаОбновления) VALUES(@tid, @sid, @q, GETDATE())";
+							using (var cmd = new SqlCommand(insDst, conn, tran))
+							{
+								cmd.Parameters.AddWithValue("@q", request.Quantity);
+								cmd.Parameters.AddWithValue("@tid", request.ProductId);
+								cmd.Parameters.AddWithValue("@sid", request.TargetWarehouseId);
+								cmd.ExecuteNonQuery();
+							}
+						}
+
+						// 5) Записываем движения товара
+						string insMov = @"INSERT INTO ДвиженияТоваров(ТоварID, СкладID, Количество, ТипДвижения, ПользовательID) VALUES(@tid, @sid, @cnt, @type, @uid)";
+						using (var cmd = new SqlCommand(insMov, conn, tran))
+						{
+							cmd.Parameters.AddWithValue("@tid", request.ProductId);
+							cmd.Parameters.AddWithValue("@sid", request.SourceWarehouseId);
+							cmd.Parameters.AddWithValue("@cnt", -request.Quantity);
+							cmd.Parameters.AddWithValue("@type", "Перемещение: Расход");
+							cmd.Parameters.AddWithValue("@uid", request.UserId);
+							cmd.ExecuteNonQuery();
+
+							cmd.Parameters["@sid"].Value = request.TargetWarehouseId;
+							cmd.Parameters["@cnt"].Value = request.Quantity;
+							cmd.Parameters["@type"].Value = "Перемещение: Приход";
+							cmd.ExecuteNonQuery();
 						}
 
 						tran.Commit();
