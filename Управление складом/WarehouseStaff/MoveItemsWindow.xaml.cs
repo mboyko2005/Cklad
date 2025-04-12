@@ -302,9 +302,30 @@ namespace УправлениеСкладом.Сотрудник_склада
 				MessageBox.Show("Склад не найден.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
 				return;
 			}
-			if (MoveItem(item.ТоварID, srcId, dstId, moveQty, GetCurrentUserID()))
+			int userID = GetCurrentUserID();
+			if (MoveItem(item.ТоварID, srcId, dstId, moveQty, userID))
 			{
 				MessageBox.Show("Товар перемещён.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+				
+				// Создаем и печатаем накладную
+				try
+				{
+					Управление_складом.Class.InvoiceGenerator invoiceGenerator = new Управление_складом.Class.InvoiceGenerator(
+						connectionString, 
+						item.ТоварID, 
+						src, 
+						dst, 
+						moveQty, 
+						userID);
+					
+					invoiceGenerator.GenerateAndPrintInvoice();
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Ошибка при печати накладной: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+				}
+				
+				// Обновляем данные
 				LoadItems();
 				ApplyFilters();
 				MoveQuantityTextBox.Clear();
