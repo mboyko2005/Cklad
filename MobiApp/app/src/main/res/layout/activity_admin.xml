@@ -7,32 +7,12 @@
     android:background="?android:attr/colorBackground"
     tools:context=".AdminActivity">
 
-    <!-- Верхняя панель в стиле темной темы -->
-    <RelativeLayout
-        android:id="@+id/topBar"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="?attr/colorSurface"
-        android:elevation="4dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:text="Склад Админ"
-            android:textColor="@color/primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-    </RelativeLayout>
-
-    <!-- Контейнер для фрагментов -->
+    <!-- Контейнер для фрагментов, теперь занимает все пространство до нижней навигации -->
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@id/bottom_navigation"
-        android:layout_below="@id/topBar" />
+        android:layout_above="@id/bottom_navigation" />
 
     <!-- Нижняя навигация (в стиле Telegram) -->
     <com.google.android.material.bottomnavigation.BottomNavigationView

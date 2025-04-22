@@ -18,6 +18,12 @@ public abstract class BaseActivity extends AppCompatActivity {
         // Применяем тему до вызова super.onCreate() и setContentView()
         applyTheme();
         
+        // Включаем полноэкранный режим для всех активностей
+        getWindow().setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
+        );
+        
         super.onCreate(savedInstanceState);
     }
 

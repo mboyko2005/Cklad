@@ -20,6 +20,9 @@
         <item name="android:navigationBarColor">@color/white</item>
         <item name="android:windowLightStatusBar">false</item>
         
+        <!-- Скрываем статус-бар для более современного вида -->
+        <item name="android:windowFullscreen">true</item>
+        
         <!-- Основные цвета компонентов -->
         <item name="android:windowBackground">@color/background_light</item>
         <item name="android:textColorPrimary">@color/text_primary</item>

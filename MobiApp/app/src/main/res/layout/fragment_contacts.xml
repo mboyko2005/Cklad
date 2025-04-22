@@ -1,17 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground">
+    android:background="?android:attr/colorBackground"
+    android:fitsSystemWindows="true">
 
+    <!-- Заголовок и поиск -->
+    <LinearLayout
+        android:id="@+id/contactsHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:elevation="4dp"
+        android:background="?android:attr/colorBackground">
+        
+        <!-- Заголовок с кнопкой сортировки -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="16dp">
+            
+            <!-- Кнопка сортировки (слева) -->
+            <TextView
+                android:id="@+id/sortButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Сортировка"
+                android:textSize="16sp"
+                android:textColor="@color/telegram_blue"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground"
+                android:padding="4dp" />
+            
+            <!-- Заголовок по центру -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Контакты"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_centerInParent="true" />
+            
+            <!-- Кнопка добавления (справа) - для будущего использования -->
+            <ImageView
+                android:id="@+id/addContactButton"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/ic_add"
+                android:tint="@color/telegram_blue"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="2dp"
+                android:contentDescription="Добавить контакт"
+                android:visibility="invisible" />
+        </RelativeLayout>
+            
+        <!-- Панель сортировки (скрыта по умолчанию) -->
+        <ViewStub
+            android:id="@+id/sortPanelStub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginBottom="8dp"
+            android:layout="@layout/sort_panel"
+            android:visibility="gone" />
+            
+        <!-- Поле поиска -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="?attr/colorSurface">
+            
+            <EditText
+                android:id="@+id/searchInput"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@null"
+                android:hint="Поиск"
+                android:textSize="16sp"
+                android:textColorHint="?android:attr/textColorSecondary"
+                android:textColor="?android:attr/textColorPrimary"
+                android:paddingHorizontal="16dp"
+                android:inputType="text"
+                android:maxLines="1"
+                android:imeOptions="actionSearch"
+                android:drawableStart="@drawable/ic_search"
+                android:drawablePadding="8dp"/>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+    
+    <!-- Список контактов -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/contactsRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/contactsHeader"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="4dp"
+        android:clipToPadding="false"
+        android:layoutAnimation="@anim/layout_animation_from_right"
+        android:overScrollMode="never"
+        android:visibility="gone"
+        tools:visibility="visible"
+        tools:listitem="@layout/item_contact"/>
+        
+    <!-- Индикатор загрузки с красивой анимацией пульсации -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_centerInParent="true"
+        android:indeterminateTint="@color/telegram_blue"
+        android:indeterminateTintMode="src_in"
+        android:visibility="visible"/>
+        
+    <!-- Пустой список с анимацией появления -->
     <TextView
+        android:id="@+id/emptyView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:text="Контакты"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="?android:attr/textColorPrimary" />
+        android:text="Не найдено контактов"
+        android:textSize="16sp"
+        android:alpha="0.8"
+        android:textColor="?android:attr/textColorSecondary"
+        android:drawableTop="@drawable/ic_contacts_empty"
+        android:drawablePadding="16dp"
+        android:visibility="gone"/>
 
 </RelativeLayout> 

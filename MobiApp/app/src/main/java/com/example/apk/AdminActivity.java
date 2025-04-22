@@ -24,6 +24,12 @@ public class AdminActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin);
 
+        // Скрываем статус-бар программно для полного эффекта
+        getWindow().setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
+        );
+
         // Инициализация менеджера сессий
         sessionManager = new SessionManager(this);
         

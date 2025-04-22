@@ -2,92 +2,91 @@
 <animation-list xmlns:android="http://schemas.android.com/apk/res/android"
     android:oneshot="false">
     
-    <item android:duration="800">
-        <shape android:shape="rectangle">
+    <item android:duration="2500">
+        <shape>
             <gradient
-                android:angle="135"
-                android:startColor="#3F51B5"
-                android:centerColor="#5677FC"
-                android:endColor="#2196F3"
-                android:type="linear" />
+                android:startColor="@color/telegram_blue"
+                android:endColor="@color/telegram_purple"
+                android:type="linear"
+                android:angle="45" />
         </shape>
     </item>
     
-    <item android:duration="800">
-        <shape android:shape="rectangle">
+    <item android:duration="2500">
+        <shape>
             <gradient
-                android:angle="180"
-                android:startColor="#3F51B5"
-                android:centerColor="#2196F3"
-                android:endColor="#00B0FF"
-                android:type="linear" />
+                android:startColor="@color/telegram_blue"
+                android:centerColor="@color/telegram_purple"
+                android:endColor="@color/telegram_pink"
+                android:type="linear"
+                android:centerX="0.35"
+                android:angle="90" />
         </shape>
     </item>
     
-    <item android:duration="800">
-        <shape android:shape="rectangle">
+    <item android:duration="2500">
+        <shape>
             <gradient
-                android:angle="225"
-                android:startColor="#2196F3"
-                android:centerColor="#00B0FF"
-                android:endColor="#00D2FF"
-                android:type="linear" />
+                android:startColor="@color/telegram_purple"
+                android:endColor="@color/telegram_pink"
+                android:type="linear"
+                android:angle="135" />
         </shape>
     </item>
     
-    <item android:duration="800">
-        <shape android:shape="rectangle">
+    <item android:duration="2500">
+        <shape>
             <gradient
-                android:angle="270"
-                android:startColor="#00B0FF"
-                android:centerColor="#00D2FF"
-                android:endColor="#3F51B5"
-                android:type="linear" />
+                android:startColor="@color/telegram_pink"
+                android:centerColor="@color/telegram_red"
+                android:endColor="@color/telegram_orange"
+                android:type="linear"
+                android:centerX="0.6"
+                android:angle="180" />
         </shape>
     </item>
     
-    <item android:duration="800">
-        <shape android:shape="rectangle">
+    <item android:duration="2500">
+        <shape>
             <gradient
-                android:angle="315"
-                android:startColor="#00D2FF"
-                android:centerColor="#3F51B5"
-                android:endColor="#5677FC"
-                android:type="linear" />
+                android:startColor="@color/telegram_red"
+                android:endColor="@color/telegram_orange"
+                android:type="linear"
+                android:angle="225" />
         </shape>
     </item>
     
-    <item android:duration="800">
-        <shape android:shape="rectangle">
+    <item android:duration="2500">
+        <shape>
             <gradient
-                android:angle="0"
-                android:startColor="#3F51B5"
-                android:centerColor="#5677FC"
-                android:endColor="#00B0FF"
-                android:type="linear" />
+                android:startColor="@color/telegram_orange"
+                android:centerColor="@color/telegram_green"
+                android:endColor="@color/telegram_blue"
+                android:type="linear"
+                android:centerX="0.4"
+                android:angle="270" />
         </shape>
     </item>
     
-    <item android:duration="800">
-        <shape android:shape="rectangle">
+    <item android:duration="2500">
+        <shape>
             <gradient
-                android:angle="45"
-                android:startColor="#5677FC"
-                android:centerColor="#00B0FF"
-                android:endColor="#3F51B5"
-                android:type="linear" />
+                android:startColor="@color/telegram_green"
+                android:endColor="@color/telegram_blue"
+                android:type="linear"
+                android:angle="315" />
         </shape>
     </item>
     
-    <item android:duration="800">
-        <shape android:shape="rectangle">
+    <item android:duration="2500">
+        <shape>
             <gradient
-                android:angle="90"
-                android:startColor="#00B0FF"
-                android:centerColor="#3F51B5"
-                android:endColor="#5677FC"
-                android:type="linear" />
+                android:startColor="@color/telegram_green"
+                android:centerColor="@color/telegram_blue"
+                android:endColor="@color/telegram_purple"
+                android:type="linear"
+                android:centerX="0.25"
+                android:angle="0" />
         </shape>
     </item>
-    
 </animation-list> 
