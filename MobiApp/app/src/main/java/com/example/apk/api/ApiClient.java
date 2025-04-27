@@ -14,7 +14,7 @@ public class ApiClient {
     
     // Базовый URL API - совпадает с tunnelURL из WPF-приложения
     // Настраивается в App.xaml.cs в WPF проекте, константа Subdomain
-    private static final String BASE_URL = "https://ckladtestt.loca.lt/";
+    public static final String BASE_URL = "https://ckladtestt.loca.lt/";
     
     private static Retrofit retrofit = null;
     private static ApiService apiService = null;

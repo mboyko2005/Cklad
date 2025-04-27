@@ -2,6 +2,7 @@ package com.example.apk.api;
 
 import java.util.List;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
@@ -10,6 +11,12 @@ import retrofit2.http.Header;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
+import retrofit2.http.Url;
+
+import com.example.apk.models.UserIdResponse;
+import com.example.apk.api.MessageResponse;
+import com.example.apk.api.MessagesResponse;
 
 /**
  * Интерфейс для API запросов
@@ -141,4 +148,39 @@ public interface ApiService {
      */
     @POST("api/settings/theme")
     Call<SettingsResponse> saveTheme(@Header("Authorization") String token, @Body ThemeRequest request);
+
+    /**
+     * Получение ID пользователя по логину
+     */
+    @GET("api/User/getUserIdByLogin/{login}")
+    Call<UserIdResponse> getUserIdByLogin(@Path("login") String login);
+
+    /**
+     * Получение всех сообщений пользователя
+     */
+    @GET("api/Message/messages/{userId}")
+    Call<MessagesResponse> getMessages(@Path("userId") int userId);
+
+    /**
+     * Получение переписки между двумя пользователями
+     */
+    @GET("api/Message/conversation/{userId}/{contactId}")
+    Call<MessagesResponse> getConversation(
+        @Path("userId") int userId,
+        @Path("contactId") int contactId
+    );
+
+    /**
+     * Отправить новое сообщение
+     */
+    @POST("api/Message/send")
+    Call<SendMessageResponse> sendMessage(@Body SendMessageRequest request);
+
+    /**
+     * Скачивает файл по указанному URL
+     * @param fileUrl URL файла для скачивания
+     * @return ResponseBody содержащий тело ответа с файлом
+     */
+    @GET
+    Call<ResponseBody> downloadFile(@Url String fileUrl);
 }

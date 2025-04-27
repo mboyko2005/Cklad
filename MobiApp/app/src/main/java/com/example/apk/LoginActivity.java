@@ -21,6 +21,7 @@ import com.example.apk.api.ApiClient;
 import com.example.apk.api.AuthRequest;
 import com.example.apk.api.AuthResponse;
 import com.example.apk.models.User;
+import com.example.apk.models.UserIdResponse;
 import com.example.apk.utils.BaseActivity;
 import com.example.apk.utils.SessionManager;
 import com.google.android.material.button.MaterialButton;
@@ -176,6 +177,9 @@ public class LoginActivity extends BaseActivity {
                     // Сохраняем данные сессии
                     User user = new User(username, authResponse.getRole(), authResponse.getToken());
                     sessionManager.createLoginSession(user);
+
+                    // Получаем и сохраняем ID пользователя
+                    fetchAndStoreUserId(username);
                     
                     // Сохраняем учетные данные, если выбрано "Запомнить меня"
                     if (rememberMeCheckBox.isChecked()) {
@@ -212,6 +216,47 @@ public class LoginActivity extends BaseActivity {
                 errorTextView.setText(R.string.connection_error);
                 errorTextView.setVisibility(View.VISIBLE);
                 errorTextView.startAnimation(shakeAnimation);
+            }
+        });
+    }
+
+    /**
+     * Получает и сохраняет ID пользователя по его логину.
+     */
+    private void fetchAndStoreUserId(String username) {
+        // Выполняем запрос к API для получения ID
+        // Используем ApiClient, который уже настроен
+        ApiClient.getApiService().getUserIdByLogin(username).enqueue(new Callback<UserIdResponse>() {
+            @Override
+            public void onResponse(Call<UserIdResponse> call, Response<UserIdResponse> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    int userId = response.body().getUserId();
+                    
+                    // Сохраняем userId в SharedPreferences (можно использовать отдельный файл или SessionManager)
+                    SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putInt("userId", userId);
+                    editor.apply();
+                    
+                    // Показываем уведомление об успешном сохранении ID
+                    Toast.makeText(LoginActivity.this, "ID пользователя " + userId + " сохранен", Toast.LENGTH_SHORT).show();
+                    
+                } else {
+                    // Ошибка получения ID от сервера
+                    String errorMessage = "Не удалось получить ID пользователя.";
+                    if (response != null && response.body() != null && response.body().getMessage() != null) {
+                        errorMessage += " Причина: " + response.body().getMessage();
+                    } else if(response != null) {
+                        errorMessage += " Код ошибки: " + response.code();
+                    }
+                    Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserIdResponse> call, Throwable t) {
+                // Ошибка сети или другая проблема при выполнении запроса
+                Toast.makeText(LoginActivity.this, "Ошибка сети при получении ID: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }

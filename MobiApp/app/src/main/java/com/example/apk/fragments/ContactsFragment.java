@@ -56,6 +56,9 @@ public class ContactsFragment extends Fragment {
     
     private List<UserData> contacts = new ArrayList<>();
 
+    // Хранение вызовов Retrofit для возможности их отмены
+    private Call<List<UserResponse>> contactsCall;
+
     public ContactsFragment() {
         // Пустой конструктор
     }
@@ -116,6 +119,15 @@ public class ContactsFragment extends Fragment {
         emptyView = view.findViewById(R.id.emptyView);
     }
     
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // Отменяем запросы при уничтожении фрагмента
+        if (contactsCall != null) {
+            contactsCall.cancel();
+        }
+    }
+
     /**
      * Загрузка списка контактов (пользователей) с сервера
      */
@@ -125,9 +137,20 @@ public class ContactsFragment extends Fragment {
         String token = "Bearer " + sessionManager.getToken();
         Log.d(TAG, "Загрузка контактов, токен: " + token);
         
-        apiService.getUsers(token).enqueue(new Callback<List<UserResponse>>() {
+        // Отменяем предыдущий запрос, если он был
+        if (contactsCall != null) {
+            contactsCall.cancel();
+        }
+        
+        contactsCall = apiService.getUsers(token);
+        contactsCall.enqueue(new Callback<List<UserResponse>>() {
             @Override
             public void onResponse(Call<List<UserResponse>> call, Response<List<UserResponse>> response) {
+                // Проверяем, прикреплен ли еще фрагмент
+                if (!isAdded()) {
+                    return;
+                }
+                
                 showLoading(false);
                 
                 if (response.isSuccessful() && response.body() != null) {
@@ -154,14 +177,27 @@ public class ContactsFragment extends Fragment {
                          "Код ответа: " + response.code());
                     Log.e(TAG, errorMessage);
                     
-                    Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                    if (isAdded()) {
+                        Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                    }
                     updateEmptyView();
                 }
             }
 
             @Override
             public void onFailure(Call<List<UserResponse>> call, Throwable t) {
+                // Проверяем, прикреплен ли еще фрагмент
+                if (!isAdded()) {
+                    return;
+                }
+                
                 showLoading(false);
+                
+                // Не показываем ошибку, если запрос был отменен
+                if (call.isCanceled()) {
+                    return;
+                }
+                
                 String errorMessage = "Ошибка сети: " + t.getMessage();
                 Log.e(TAG, errorMessage, t);
                 Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show();
@@ -171,6 +207,11 @@ public class ContactsFragment extends Fragment {
     }
     
     private void showLoading(boolean isLoading) {
+        // Проверяем, прикреплен ли фрагмент к контексту
+        if (!isAdded()) {
+            return;
+        }
+        
         if (isLoading) {
             progressBar.setVisibility(View.VISIBLE);
             contactsRecyclerView.setVisibility(View.GONE);
@@ -193,6 +234,11 @@ public class ContactsFragment extends Fragment {
     }
     
     private void updateEmptyView() {
+        // Проверяем, прикреплен ли фрагмент к контексту
+        if (!isAdded()) {
+            return;
+        }
+        
         if (contacts.isEmpty()) {
             emptyView.setVisibility(View.VISIBLE);
             contactsRecyclerView.setVisibility(View.GONE);

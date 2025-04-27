@@ -1,6 +1,7 @@
 package com.example.apk;
 
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.fragment.app.Fragment;
 
@@ -70,5 +71,14 @@ public class AdminActivity extends BaseActivity {
         
         // Выбираем пункт "Чаты" в меню
         bottomNavigationView.setSelectedItemId(R.id.nav_chats);
+
+        // Слушатель стека фрагментов для скрытия/показа нижней навигации
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                bottomNavigationView.setVisibility(View.GONE);
+            } else {
+                bottomNavigationView.setVisibility(View.VISIBLE);
+            }
+        });
     }
 } 
