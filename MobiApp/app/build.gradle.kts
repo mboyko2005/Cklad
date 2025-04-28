@@ -65,6 +65,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-livedata:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime:2.7.0")
     
+    // Библиотека для поддержки GIF изображений
+    implementation("pl.droidsonroids.gif:android-gif-drawable:1.2.28")
+    
     // Библиотеки для тестирования
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

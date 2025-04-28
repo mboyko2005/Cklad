@@ -16,6 +16,7 @@ public class ChatItem {
     private String lastMessage;
     private long lastMessageTimestamp;
     private boolean isNew;
+    private int unreadCount;
 
     public ChatItem(String chatId, String chatName, String lastMessage) {
         this.chatId = chatId;
@@ -23,6 +24,7 @@ public class ChatItem {
         this.lastMessage = lastMessage;
         this.lastMessageTimestamp = System.currentTimeMillis();
         this.isNew = false;
+        this.unreadCount = 0;
     }
 
     @NonNull
@@ -64,6 +66,14 @@ public class ChatItem {
     
     public void setNew(boolean isNew) {
         this.isNew = isNew;
+    }
+    
+    public int getUnreadCount() {
+        return unreadCount;
+    }
+    
+    public void setUnreadCount(int unreadCount) {
+        this.unreadCount = unreadCount;
     }
     
     @Override

@@ -129,6 +129,17 @@ public class ChatRepository {
                                         long timestamp = parseTimestamp(msg.getTimestamp());
                                         chat.setLastMessageTimestamp(timestamp);
                                         
+                                        // Подсчитываем количество непрочитанных сообщений
+                                        int unreadCount = 0;
+                                        for (MessageResponse message : messages) {
+                                            if (message.getSenderId() == partnerId && 
+                                                message.getReceiverId() == userId && 
+                                                !message.isRead()) {
+                                                unreadCount++;
+                                            }
+                                        }
+                                        chat.setUnreadCount(unreadCount);
+                                        
                                         serverChats.add(chat);
                                     }
 
@@ -247,6 +258,17 @@ public class ChatRepository {
                                     // Устанавливаем timestamp из сообщения
                                     long timestamp = parseTimestamp(msg.getTimestamp());
                                     chat.setLastMessageTimestamp(timestamp);
+                                    
+                                    // Подсчитываем количество непрочитанных сообщений
+                                    int unreadCount = 0;
+                                    for (MessageResponse message : messages) {
+                                        if (message.getSenderId() == partnerId && 
+                                            message.getReceiverId() == userId && 
+                                            !message.isRead()) {
+                                            unreadCount++;
+                                        }
+                                    }
+                                    chat.setUnreadCount(unreadCount);
                                     
                                     chatItems.add(chat);
                                 }

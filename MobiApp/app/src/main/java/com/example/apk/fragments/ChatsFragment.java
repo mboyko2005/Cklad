@@ -30,6 +30,10 @@ import com.example.apk.viewmodels.ChatViewModel;
 import java.util.ArrayList;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 /**
  * Фрагмент для отображения чатов
  */
@@ -44,7 +48,7 @@ public class ChatsFragment extends Fragment {
     private LinearLayout loadingLayout;
     
     // Интервал проверки новых чатов (в миллисекундах)
-    private static final long CHECK_INTERVAL = 30000; // 30 секунд
+    private static final long CHECK_INTERVAL = 2000; // 2 секунды вместо 15
     private Handler handler;
     private Runnable checkRunnable;
     private int userId;
@@ -83,6 +87,9 @@ public class ChatsFragment extends Fragment {
         chatsTitleView = view.findViewById(R.id.chats_title);
         loadingLayout = view.findViewById(R.id.loading_layout);
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout);
+        
+        // Настройка поиска
+        setupSearchView(view);
         
         // Настройка RecyclerView и адаптера
         recyclerViewChats = view.findViewById(R.id.recycler_view_chats);
@@ -159,8 +166,12 @@ public class ChatsFragment extends Fragment {
         // Запускаем периодическую проверку
         handler.postDelayed(checkRunnable, CHECK_INTERVAL);
         
-        // Удаляем вызов проверки при каждом возврате к фрагменту
-        // Теперь проверка будет происходить только по таймеру
+        // Добавляем обновление списка чатов при возвращении к фрагменту
+        if (!isFirstLoad && userId > 0) {
+            // Обновляем список чатов
+            chatViewModel.refreshChats(userId);
+        }
+        isFirstLoad = false;
     }
     
     @Override
@@ -193,18 +204,98 @@ public class ChatsFragment extends Fragment {
         
         if (isFirstLoad) {
             // При первом запуске просто запускаем обновление с сервера
-            // или используем LiveData из ViewModel, которая уже работает асинхронно
             isFirstLoad = false;
             
-            // Показываем данные из кэша через LiveData (работает асинхронно)
-            // Проверяем наличие данных через обсервер
-            chatViewModel.getAllChats().observe(getViewLifecycleOwner(), chats -> {
-                if (chats == null || chats.isEmpty()) {
-                    // Если кэш пуст, запускаем обновление с сервера
-                    chatViewModel.refreshChats(userId);
+            // Принудительно запускаем обновление с сервера
+            chatViewModel.refreshChats(userId);
+            
+            // Добавляем таймаут на случай, если обновление зависнет
+            handler.postDelayed(() -> {
+                if (isAdded() && swipeRefreshLayout.isRefreshing()) {
+                    swipeRefreshLayout.setRefreshing(false);
+                    updateTitleVisibility(false);
+                    
+                    // Проверяем, есть ли уже данные
+                    chatViewModel.getAllChats().observe(getViewLifecycleOwner(), chats -> {
+                        if (chats == null || chats.isEmpty()) {
+                            // Если после таймаута данных всё еще нет, показываем сообщение
+                            Toast.makeText(requireContext(), "Не удалось загрузить чаты. Попробуйте снова.", 
+                                           Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }, 10000); // 10 секунд таймаут
+        }
+    }
+
+    /**
+     * Настраивает SearchView
+     */
+    private void setupSearchView(View view) {
+        com.example.apk.views.CenteredSearchView searchView = view.findViewById(R.id.search_view);
+        if (searchView != null) {
+            // Настройка внешнего вида
+            searchView.setIconifiedByDefault(false);
+            searchView.setSubmitButtonEnabled(false);
+            
+            // Прозрачный фон для текстового поля
+            int searchPlateId = searchView.getContext().getResources().getIdentifier(
+                    "android:id/search_plate", null, null);
+            View searchPlate = searchView.findViewById(searchPlateId);
+            if (searchPlate != null) {
+                searchPlate.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+            }
+            
+            // Обработчик поиска
+            searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    // Обрабатываем поиск при нажатии кнопки поиска
+                    return true;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    // Фильтруем список чатов при вводе текста
+                    if (chatAdapter != null) {
+                        chatAdapter.filter(newText);
+                    }
+                    return true;
                 }
             });
         }
-        // Проверка обновлений будет происходить автоматически по таймеру
+    }
+    
+    /**
+     * Фильтрует список чатов по поисковому запросу
+     * @param query текст для поиска
+     */
+    private void filterChats(String query) {
+        if (query == null || query.isEmpty()) {
+            // Если запрос пустой, возвращаем полный список чатов
+            chatViewModel.getAllChats().observe(getViewLifecycleOwner(), chatItems -> {
+                if (chatItems != null && !chatItems.isEmpty()) {
+                    chatAdapter.updateChats(chatItems);
+                }
+            });
+        } else {
+            // Если есть запрос, фильтруем список
+            chatViewModel.getAllChats().observe(getViewLifecycleOwner(), chatItems -> {
+                if (chatItems != null && !chatItems.isEmpty()) {
+                    List<ChatItem> filteredList = new ArrayList<>();
+                    String lowerCaseQuery = query.toLowerCase();
+                    
+                    for (ChatItem item : chatItems) {
+                        // Проверяем совпадение по имени чата или тексту последнего сообщения
+                        if (item.getChatName().toLowerCase().contains(lowerCaseQuery) || 
+                            item.getLastMessage().toLowerCase().contains(lowerCaseQuery)) {
+                            filteredList.add(item);
+                        }
+                    }
+                    
+                    chatAdapter.updateChats(filteredList);
+                }
+            });
+        }
     }
 } 

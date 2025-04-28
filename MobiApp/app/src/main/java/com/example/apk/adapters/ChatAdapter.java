@@ -21,12 +21,14 @@ import java.util.Random;
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
     private final Context context;
     private List<ChatItem> chatList;
+    private List<ChatItem> fullChatList; // Полный список для фильтрации
     private final Random random = new Random();
     private OnChatClickListener clickListener;
 
     public ChatAdapter(Context context, List<ChatItem> chatList) {
         this.context = context;
         this.chatList = new ArrayList<>(chatList);
+        this.fullChatList = new ArrayList<>(chatList);
     }
 
     /**
@@ -66,6 +68,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             }
         }
 
+        // Отображение счетчика непрочитанных сообщений
+        if (item.getUnreadCount() > 0) {
+            holder.unreadCountTextView.setVisibility(View.VISIBLE);
+            holder.unreadCountTextView.setText(String.valueOf(item.getUnreadCount()));
+        } else {
+            holder.unreadCountTextView.setVisibility(View.GONE);
+        }
+
         // Обработка клика по элементу
         holder.itemView.setOnClickListener(v -> {
             if (clickListener != null) {
@@ -89,6 +99,30 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
      */
     public void updateChats(List<ChatItem> chats) {
         this.chatList = new ArrayList<>(chats);
+        this.fullChatList = new ArrayList<>(chats);
+        notifyDataSetChanged();
+    }
+
+    /**
+     * Фильтрация чатов по поисковому запросу
+     * @param query запрос для поиска
+     */
+    public void filter(String query) {
+        if (query == null || query.isEmpty()) {
+            // Если запрос пустой, восстанавливаем полный список
+            chatList = new ArrayList<>(fullChatList);
+        } else {
+            String lowerCaseQuery = query.toLowerCase();
+            chatList = new ArrayList<>();
+            
+            for (ChatItem item : fullChatList) {
+                // Ищем по имени чата и последнему сообщению
+                if (item.getChatName().toLowerCase().contains(lowerCaseQuery) || 
+                    item.getLastMessage().toLowerCase().contains(lowerCaseQuery)) {
+                    chatList.add(item);
+                }
+            }
+        }
         notifyDataSetChanged();
     }
 
@@ -97,6 +131,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         TextView lastMessage;
         ImageView avatarBackground;
         TextView avatarText;
+        TextView unreadCountTextView;
 
         ChatViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -104,6 +139,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             lastMessage = itemView.findViewById(R.id.last_message);
             avatarBackground = itemView.findViewById(R.id.avatarBackground);
             avatarText = itemView.findViewById(R.id.avatarText);
+            unreadCountTextView = itemView.findViewById(R.id.unreadCountTextView);
         }
     }
 

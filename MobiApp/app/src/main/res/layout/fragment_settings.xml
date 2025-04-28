@@ -185,7 +185,8 @@
                 android:orientation="horizontal"
                 android:padding="16dp"
                 android:gravity="center_vertical"
-                android:elevation="2dp">
+                android:elevation="2dp"
+                android:layout_marginBottom="16dp">
 
                 <ImageView
                     android:layout_width="24dp"
@@ -207,6 +208,107 @@
                     android:layout_height="24dp"
                     android:src="@drawable/ic_arrow_right" 
                     app:tint="?android:attr/textColorPrimary" />
+            </LinearLayout>
+
+            <!-- Раздел очистки кэша -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="8dp"
+                android:text="Данные приложения"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="16sp" />
+
+            <!-- Блок очистки кэша -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/colorSurface"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:elevation="2dp"
+                android:layout_marginBottom="16dp">
+                
+                <!-- Заголовок и размер кэша -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+                    
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_storage"
+                        app:tint="?android:attr/textColorPrimary" />
+                    
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_weight="1"
+                        android:text="Кэш приложения"
+                        android:textColor="?android:attr/textColorPrimary"
+                        android:textSize="16sp" />
+                        
+                    <TextView
+                        android:id="@+id/cache_size_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0 Мб"
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:textSize="14sp" />
+                </LinearLayout>
+                
+                <!-- Кнопка очистки кэша -->
+                <Button
+                    android:id="@+id/clear_cache_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Очистить кэш"
+                    android:textColor="@color/white"
+                    android:backgroundTint="?attr/colorPrimary" />
+                
+                <!-- Контейнер для анимации очистки -->
+                <FrameLayout
+                    android:id="@+id/cache_cleaning_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone">
+                    
+                    <!-- GIF анимация уточки -->
+                    <pl.droidsonroids.gif.GifImageView
+                        android:id="@+id/duck_animation"
+                        android:layout_width="100dp"
+                        android:layout_height="100dp"
+                        android:layout_gravity="center_horizontal"
+                        android:src="@drawable/utyatelegram"
+                        android:visibility="visible" />
+                    
+                    <!-- Прогресс-бар -->
+                    <ProgressBar
+                        android:id="@+id/cache_progress_bar"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom"
+                        android:layout_marginTop="16dp"
+                        android:max="100"
+                        android:progress="0" />
+                    
+                    <!-- Текст с процентом очистки -->
+                    <TextView
+                        android:id="@+id/cleaning_progress_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|center_horizontal"
+                        android:layout_marginTop="4dp"
+                        android:text="0%"
+                        android:textColor="?android:attr/textColorPrimary"
+                        android:textSize="14sp" />
+                </FrameLayout>
             </LinearLayout>
 
             <!-- Разделитель -->

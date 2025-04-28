@@ -98,14 +98,21 @@
 
 
         <!-- Search Bar -->
-        <androidx.appcompat.widget.SearchView
+        <com.example.apk.views.CenteredSearchView
             android:id="@+id/search_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
-            app:iconifiedByDefault="false"
+            app:iconifiedByDefault="true"
             app:queryHint="Поиск"
-            android:background="@drawable/search_view_bg" />  <!-- Need to create search_view_bg.xml -->
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary"
+            app:queryBackground="@android:color/transparent"
+            app:searchIcon="@drawable/ic_search"
+            app:closeIcon="@drawable/ic_clear"
+            app:searchHintIcon="@null"
+            android:background="@drawable/search_view_bg">
+        </com.example.apk.views.CenteredSearchView>
 
 
         <!-- Tabs -->

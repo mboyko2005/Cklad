@@ -177,6 +177,15 @@ public interface ApiService {
     Call<SendMessageResponse> sendMessage(@Body SendMessageRequest request);
 
     /**
+     * Отметить сообщения как прочитанные
+     */
+    @POST("api/Message/read/{userId}/{contactId}")
+    Call<Object> markMessagesAsRead(
+        @Path("userId") int userId,
+        @Path("contactId") int contactId
+    );
+
+    /**
      * Скачивает файл по указанному URL
      * @param fileUrl URL файла для скачивания
      * @return ResponseBody содержащий тело ответа с файлом

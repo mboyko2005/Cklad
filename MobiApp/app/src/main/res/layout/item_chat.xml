@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:padding="12dp">
@@ -59,5 +60,25 @@
         app:layout_constraintStart_toStartOf="@id/chat_name"
         app:layout_constraintTop_toBottomOf="@id/chat_name"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/unreadCountTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/bg_unread_count"
+        android:gravity="center"
+        android:minWidth="24dp"
+        android:minHeight="24dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/last_message"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/last_message"
+        tools:text="3"
+        tools:visibility="visible" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

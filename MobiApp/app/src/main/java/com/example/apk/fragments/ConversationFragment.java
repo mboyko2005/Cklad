@@ -5,10 +5,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -52,6 +59,8 @@ public class ConversationFragment extends Fragment {
     private static final String ARG_CHAT_NAME = "chatName";
     private static final int PERMISSION_REQUEST_CODE = 1001;
     private static final int MANAGE_STORAGE_PERMISSION_REQUEST = 1002;
+    // Интервал обновления чата (1 секунда вместо 10 секунд)
+    private static final long MESSAGE_UPDATE_INTERVAL = 1000;
 
     private int partnerId;
     private String chatName;
@@ -60,6 +69,11 @@ public class ConversationFragment extends Fragment {
     private SessionManager sessionManager;
     private RecyclerView recyclerView;
     private ConversationAdapter adapter;
+    
+    // Для периодического обновления сообщений
+    private Handler handler;
+    private Runnable updateRunnable;
+    private boolean isAutoUpdateEnabled = true;
 
     public static ConversationFragment newInstance(int partnerId, String chatName) {
         ConversationFragment fragment = new ConversationFragment();
@@ -186,6 +200,9 @@ public class ConversationFragment extends Fragment {
         recyclerView.setAdapter(adapter);
 
         loadConversation();
+        
+        // Настройка периодического обновления
+        setupMessageUpdates();
 
         // Обработчик кнопки отправки
         ImageView sendButton = view.findViewById(R.id.send_button);
@@ -219,15 +236,86 @@ public class ConversationFragment extends Fragment {
                             current.add(newMsg);
                             adapter.setMessages(current);
                             recyclerView.scrollToPosition(current.size() - 1);
+                            
+                            // Обновляем и последний список сообщений
+                            loadConversation();
                         }
                     }
 
                     @Override
                     public void onFailure(Call<SendMessageResponse> call, Throwable t) {
-                        // TODO: показать ошибку
+                        Toast.makeText(requireContext(), "Ошибка отправки: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
         });
+        
+        // Настройка кнопки прикрепления файлов
+        ImageView attachButton = view.findViewById(R.id.attach);
+        if (attachButton != null) {
+            attachButton.setOnClickListener(v -> {
+                // Логика для прикрепления файлов
+                Toast.makeText(requireContext(), "Прикрепление файлов", Toast.LENGTH_SHORT).show();
+            });
+        }
+    }
+    
+    /**
+     * Настройка периодического обновления сообщений
+     */
+    private void setupMessageUpdates() {
+        handler = new Handler(Looper.getMainLooper());
+        updateRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isAdded() && isAutoUpdateEnabled) {
+                    loadConversation();
+                    // Планируем следующее обновление
+                    handler.postDelayed(this, MESSAGE_UPDATE_INTERVAL);
+                }
+            }
+        };
+    }
+    
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Запускаем периодическое обновление
+        isAutoUpdateEnabled = true;
+        handler.postDelayed(updateRunnable, MESSAGE_UPDATE_INTERVAL);
+        
+        // Обновляем переписку при возврате к фрагменту
+        loadConversation();
+        
+        // Отмечаем сообщения как прочитанные
+        markMessagesAsRead();
+    }
+    
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Останавливаем периодическое обновление
+        isAutoUpdateEnabled = false;
+        handler.removeCallbacks(updateRunnable);
+    }
+    
+    /**
+     * Отмечает сообщения как прочитанные
+     */
+    private void markMessagesAsRead() {
+        ApiClient.getApiService()
+                .markMessagesAsRead(userId, partnerId)
+                .enqueue(new Callback<Object>() {
+                    @Override
+                    public void onResponse(Call<Object> call, Response<Object> response) {
+                        // Обновляем список сообщений после отметки
+                        loadConversation();
+                    }
+
+                    @Override
+                    public void onFailure(Call<Object> call, Throwable t) {
+                        // Игнорируем ошибку
+                    }
+                });
     }
 
     /**
@@ -243,18 +331,64 @@ public class ConversationFragment extends Fragment {
                         if (response.isSuccessful() && response.body() != null
                                 && response.body().isSuccess()) {
                             List<MessageResponse> msgs = response.body().getMessages();
-                            adapter.setMessages(msgs);
-                            // Прокрутка в конец
-                            if (!msgs.isEmpty()) {
-                                recyclerView.scrollToPosition(msgs.size() - 1);
+                            List<MessageResponse> currentMsgs = adapter.getMessages();
+                            
+                            // Проверяем, изменились ли сообщения
+                            boolean shouldUpdate = currentMsgs.size() != msgs.size();
+                            
+                            // Если количество одинаковое, проверяем ID последнего сообщения
+                            if (!shouldUpdate && !msgs.isEmpty() && !currentMsgs.isEmpty()) {
+                                MessageResponse lastNew = msgs.get(msgs.size() - 1);
+                                MessageResponse lastCurrent = currentMsgs.get(currentMsgs.size() - 1);
+                                shouldUpdate = lastNew.getMessageId() != lastCurrent.getMessageId();
+                            }
+                            
+                            if (shouldUpdate) {
+                                // Если добавлены новые сообщения - воспроизводим звук уведомления
+                                if (currentMsgs.size() > 0 && msgs.size() > currentMsgs.size()) {
+                                    playNotificationSound();
+                                }
+                                
+                                adapter.setMessages(msgs);
+                                // Прокрутка в конец
+                                if (!msgs.isEmpty()) {
+                                    recyclerView.scrollToPosition(msgs.size() - 1);
+                                }
+                                
+                                // Отмечаем сообщения как прочитанные
+                                markMessagesAsRead();
                             }
                         }
                     }
 
                     @Override
                     public void onFailure(Call<MessagesResponse> call, Throwable t) {
-                        // TODO: обработка ошибки
+                        Toast.makeText(requireContext(), "Ошибка загрузки сообщений", Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+    
+    /**
+     * Воспроизводит звук уведомления о новом сообщении
+     */
+    private void playNotificationSound() {
+        try {
+            // Используем стандартный звук уведомления
+            Uri notificationSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            Ringtone r = RingtoneManager.getRingtone(requireContext(), notificationSound);
+            r.play();
+            
+            // Также добавляем вибрацию для лучшего оповещения
+            Vibrator vibrator = (Vibrator) requireContext().getSystemService(Context.VIBRATOR_SERVICE);
+            if (vibrator != null && vibrator.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE));
+                } else {
+                    vibrator.vibrate(100);
+                }
+            }
+        } catch (Exception e) {
+            // Игнорируем ошибки воспроизведения звука
+        }
     }
 } 
