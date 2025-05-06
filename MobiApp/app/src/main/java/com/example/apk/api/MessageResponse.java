@@ -1,6 +1,8 @@
 package com.example.apk.api;
 
 import com.google.gson.annotations.SerializedName;
+import android.net.Uri;
+import android.graphics.Bitmap;
 
 public class MessageResponse {
     @SerializedName("messageId")
@@ -23,6 +25,12 @@ public class MessageResponse {
 
     @SerializedName("hasAttachment")
     private boolean hasAttachment;
+
+    @SerializedName("type")
+    private String attachmentType;
+
+    private transient Uri localAttachmentUri = null;
+    private transient Bitmap editedBitmap = null;
 
     public int getMessageId() {
         return messageId;
@@ -50,5 +58,33 @@ public class MessageResponse {
 
     public boolean hasAttachment() {
         return hasAttachment;
+    }
+    
+    public String getAttachmentType() {
+        return attachmentType;
+    }
+    
+    public void setAttachmentType(String attachmentType) {
+        this.attachmentType = attachmentType;
+    }
+
+    public Uri getLocalAttachmentUri() {
+        return localAttachmentUri;
+    }
+
+    public void setLocalAttachmentUri(Uri localAttachmentUri) {
+        this.localAttachmentUri = localAttachmentUri;
+    }
+
+    public void setHasAttachment(boolean hasAttachment) {
+        this.hasAttachment = hasAttachment;
+    }
+
+    public Bitmap getEditedBitmap() {
+        return editedBitmap;
+    }
+
+    public void setEditedBitmap(Bitmap editedBitmap) {
+        this.editedBitmap = editedBitmap;
     }
 } 

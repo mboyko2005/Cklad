@@ -7,14 +7,29 @@
     android:padding="4dp"
     android:gravity="start">
 
-    <!-- Изображение вложения -->
-    <ImageView
-        android:id="@+id/message_image"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:scaleType="centerCrop"
-        android:visibility="gone"
-        android:layout_marginBottom="4dp" />
+    <!-- Контейнер для изображения и индикатора загрузки -->
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        
+        <!-- Изображение вложения -->
+        <ImageView
+            android:id="@+id/message_image"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:layout_marginBottom="4dp" />
+            
+        <!-- Индикатор загрузки изображения -->
+        <ProgressBar
+            android:id="@+id/image_loading_progress"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:indeterminateTint="?attr/colorPrimary" />
+    </FrameLayout>
         
     <!-- Контейнер для вложений -->
     <LinearLayout

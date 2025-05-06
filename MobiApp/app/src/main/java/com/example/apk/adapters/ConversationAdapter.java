@@ -3,6 +3,9 @@ package com.example.apk.adapters;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -22,9 +25,14 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.example.apk.R;
 import com.example.apk.api.ApiClient;
 import com.example.apk.api.MessageResponse;
+import com.example.apk.dialogs.ImageEditorDialog;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -92,6 +100,9 @@ public class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             items.add(msg);
         }
         notifyDataSetChanged();
+        
+        // Запускаем предварительную загрузку изображений
+        preloadImages();
     }
 
     // Форматирует дату для разделителя
@@ -129,14 +140,19 @@ public class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        appContext = parent.getContext().getApplicationContext();
+        
         if (viewType == VIEW_TYPE_DATE_DIVIDER) {
             View view = inflater.inflate(R.layout.item_date_divider, parent, false);
+            convertView = view;
             return new DateDividerViewHolder(view);
         } else if (viewType == VIEW_TYPE_SENT) {
             View view = inflater.inflate(R.layout.item_message_sent, parent, false);
+            convertView = view;
             return new MessageViewHolder(view);
         } else {
             View view = inflater.inflate(R.layout.item_message_received, parent, false);
+            convertView = view;
             return new MessageViewHolder(view);
         }
     }
@@ -161,44 +177,106 @@ public class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                 mvh.messageText.setVisibility(View.VISIBLE);
                 mvh.attachmentContainer.setVisibility(View.VISIBLE);
                 
-                // Определяем тип вложения (файл/изображение) основываясь на тексте сообщения
-                String messageText = msg.getText().toLowerCase();
-                boolean isImage = messageText.endsWith(".jpg") || messageText.endsWith(".jpeg") 
-                        || messageText.endsWith(".png") || messageText.endsWith(".gif") 
-                        || messageText.endsWith(".webp");
-                
-                if (isImage) {
-                    // Для изображений используем стандартный подход
-                    mvh.messageImage.setVisibility(View.VISIBLE);
-                    mvh.fileLayout.setVisibility(View.GONE);
-                    
-                    String url = ApiClient.BASE_URL + "api/Message/media/" + msg.getMessageId();
-                    Glide.with(mvh.itemView.getContext())
-                            .load(url)
-                            .into(mvh.messageImage);
+                // Определяем источник для загрузки
+                Object loadSource;
+                if (msg.getLocalAttachmentUri() != null) {
+                    // Если есть локальный URI (только что отправленное сообщение), грузим из него
+                    loadSource = msg.getLocalAttachmentUri();
                 } else {
-                    // Для файлов используем новый макет
-                    mvh.messageImage.setVisibility(View.GONE);
-                    mvh.fileLayout.setVisibility(View.VISIBLE);
-                    
-                    // Находим имя файла в тексте сообщения или устанавливаем стандартное
-                    String fileName = messageText.isEmpty() ? "документ" : messageText.trim();
-                    mvh.fileName.setText(fileName);
-                    
-                    // Устанавливаем значок файла в зависимости от расширения
-                    setFileIcon(mvh.fileIcon, fileName);
-                    
-                    // ID сообщения для загрузки
-                    int messageId = msg.getMessageId();
-                    
-                    // Обновляем UI в зависимости от статуса загрузки
-                    updateDownloadUI(mvh, messageId, fileName);
+                    // Иначе грузим с сервера
+                    loadSource = ApiClient.BASE_URL + "api/Message/media/" + msg.getMessageId();
                 }
+                
+                // Всегда пробуем сначала загрузить как изображение
+                mvh.messageImage.setVisibility(View.VISIBLE);
+                mvh.fileLayout.setVisibility(View.GONE);
+                mvh.imageLoadingProgress.setVisibility(View.VISIBLE);
+                
+                // Загружаем изображение оптимизированным способом с приоритетом IMMEDIATE
+                // Сначала проверяем, есть ли изображение в кеше, чтобы показать немедленно
+                Glide.with(mvh.itemView.getContext())
+                        .load(loadSource)
+                    .placeholder(R.drawable.placeholder_image)
+                    .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
+                    .priority(com.bumptech.glide.Priority.IMMEDIATE)
+                    .thumbnail(0.5f) // Добавляем загрузку миниатюры для быстрого показа
+                    .override(600, 600) // Ограничиваем размер для ускорения
+                    .dontTransform() // Отключаем трансформации
+                    .format(com.bumptech.glide.load.DecodeFormat.PREFER_RGB_565) // Экономия памяти
+                        .listener(new RequestListener<Drawable>() {
+                            @Override
+                            public boolean onLoadFailed(GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            // Если загрузка не удалась, значит это не изображение - показываем как файл
+                            mvh.imageLoadingProgress.setVisibility(View.GONE);
+                                mvh.messageImage.setVisibility(View.GONE);
+                                mvh.fileLayout.setVisibility(View.VISIBLE);
+                                
+                                // Находим имя файла в тексте сообщения или устанавливаем стандартное
+                                String messageText = msg.getText().toLowerCase();
+                                String fileName = messageText.isEmpty() ? "документ" : messageText.trim();
+                                mvh.fileName.setText(fileName);
+                                
+                                // Устанавливаем значок файла в зависимости от расширения
+                                setFileIcon(mvh.fileIcon, fileName);
+                                
+                                // ID сообщения для загрузки
+                                int messageId = msg.getMessageId();
+                                
+                                // Обновляем UI в зависимости от статуса загрузки
+                                updateDownloadUI(mvh, messageId, fileName);
+                                
+                            return false;
+                            }
+
+                            @Override
+                            public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            mvh.imageLoadingProgress.setVisibility(View.GONE);
+                            // Изображение успешно загружено - сохраняем тип для будущих загрузок
+                            if (msg.getAttachmentType() == null) {
+                                msg.setAttachmentType("image");
+                            }
+                            
+                            // Логируем источник загрузки, чтобы отслеживать эффективность кеширования
+                            android.util.Log.d("ImageLoading", "Image loaded from " + dataSource.name() + 
+                                    " for message " + msg.getMessageId());
+                            
+                            return false;
+                            }
+                        })
+                    .into(new com.bumptech.glide.request.target.DrawableImageViewTarget(mvh.messageImage) {
+                        @Override
+                        public void onLoadStarted(Drawable placeholder) {
+                            super.onLoadStarted(placeholder);
+                        }
+                    });
             } else {
                 // Если нет вложений, скрываем элементы
                 mvh.messageImage.setVisibility(View.GONE);
                 mvh.attachmentContainer.setVisibility(View.GONE);
             }
+
+            mvh.messageImage.setOnClickListener(v -> {
+                Context context = v.getContext();
+                if (context != null) {
+                    MessageResponse currentMessage = (MessageResponse) items.get(holder.getAdapterPosition());
+                    if (currentMessage != null && currentMessage.hasAttachment()) {
+                        // Получаем изображение из ImageView
+                        if (mvh.messageImage.getDrawable() instanceof BitmapDrawable) {
+                            Bitmap bitmap = ((BitmapDrawable) mvh.messageImage.getDrawable()).getBitmap();
+                            if (bitmap != null) {
+                                // Открываем диалог редактирования изображения
+                                ImageEditorDialog dialog = new ImageEditorDialog(context, bitmap, editedBitmap -> {
+                                    // Обновляем изображение в сообщении
+                                    mvh.messageImage.setImageBitmap(editedBitmap);
+                                    // Сохраняем изменения в сообщении
+                                    currentMessage.setEditedBitmap(editedBitmap);
+                                });
+                                dialog.show();
+                            }
+                        }
+                    }
+                }
+            });
         }
     }
     
@@ -609,8 +687,7 @@ public class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         TextView messageText;
         TextView messageTime;
         ImageView messageImage;
-        
-        // Элементы файлового вложения
+        ProgressBar imageLoadingProgress;
         View attachmentContainer;
         View fileLayout;
         ImageView fileIcon;
@@ -625,19 +702,17 @@ public class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             messageText = itemView.findViewById(R.id.message_text);
             messageTime = itemView.findViewById(R.id.message_time);
             messageImage = itemView.findViewById(R.id.message_image);
-            
-            // Инициализация элементов для отображения файлов
+            imageLoadingProgress = itemView.findViewById(R.id.image_loading_progress);
             attachmentContainer = itemView.findViewById(R.id.attachment_container);
+            fileLayout = itemView.findViewById(R.id.file_layout);
             
-            // Если найден контейнер вложений, инициализируем все его элементы
-            if (attachmentContainer != null) {
-                fileLayout = itemView.findViewById(R.id.file_layout);
-                fileIcon = itemView.findViewById(R.id.file_icon);
-                downloadIcon = itemView.findViewById(R.id.download_icon);
-                cancelIcon = itemView.findViewById(R.id.cancel_icon);
-                downloadProgressRing = itemView.findViewById(R.id.download_progress_ring);
-                fileName = itemView.findViewById(R.id.file_name);
-                fileSize = itemView.findViewById(R.id.file_size);
+            if (fileLayout != null) {
+                fileIcon = fileLayout.findViewById(R.id.file_icon);
+                downloadIcon = fileLayout.findViewById(R.id.download_icon);
+                cancelIcon = fileLayout.findViewById(R.id.cancel_icon);
+                downloadProgressRing = fileLayout.findViewById(R.id.download_progress_ring);
+                fileName = fileLayout.findViewById(R.id.file_name);
+                fileSize = fileLayout.findViewById(R.id.file_size);
             }
         }
     }
@@ -650,4 +725,103 @@ public class ConversationAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         long downloadedBytes = 0;
         int progress = 0;
     }
+
+    // Добавляем новый метод для определения типа вложения
+    private boolean isImageAttachment(MessageResponse msg) {
+        // Проверяем тип вложения из API (если он есть)
+        if (msg.getAttachmentType() != null) {
+            String attachmentType = msg.getAttachmentType().toLowerCase();
+            return attachmentType.contains("image");
+        }
+        
+        // Если локальный URI - скорее всего это изображение
+        if (msg.getLocalAttachmentUri() != null) {
+            return true;
+        }
+        
+        // Проверяем по расширению файла в тексте
+        String text = msg.getText().toLowerCase();
+        if (text.endsWith(".jpg") || text.endsWith(".jpeg") || 
+            text.endsWith(".png") || text.endsWith(".gif") || 
+            text.endsWith(".webp") || text.endsWith(".bmp")) {
+            return true;
+        }
+        
+        // По умолчанию считаем, что это может быть изображение
+        // Попробуем загрузить как изображение, и только при ошибке загрузки покажем как файл
+        return true;
+    }
+
+    /**
+     * Предварительно загружает изображения для сообщений, 
+     * которые еще не видны на экране
+     */
+    private void preloadImages() {
+        // Запускаем загрузку в отдельном потоке, чтобы не блокировать UI
+        new Thread(() -> {
+            try {
+                // Небольшая задержка, чтобы дать приоритет видимым изображениям
+                Thread.sleep(300);
+                
+                // Предзагружаем только если есть контекст и сообщения
+                Context context = getContext();
+                if (context == null || originalMessages.isEmpty()) {
+                    return;
+                }
+                
+                // Берем только сообщения с вложениями
+                List<MessageResponse> messagesWithAttachments = new ArrayList<>();
+                for (MessageResponse msg : originalMessages) {
+                    if (msg.hasAttachment()) {
+                        messagesWithAttachments.add(msg);
+                    }
+                }
+                
+                // Начинаем с конца (новые сообщения)
+                for (int i = messagesWithAttachments.size() - 1; i >= 0; i--) {
+                    MessageResponse msg = messagesWithAttachments.get(i);
+                    Object loadSource;
+                    
+                    if (msg.getLocalAttachmentUri() != null) {
+                        loadSource = msg.getLocalAttachmentUri();
+                    } else {
+                        loadSource = ApiClient.BASE_URL + "api/Message/media/" + msg.getMessageId();
+                    }
+                    
+                    // Предзагрузка с миниатюрами
+                    Glide.with(context)
+                        .load(loadSource)
+                        .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
+                        .priority(com.bumptech.glide.Priority.LOW) // Низкий приоритет для предзагрузки
+                        .thumbnail(0.1f) // Загружаем сначала очень маленькую версию
+                        .preload(300, 300); // Предзагружаем уменьшенную версию
+                }
+            } catch (Exception e) {
+                android.util.Log.e("ConversationAdapter", "Error preloading images", e);
+            }
+        }).start();
+    }
+    
+    /**
+     * Получает последний доступный контекст
+     */
+    private Context getContext() {
+        try {
+            if (appContext != null) {
+                return appContext;
+            } else if (convertView != null) {
+                appContext = convertView.getContext();
+                return appContext;
+            } else if (!originalMessages.isEmpty()) {
+                return appContext;
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    // Храним последний контекст
+    private static Context appContext;
+    private View convertView;
 } 

@@ -21,16 +21,19 @@ public class CenteredSearchView extends SearchView {
     public CenteredSearchView(Context context) {
         super(context);
         adjustSearchTextLayout();
+        preventAutoFocus();
     }
 
     public CenteredSearchView(Context context, AttributeSet attrs) {
         super(context, attrs);
         adjustSearchTextLayout();
+        preventAutoFocus();
     }
 
     public CenteredSearchView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         adjustSearchTextLayout();
+        preventAutoFocus();
     }
 
     /**
@@ -77,5 +80,36 @@ public class CenteredSearchView extends SearchView {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+    
+    /**
+     * Предотвращает автоматический фокус поля поиска при инициализации
+     */
+    private void preventAutoFocus() {
+        try {
+            // Убираем фокус программно
+            clearFocus();
+            
+            // Устанавливаем прослушивание для перехвата запроса фокуса
+            setOnQueryTextFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus) {
+                    // Если фокус получен автоматически при инициализации, убираем его
+                    if (!isInTouchMode()) {
+                        clearFocus();
+                    }
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    @Override
+    public void onWindowFocusChanged(boolean hasWindowFocus) {
+        // Предотвращаем получение фокуса при появлении окна
+        if (hasWindowFocus) {
+            clearFocus();
+        }
+        super.onWindowFocusChanged(hasWindowFocus);
     }
 } 

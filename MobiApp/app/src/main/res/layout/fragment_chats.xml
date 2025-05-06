@@ -104,6 +104,8 @@
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
             app:iconifiedByDefault="true"
+            android:focusable="false"
+            android:focusableInTouchMode="true"
             app:queryHint="Поиск"
             android:textColor="@color/text_primary"
             android:textColorHint="@color/text_secondary"

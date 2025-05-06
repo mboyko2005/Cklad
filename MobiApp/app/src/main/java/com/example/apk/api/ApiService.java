@@ -8,11 +8,16 @@ import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 import retrofit2.http.Url;
+import retrofit2.http.Part;
+
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 
 import com.example.apk.models.UserIdResponse;
 import com.example.apk.api.MessageResponse;
@@ -192,4 +197,15 @@ public interface ApiService {
      */
     @GET
     Call<ResponseBody> downloadFile(@Url String fileUrl);
+
+    /**
+     * Новый метод для загрузки медиафайла
+     */
+    @Multipart
+    @POST("api/message/upload-media")
+    Call<MessageResponse> uploadMessageMedia(
+        @Header("UserId") int userId,
+        @Part("messageId") RequestBody messageId,
+        @Part MultipartBody.Part file
+    );
 }

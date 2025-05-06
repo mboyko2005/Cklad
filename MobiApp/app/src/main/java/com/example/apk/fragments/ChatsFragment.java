@@ -97,6 +97,9 @@ public class ChatsFragment extends Fragment {
         chatAdapter = new ChatAdapter(requireContext(), new ArrayList<>());
         recyclerViewChats.setAdapter(chatAdapter);
         
+        // Сбрасываем фокус с поиска, устанавливая его на другие элементы
+        recyclerViewChats.requestFocus();
+        
         // Настраиваем SwipeRefreshLayout
         swipeRefreshLayout.setColorSchemeResources(android.R.color.holo_blue_light);
         swipeRefreshLayout.setOnRefreshListener(() -> {
@@ -158,6 +161,15 @@ public class ChatsFragment extends Fragment {
         
         // Загружаем чаты при первом запуске
         loadChats();
+        
+        // Дополнительное устранение фокуса с поля поиска после полной загрузки фрагмента
+        view.post(() -> {
+            com.example.apk.views.CenteredSearchView searchView = view.findViewById(R.id.search_view);
+            if (searchView != null) {
+                searchView.clearFocus();
+                recyclerViewChats.requestFocus();
+            }
+        });
     }
     
     @Override
@@ -235,8 +247,11 @@ public class ChatsFragment extends Fragment {
         com.example.apk.views.CenteredSearchView searchView = view.findViewById(R.id.search_view);
         if (searchView != null) {
             // Настройка внешнего вида
-            searchView.setIconifiedByDefault(false);
+            searchView.setIconifiedByDefault(true); // Позволяет SearchView начинаться в свернутом виде
             searchView.setSubmitButtonEnabled(false);
+            
+            // Убираем автоматический фокус
+            searchView.clearFocus();
             
             // Прозрачный фон для текстового поля
             int searchPlateId = searchView.getContext().getResources().getIdentifier(

@@ -66,4 +66,9 @@
     <!-- Цвет для текста поиска -->
     <color name="search_text_color">#9E9E9E</color>
     <color name="search_hint_color">#BDBDBD</color>
+    
+    <color name="drawing_red">#FF0000</color>
+    <color name="drawing_green">#00FF00</color>
+    <color name="drawing_blue">#0000FF</color>
+    <color name="drawing_black">#000000</color>
 </resources>
